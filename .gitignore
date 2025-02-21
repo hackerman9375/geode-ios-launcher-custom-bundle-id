@@ -1,0 +1,11 @@
+.theos/
+packages/
+.DS_Store
+.cache
+.clangd
+compile_commands.json
+old/
+.cache/
+build.sh
+build-without.sh
+
