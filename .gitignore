@@ -8,4 +8,6 @@ old/
 .cache/
 build.sh
 build-without.sh
-
+build-debug.sh
+.git
+Resources/Frameworks/OpenSSL.framework

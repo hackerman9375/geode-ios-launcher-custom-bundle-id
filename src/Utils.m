@@ -1,6 +1,10 @@
 #import "Utils.h"
+#import <mach-o/arch.h>
 
 @implementation Utils
++ (NSString*)gdBundleName {
+    return @"com.robtop.geometryjump.app";
+}
 + (BOOL)isJailbroken {
     return [[NSFileManager defaultManager] fileExistsAtPath:@"/var/jb"];
 }
@@ -46,6 +50,21 @@
     // Create and return the UIImageView
     UIImageView *imageView = [[UIImageView alloc] initWithImage:pdfImage];
     return imageView;
+}
+
++ (void)showError:(UIViewController*)root title:(NSString *)title error:(NSError *)error  {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error"
+        message:[NSString stringWithFormat:@"%@: %@", title, error.localizedDescription]
+        preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
+    [alert addAction:okAction];
+    [root presentViewController:alert animated:YES completion:nil];
+}
+
++ (NSString *)archName {
+    const NXArchInfo *info = NXGetLocalArchInfo();
+    NSString *typeOfCpu = [NSString stringWithUTF8String:info->description];
+    return typeOfCpu;
 }
 
 @end

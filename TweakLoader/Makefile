@@ -1,0 +1,14 @@
+ARCHS := arm64
+TARGET := iphone:clang:latest:13.0:7.0
+PACKAGE_FORMAT = ipa
+INSTALL_TARGET_PROCESSES = Geode
+include $(THEOS)/makefiles/common.mk
+
+LIBRARY_NAME = TweakLoader
+
+TweakLoader_FILES = SecItem.m TweakLoader.m NSBundle+FixCydiaSubstrate.m NSFileManager+GuestHooks.m UIKit+GuestHooks.m utils.m FBSSerialQueue.m ../fishhook/fishhook.c
+TweakLoader_CFLAGS = -objc-arc
+TweakLoader_INSTALL_PATH = /Applications/Geode.app/Frameworks
+TweakLoader_PRIVATE_FRAMEWORKS = CoreServices FrontBoard RunningBoardServices
+
+include $(THEOS_MAKE_PATH)/library.mk
