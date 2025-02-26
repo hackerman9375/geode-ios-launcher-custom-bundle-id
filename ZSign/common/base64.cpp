@@ -140,6 +140,7 @@ const char *ZBase64::Decode(const char *szSrc, int nSrcLen, int *pDecLen)
 
 	int i = 0;
 	int len = 0;
+    printf("%i\n", len); // or else it errors??
 	unsigned char *psrc = (unsigned char *)szSrc;
 	char *pbuf = szDec;
 	for (i = 0; i < nSrcLen - 4; i += 4)
