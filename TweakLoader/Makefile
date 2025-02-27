@@ -1,5 +1,5 @@
 ARCHS := arm64
-TARGET := iphone:clang:latest:14.0:13.5
+TARGET := iphone:clang:16.5:14.0
 PACKAGE_FORMAT = ipa
 INSTALL_TARGET_PROCESSES = Geode
 include $(THEOS)/makefiles/common.mk
