@@ -26,13 +26,13 @@ jobs:
         with:
           repository: theos/sdks
           ref: master
-          sparse-checkout: iPhoneOS16.5.sdk
+          sparse-checkout: iPhoneOS14.5.sdk
           path: theos/sdks
 
       - name: Ensure main utils are installed
         uses: dhinakg/procursus-action@main
         with:
-          packages: coreutils make xz ldid
+          packages: findutils coreutils make xz ldid
           
       - name: Build
         run: |
