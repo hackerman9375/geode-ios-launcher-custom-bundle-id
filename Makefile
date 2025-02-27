@@ -1,6 +1,7 @@
 export ARCHS := arm64
 PACKAGE_FORMAT = ipa
-TARGET := iphone:clang:latest:13.0:7.0
+#TARGET := iphone:clang:latest:13.0:7.0
+TARGET := iphone:clang:latest:14.0:13.5
 #TARGET := iphone:clang:16.5:14.0
 INSTALL_TARGET_PROCESSES = Geode
 
