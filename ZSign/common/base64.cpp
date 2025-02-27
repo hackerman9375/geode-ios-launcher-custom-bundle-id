@@ -84,6 +84,7 @@ const char *ZBase64::Encode(const char *szSrc, int nSrcLen)
 
 	int i = 0;
 	int len = 0;
+	printf("%i\n", len); // or else it errors??
 	unsigned char *psrc = (unsigned char *)szSrc;
 	char *p64 = szEnc;
 	for (i = 0; i < nSrcLen - 3; i += 3)
@@ -140,7 +141,7 @@ const char *ZBase64::Decode(const char *szSrc, int nSrcLen, int *pDecLen)
 
 	int i = 0;
 	int len = 0;
-    printf("%i\n", len); // or else it errors??
+	printf("%i\n", len); // or else it errors??
 	unsigned char *psrc = (unsigned char *)szSrc;
 	char *pbuf = szDec;
 	for (i = 0; i < nSrcLen - 4; i += 4)

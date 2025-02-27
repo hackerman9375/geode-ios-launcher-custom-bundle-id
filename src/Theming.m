@@ -32,7 +32,6 @@
         return;
     }
     [userDefaults setObject:colorData forKey:@"accentColor"];
-    [userDefaults synchronize];
 }
 
 + (UIColor*)getTextColor:(UIColor *)color {

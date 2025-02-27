@@ -1,9 +1,11 @@
 #import "SettingsController.h"
+#import "src/GeodeInstaller.h"
 #import <UIKit/UIKit.h>
 #import "src/LCUtils/Shared.h"
 #import "src/Theming.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 #import "Utils.h"
+#import "LogsView.h"
 #import <sys/utsname.h>
 
 NSString *deviceArchitecture() {
@@ -12,10 +14,28 @@ NSString *deviceArchitecture() {
     return [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
 }
 
+@interface SettingsController () 
+@property (nonatomic, strong) NSArray *creditsArray;
+@end
+
 @implementation SettingsController
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setTitle:@"Settings"];
+    self.creditsArray = @[
+        @{ @"name" : @"rooot",   @"url" : @"https://github.com/RoootTheFox" },
+        @{ @"name" : @"dankmeme01", @"url" : @"https://github.com/dankmeme01" },
+        @{ @"name" : @"Firee", @"url" : @"https://github.com/FireMario211" },
+        @{ @"name" : @"ninXout", @"url" : @"https://github.com/ninXout" },
+        @{ @"name" : @"Duy Tran Khanh", @"url" : @"https://github.com/khanhduytran0" },
+        @{ @"name" : @"camila314", @"url" : @"https://github.com/camila314" },
+        @{ @"name" : @"TheSillyDoggo", @"url" : @"https://github.com/TheSillyDoggo" },
+        @{ @"name" : @"Nathan", @"url" : @"https://github.com/verygenericname" },
+        @{ @"name" : @"LimeGradient", @"url" : @"https://github.com/LimeGradient" },
+        @{ @"name" : @"km7dev", @"url" : @"https://github.com/Kingminer7" },
+        @{ @"name" : @"Anh", @"url" : @"https://github.com/AnhNguyenlost13" },
+        @{ @"name" : @"pengubow", @"url" : @"https://github.com/pengubow" },
+    ];
 
     self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleInsetGrouped];
     [[self tableView] setTranslatesAutoresizingMaskIntoConstraints:NO];
@@ -46,23 +66,24 @@ NSString *deviceArchitecture() {
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
 	switch (section) {
         case 0:
-            return 3;
-        case 1:
-            return 2;
         case 2:
             return 5;
+        case 1:
+            return 2;
+        case 4:
+            return [self.creditsArray count];
         case 3:
             return 4;
-        case 4:
-            return 1;
         default:
             return 0;
     }
 }
 
-- (UISwitch*)createSwitch:(BOOL)enabled {
+- (UISwitch*)createSwitch:(BOOL)enabled tag:(NSInteger)tag {
     UISwitch *uiSwitch = [[UISwitch alloc] init];
     [uiSwitch setOn:enabled];
+    [uiSwitch setTag:tag];
+    [uiSwitch addTarget:self action:@selector(switchValueChanged:) forControlEvents:UIControlEventValueChanged];
     return uiSwitch;
 }
 
@@ -86,6 +107,15 @@ NSString *deviceArchitecture() {
                 cell.textLabel.text = @"Open File Manager";
                 cell.textLabel.textColor = [Theming getAccentColor];
                 cell.accessoryType = UITableViewCellAccessoryNone;
+            } else if (indexPath.row == 3) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+                cellval1.textLabel.text = @"Enable Automatic Updates";
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"UPDATE_AUTOMATICALLY"] tag:0];
+                return cellval1;
+            } else if (indexPath.row == 4) {
+                cell.textLabel.text = @"Check for Updates";
+                cell.textLabel.textColor = [Theming getAccentColor];
+                cell.accessoryType = UITableViewCellAccessoryNone;
             }
             break;
         case 1:
@@ -94,23 +124,27 @@ NSString *deviceArchitecture() {
                 cell.textLabel.textColor = [Theming getAccentColor];
                 cell.accessoryType = UITableViewCellAccessoryNone;
             } else if (indexPath.row == 1) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Automatically Launch";
-                cellval1.accessoryView = [self createSwitch:YES];
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"LOAD_AUTOMATICALLY"] tag:1];
                 return cellval1;
             }
             break;
         case 2: 
             if (indexPath.row == 0) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Developer Mode";
-                cellval1.accessoryView = [self createSwitch:YES];
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"DEVELOPER_MODE"] tag:2];
                 return cellval1;
             } else if (indexPath.row == 1) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Run with JIT";
-                cellval1.accessoryView = [self createSwitch:YES];
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"USE_JIT"] tag:3];
                 return cellval1;
             } else if (indexPath.row == 2) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Use Tweak than JIT";
-                cellval1.accessoryView = [self createSwitch:YES];
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"USE_TWEAK"] tag:4];
                 return cellval1;
             } else if (indexPath.row == 3) {
                 cell.textLabel.text = @"View Application Logs";
@@ -127,7 +161,7 @@ NSString *deviceArchitecture() {
                 cellval1.detailTextLabel.text = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
             } else if (indexPath.row == 1) {
                 cellval1.textLabel.text = @"Geode";
-                cellval1.detailTextLabel.text = @"UNKNOWN";
+                cellval1.detailTextLabel.text = [Utils getGeodeVersion];
             } else if (indexPath.row == 2) {
                 NSString *infoPlistPath = [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"Info.plist"].path;
                 NSDictionary *infoDictionary = [NSDictionary dictionaryWithContentsOfFile:infoPlistPath];
@@ -145,6 +179,12 @@ NSString *deviceArchitecture() {
                 ];
             }
             return cellval1;
+        }
+        case 4: {
+            cell.textLabel.text = self.creditsArray[indexPath.row][@"name"];
+            cell.textLabel.textColor = [Theming getAccentColor];
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+            return cell;
         }
     }
 
@@ -174,6 +214,8 @@ NSString *deviceArchitecture() {
 
 - (NSString*)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     switch (section) {
+        case 0:
+            return [NSString stringWithFormat:@"Current loader version: %@", [Utils getGeodeVersion]];
         case 1:
             return @"Launches the game after a short delay.";
         case 4:
@@ -183,9 +225,11 @@ NSString *deviceArchitecture() {
     }
 }
 
+
 #pragma mark - Table View Delegate
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    NSLog(@"godelol s:%ld,%ld",(long)indexPath.section,indexPath.row);
     if (indexPath.section == 0) {
         switch (indexPath.row) {
             case 0: { // Change accent color
@@ -204,15 +248,12 @@ NSString *deviceArchitecture() {
                     UIBarButtonItem *doneBtn = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Done", ) style:UIBarButtonItemStyleDone target:self action:@selector(ms_dismissViewController:)];
                     colorSelectionController.navigationItem.rightBarButtonItem = doneBtn;
                 }
-
+                //[[self navigationController] pushViewController:colorSelectionController animated:YES];
                 [self presentViewController:navCtrl animated:YES completion:nil];
-
-
                 break;
             }
             case 1: {
                 [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"accentColor"];
-                [[NSUserDefaults standardUserDefaults] synchronize]; 
                 [self.root updateState];
                 [self.tableView reloadData];
                 break;
@@ -220,22 +261,69 @@ NSString *deviceArchitecture() {
             case 2: { // Open file manager
                 NSString *openURL = [
                     NSString stringWithFormat:@"shareddocuments://%@",
-                    [LCPath docPath].path
+                    [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents"].path
                 ];
                 NSURL* url = [NSURL URLWithString:openURL];
                 if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
                     [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
-                    return;
                 }
                 //[[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:@"com.apple.DocumentsApp"];
+                break;
+            }
+            case 4: { // Check for updates
+                [[GeodeInstaller alloc] checkUpdates:_root download:YES];
                 break;
             }
             default:
                 break;
         }
+    } else if (indexPath.section == 1) {
+        switch (indexPath.row) {
+            case 0: { // Safe Mode
+                break;
+            }
+        }
+    } else if (indexPath.section == 2) {
+        switch (indexPath.row) {
+            case 3: // View app logs
+                [[self navigationController] pushViewController:
+                    [[LogsViewController alloc] initWithFile:[Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/logs/"].path]]
+                    animated:YES
+                ];
+                break;
+            case 4: // View recent crash
+                //[Utils toggleKey:@"LOAD_AUTOMATICALLY"];
+                break;
+        }
+    } else if (indexPath.section == 4) {
+        NSURL* url = [NSURL URLWithString:self.creditsArray[indexPath.row][@"url"]];
+        if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
+            [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
+        }
     }
 
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
+}
+
+// ios 13 bad!
+- (void)switchValueChanged:(UISwitch *)sender {
+    switch (sender.tag) {
+        case 0: // Enable Automatic Updates
+            [Utils toggleKey:@"UPDATE_AUTOMATICALLY"];
+            break;
+        case 1: // Automatically Launch
+            [Utils toggleKey:@"LOAD_AUTOMATICALLY"];
+            break;
+        case 2: // Dev Mode
+            [Utils toggleKey:@"DEVELOPER_MODE"];
+            break;
+        case 3: // Run With JIT
+            //[Utils toggleKey:@"USE_JIT"];
+            break;
+        case 4: // Use Tweak instead of JIT
+            //[Utils toggleKey:@"USE_TWEAK"];
+            break;
+    }
 }
 
 - (void)ms_dismissViewController:(id)sender

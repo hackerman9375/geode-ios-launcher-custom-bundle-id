@@ -4,10 +4,26 @@
 @implementation Utils
 + (NSString*)gdBundleName {
     return @"com.robtop.geometryjump.app";
+    //return @"GeometryDash";
 }
 + (BOOL)isJailbroken {
     return [[NSFileManager defaultManager] fileExistsAtPath:@"/var/jb"];
 }
+
++ (NSString*)getGeodeVersion {
+    return [[NSUserDefaults standardUserDefaults] stringForKey:@"CURRENT_VERSION_TAG"];
+}
++ (void)updateGeodeVersion:(NSString *)newVer {
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setObject:newVer forKey:@"CURRENT_VERSION_TAG"];
+    [userDefaults synchronize];
+}
+
++ (NSString*)getGeodeReleaseURL {
+    //return @"http://192.168.200.1:38000";
+    return @"https://api.github.com/repos/geode-sdk/geode/releases/latest";
+}
+
 // ai generated because i cant figure this out
 + (UIImageView *)imageViewFromPDF:(NSString *)pdfName {
     NSURL *pdfURL = [[NSBundle mainBundle] URLForResource:pdfName withExtension:@"pdf"];
@@ -51,6 +67,36 @@
     UIImageView *imageView = [[UIImageView alloc] initWithImage:pdfImage];
     return imageView;
 }
++ (NSURL *)pathToMostRecentLogInDirectory:(NSString *)directoryPath {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSError *error;
+
+    // Get all files in directory
+    NSArray<NSURL *> *files = [fileManager contentsOfDirectoryAtURL:[NSURL fileURLWithPath:directoryPath]
+                                         includingPropertiesForKeys:@[NSURLCreationDateKey]
+                                                            options:NSDirectoryEnumerationSkipsHiddenFiles
+                                                              error:&error];
+
+    if (error) {
+        NSLog(@"Error reading directory: %@", error.localizedDescription);
+        return nil;
+    }
+
+    // Filter and sort log files
+    NSArray *logFiles = [files filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"pathExtension == 'log'"]];
+
+    logFiles = [logFiles sortedArrayUsingComparator:^NSComparisonResult(NSURL *file1, NSURL *file2) {
+        // Get creation dates
+        NSDate *date1, *date2;
+        [file1 getResourceValue:&date1 forKey:NSURLCreationDateKey error:nil];
+        [file2 getResourceValue:&date2 forKey:NSURLCreationDateKey error:nil];
+
+        // Reverse chronological order
+        return [date2 compare:date1];
+    }];
+
+    return logFiles.firstObject;
+}
 
 + (void)showError:(UIViewController*)root title:(NSString *)title error:(NSError *)error  {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error"
@@ -65,6 +111,11 @@
     const NXArchInfo *info = NXGetLocalArchInfo();
     NSString *typeOfCpu = [NSString stringWithUTF8String:info->description];
     return typeOfCpu;
+}
+
++ (void)toggleKey:(NSString *)key {
+    NSLog(@"godelol %@", key);
+    [[NSUserDefaults standardUserDefaults] setBool:![[NSUserDefaults standardUserDefaults] boolForKey:key] forKey:key];
 }
 
 @end

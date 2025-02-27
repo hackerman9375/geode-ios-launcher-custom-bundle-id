@@ -1,16 +1,19 @@
 #import "VerifyInstall.h"
-#import "src/Utils.h"
-#import "src/LCUtils/LCAppInfo.h"
-#import "src/LCUtils/LCAppModel.h"
-#import "src/LCUtils/LCUtils.h"
-#import "src/LCUtils/Shared.h"
-#import "src/LCUtils/unarchive.h"
+#import "GeodeInstaller.h"
+#import "Utils.h"
+#import "LCUtils/LCAppInfo.h"
+#import "LCUtils/LCAppModel.h"
+#import "LCUtils/LCUtils.h"
+#import "LCUtils/Shared.h"
+#import "LCUtils/unarchive.h"
 #import <dlfcn.h>
 #import <UIKit/UIKit.h>
 
 #import <objc/runtime.h>
 
 typedef void (^DecompressCompletion)(NSError * _Nullable error);
+
+BOOL hasDoneUpdate = NO;
 
 @implementation VerifyInstall 
 // for actually knowing whether they own the app!
@@ -42,6 +45,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
             [root presentViewController:resultAlert animated:YES completion:nil];
             return;
         }
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"UPDATE_AUTOMATICALLY"];
         [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"GDVerified"];
         [[NSUserDefaults standardUserDefaults] synchronize];
         [root updateState];
@@ -55,6 +59,12 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
 // after the user installed the patched ipa
 + (BOOL)verifyGDInstalled {
     BOOL res = NO;
+    /*[
+        [NSFileManager defaultManager]
+        moveItemAtPath:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app" isDirectory:YES].path
+        toPath:[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName] isDirectory:YES].path
+        error:nil
+    ];*/
     if ([
         [NSFileManager defaultManager] fileExistsAtPath:[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName] isDirectory:YES].path isDirectory:&res
     ]) {
@@ -170,7 +180,9 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
             finalNewApp.signer = [[NSUserDefaults standardUserDefaults] integerForKey:@"LCDefaultSigner"];
             [finalNewApp patchExecAndSignIfNeedWithCompletionHandler:^(BOOL success, NSString *errorInfo) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    [root updateState];
+                    //[root updateState];
+                    root.optionalTextLabel.text = @"Downloading Geode...";
+                    [[[GeodeInstaller alloc] init] startInstall:root ignoreRoot:NO];
                 });
                 if (success) {
                     LCAppModel *newAppModel = [[LCAppModel alloc] initWithAppInfo:finalNewApp delegate:nil];
@@ -213,9 +225,13 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
 
 // after the user installed geode itself
 + (BOOL)verifyGeodeInstalled {
-    return [VerifyInstall verifyGDInstalled];
+    return [[NSFileManager defaultManager] fileExistsAtPath:[[LCPath tweakPath] URLByAppendingPathComponent:@"Geode.ios.dylib"].path];
 }
 + (BOOL)verifyAll {
+    if (!hasDoneUpdate && [[NSUserDefaults standardUserDefaults] boolForKey:@"UPDATE_AUTOMATICALLY"]) {
+        hasDoneUpdate = YES;
+        return NO;
+    }
     return [VerifyInstall verifyGDAuthenticity] && [VerifyInstall verifyGDInstalled] && [VerifyInstall verifyGeodeInstalled];
 }
 @end

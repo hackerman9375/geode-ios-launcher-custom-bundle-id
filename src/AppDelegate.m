@@ -1,4 +1,6 @@
 #import "AppDelegate.h"
+#import "src/LCUtils/LCUtils.h"
+#import "src/Utils.h"
 #import "src/Theming.h"
 #import "RootViewController.h"
 
@@ -84,8 +86,8 @@
                 }
             }
         }
-    } else if ([url.host isEqualToString:@"geode-launch"]) {
-        NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    } else if ([url.host isEqualToString:@"geode-launch"] || [url.host isEqualToString:@"launch"]) {
+        /*NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
         NSString *bundleId = nil;
         NSString *containerName = nil;
         for (NSURLQueryItem *item in components.queryItems) {
@@ -97,7 +99,10 @@
         }
         if (bundleId) {
             [AppDelegate launchApp:bundleId container:containerName];
-        }
+        }*/ 
+        [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];
+        [[NSUserDefaults standardUserDefaults] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+        [LCUtils launchToGuestApp];
     }
     return NO;
 }

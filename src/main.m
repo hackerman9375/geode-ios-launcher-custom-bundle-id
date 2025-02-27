@@ -1,4 +1,5 @@
 #import "LCUtils/FoundationPrivate.h"
+#import <Foundation/Foundation.h>
 #import "LCUtils/LCSharedUtils.h"
 #import "LCUtils/UIKitPrivate.h"
 #import "LCUtils/utils.h"
@@ -288,6 +289,12 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
         NSString *target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"TweakLoader.dylib"];
         symlink(target.UTF8String, tweakLoaderPath.UTF8String);
     }
+    NSString *tweakLoaderPath2 = [tweakFolder stringByAppendingPathComponent:@"Geode.ios.dylib"];
+    if (![fm fileExistsAtPath:tweakLoaderPath2]) {
+        remove(tweakLoaderPath2.UTF8String);
+        NSString *target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"Geode.ios.dylib"];
+        symlink(target.UTF8String, tweakLoaderPath2.UTF8String);
+    }
     
 
     // If JIT is enabled, bypass library validation so we can load arbitrary binaries
@@ -382,7 +389,10 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     for (NSString *dir in dirList) {
         NSLog(@"creating %@", dir);
         NSString *dirPath = [newHomePath stringByAppendingPathComponent:dir];
-        [fm createDirectoryAtPath:dirPath withIntermediateDirectories:YES attributes:nil error:nil];
+        NSDictionary *attributes = @{
+            NSFileProtectionKey: NSFileTypeDirectory
+        };
+        [fm createDirectoryAtPath:dirPath withIntermediateDirectories:YES attributes:attributes error:nil];
     }
 
     [lcUserDefaults setObject:dataUUID forKey:@"lastLaunchDataUUID"];

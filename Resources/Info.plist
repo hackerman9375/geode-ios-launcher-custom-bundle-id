@@ -198,5 +198,9 @@
 		<string>nearby-interaction</string>
 		<string>remote-notification</string>
 	</array>
+
+    <!-- Permissions -->
+    <key>NSMicrophoneUsageDescription</key>
+	<string>The mod you are using is requesting this permission.</string>
 </dict>
 </plist>

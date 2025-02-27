@@ -1,13 +1,14 @@
 #import "RootViewController.h"
-#import "src/SettingsController.h"
-#import "src/LCUtils/Shared.h"
-#import "src/LCUtils/LCSharedUtils.h"
-#import "src/LCUtils/LCUtils.h"
-#import "src/Theming.h"
-#import "src/components/ProgressBar.h"
-#import "src/VerifyInstall.h"
+#import "GeodeInstaller.h"
+#import "SettingsController.h"
+#import "LCUtils/Shared.h"
+#import "LCUtils/LCSharedUtils.h"
+#import "LCUtils/LCUtils.h"
+#import "Theming.h"
+#import "components/ProgressBar.h"
+#import "VerifyInstall.h"
 #import <objc/runtime.h>
-#import "src/Utils.h"
+#import "Utils.h"
 #import <Foundation/Foundation.h>
 #import <dlfcn.h>
 #import <MobileCoreServices/MobileCoreServices.h>
@@ -18,10 +19,26 @@
 @end
 */
 
+@interface RootViewController ()
+
+@property (nonatomic, strong) ProgressBar *progressBar;
+
+@end
+
 @implementation RootViewController {
     NSURLSessionDownloadTask *downloadTask;
 }
 
+- (void)progressVisibility:(BOOL)hidden {
+    if (self.progressBar != nil) {
+        [self.progressBar setHidden:hidden];
+    }
+}
+- (void)barProgress:(CGFloat)value {
+    if (self.progressBar != nil) {
+        [self.progressBar setProgress:value];
+    }
+}
 - (void)updateState {
     self.logoImageView.frame = CGRectMake(self.view.center.x - 70, self.view.center.y - 130, 150, 150);
     self.projectLabel.frame = CGRectMake(0, CGRectGetMaxY(self.logoImageView.frame) + 15, self.view.bounds.size.width, 35);
@@ -43,6 +60,9 @@
         [self.launchButton setTitle:@"Launch" forState:UIControlStateNormal];
         [self.launchButton setImage:[[UIImage systemImageNamed:@"play.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
         [self.launchButton addTarget:self action:@selector(launchGame) forControlEvents:UIControlEventTouchUpInside];
+        if ([[NSUserDefaults standardUserDefaults] boolForKey:@"LOAD_AUTOMATICALLY"]) {
+            [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(launchGame) userInfo:nil repeats:NO];
+        }
     } else {
         [self.optionalTextLabel setHidden:NO];
         if (![VerifyInstall verifyGDAuthenticity]) {
@@ -59,6 +79,15 @@
             [self.launchButton setTitle:@"Download" forState:UIControlStateNormal];
             [self.launchButton setImage:[[UIImage systemImageNamed:@"tray.and.arrow.down"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
             [self.launchButton addTarget:self action:@selector(downloadGame) forControlEvents:UIControlEventTouchUpInside];
+        } else if ([VerifyInstall verifyAll]) {
+            self.launchButton.frame = CGRectMake(self.launchButton.frame.origin.x, CGRectGetMaxY(self.optionalTextLabel.frame) + 10, 140, 45);
+            self.settingsButton.frame = CGRectMake(self.settingsButton.frame.origin.x, CGRectGetMaxY(self.optionalTextLabel.frame) + 10, 45, 45);
+            [self.launchButton setEnabled:NO];
+            self.optionalTextLabel.text = @"Checking for updates...";
+            [self.launchButton setTitle:@"Update" forState:UIControlStateNormal];
+            [self.launchButton setImage:[[UIImage systemImageNamed:@"tray.and.arrow.down"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
+            [self.launchButton addTarget:self action:@selector(updateGeode) forControlEvents:UIControlEventTouchUpInside];
+            [[GeodeInstaller alloc] checkUpdates:self download:YES];
         }
     }
 }
@@ -130,6 +159,7 @@
         initWithFrame:CGRectMake(self.view.center.x - 140, self.view.center.y + 200, 280, 68)
         progressText:@"Downloading... {percent}%" // note for me, nil for no string
         showCancelButton:YES
+        root:self
     ];
     [self.progressBar setHidden:YES];
     [self.view addSubview:self.progressBar];
@@ -165,6 +195,9 @@
     UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:settings];
     [self presentViewController:navController animated:YES completion:nil];
 }
+- (void)updateGeode {
+    [[GeodeInstaller alloc] checkUpdates:self download:YES];
+}
 - (void)downloadGame {
     /*UIDocumentPickerViewController *documentPickerController = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.item"] inMode:UIDocumentPickerModeImport];
     documentPickerController.delegate = self;
@@ -180,11 +213,15 @@
     UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"WHY" style:UIAlertActionStyleDefault handler:nil];
     [alert addAction:okAction];
     [self presentViewController:alert animated:YES completion:nil];*/
-    [self.progressBar setHidden:NO];
     [self.launchButton setEnabled:NO];
-    NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
-    downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"http://192.168.200.213:3000/Geometry-2.207.ipa"]];
-    [downloadTask resume];
+    if ([VerifyInstall verifyGDInstalled] && ![VerifyInstall verifyGeodeInstalled]) {
+        [[[GeodeInstaller alloc] init] startInstall:self ignoreRoot:NO];
+    } else {
+        [self.progressBar setHidden:NO];
+        NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
+        downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"http://192.168.200.213:3000/Geometry-2.207.ipa"]];
+        [downloadTask resume];
+    }
 }
 
 - (void)launchGame {
@@ -204,7 +241,7 @@
     //try await signApp(force: false)
     
     [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];
-    [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selectedContainer"];
+    [[NSUserDefaults standardUserDefaults] setValue:@"GeometryDash" forKey:@"selectedContainer"];
     [LCUtils launchToGuestApp];
     /*UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"placeholder"
         message:@"this is a placeholder for when you click launch. what? did you think you could just *launch* gd? also you're not jailbroken"
@@ -274,7 +311,9 @@
 }
 
 - (void)cancelDownload {
-    [downloadTask cancel];
+    if (downloadTask != nil) {
+        [downloadTask cancel];
+    }
     [self.progressBar setHidden:YES];
 }
 

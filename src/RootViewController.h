@@ -1,4 +1,3 @@
-#import "src/components/ProgressBar.h"
 #import <UIKit/UIKit.h>
 
 @interface RootViewController : UIViewController<NSURLSessionDownloadDelegate, NSURLSessionTaskDelegate>
@@ -9,6 +8,10 @@
 @property (nonatomic, strong) UIButton *launchButton;
 @property (nonatomic, strong) UIButton *settingsButton;
 @property (nonatomic, strong) UIButton *infoButton;
-@property (nonatomic, strong) ProgressBar *progressBar;
 - (void)updateState;
+- (void)cancelDownload;
+
+// sorry i dont want to deal with dumb link errors
+- (void)progressVisibility:(BOOL)hidden;
+- (void)barProgress:(CGFloat)value;
 @end

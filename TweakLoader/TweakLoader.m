@@ -53,7 +53,7 @@ static void TweakLoaderConstructor() {
     NSMutableArray *errors = [NSMutableArray new];
 
     // Load CydiaSubstrate
-    dlopen("@loader_path/CydiaSubstrate.framework/CydiaSubstrate", RTLD_LAZY | RTLD_GLOBAL);
+    //dlopen("@loader_path/CydiaSubstrate.framework/CydiaSubstrate", RTLD_LAZY | RTLD_GLOBAL);
     const char *substrateError = dlerror();
     if (substrateError) {
         [errors addObject:@(substrateError)];

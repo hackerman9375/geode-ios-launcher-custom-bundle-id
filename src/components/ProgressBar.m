@@ -1,5 +1,6 @@
 #import "ProgressBar.h"
-#import "src/Theming.h"
+#import "../RootViewController.h"
+#import "../Theming.h"
 
 @interface ProgressBar ()
 
@@ -13,12 +14,14 @@
 
 - (instancetype)initWithFrame:(CGRect)frame
     progressText:(NSString *)progressText
-    showCancelButton:(BOOL)showCancelButton {
+    showCancelButton:(BOOL)showCancelButton
+    root:(RootViewController*)root {
     self = [super initWithFrame:frame];
     if (self) {
         self.progressText = progressText;
         self.showCancelButton = showCancelButton;
         self.backgroundColor = [UIColor clearColor];
+        self.root = root;
 
         [self setupViews];
     }
@@ -76,6 +79,7 @@
 
 // TODO: fix
 - (void)cancelButtonTapped {
+    [_root cancelDownload];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"CancelEvent" object:nil];
 }
 

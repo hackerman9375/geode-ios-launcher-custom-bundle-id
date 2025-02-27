@@ -20,6 +20,7 @@ include $(THEOS_MAKE_PATH)/application.mk
 SUBPROJECTS += ZSign TweakLoader
 include $(THEOS_MAKE_PATH)/aggregate.mk
 
+#@cp Geode.ios.dylib $(THEOS_STAGING_DIR)/Applications/Geode.app/Frameworks
 before-package::
 	@mv $(THEOS_STAGING_DIR)/Applications/Geode.app/Geode $(THEOS_STAGING_DIR)/Applications/Geode.app/GeodeLauncher_PleaseDoNotShortenTheExecutableNameBecauseItIsUsedToReserveSpaceForOverwritingThankYou
 	

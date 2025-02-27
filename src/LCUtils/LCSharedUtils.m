@@ -125,7 +125,7 @@ extern NSBundle *lcMainBundle;
 
     NSString* launchBundleId = nil;
     NSString* openUrl = nil;
-    NSString* containerFolderName = nil;
+    //NSString* containerFolderName = nil;
     for (NSURLQueryItem* queryItem in components.queryItems) {
         if ([queryItem.name isEqualToString:@"bundle-name"]) {
             launchBundleId = queryItem.value;
@@ -133,7 +133,7 @@ extern NSBundle *lcMainBundle;
             NSData *decodedData = [[NSData alloc] initWithBase64EncodedString:queryItem.value options:0];
             openUrl = [[NSString alloc] initWithData:decodedData encoding:NSUTF8StringEncoding];
         } else if ([queryItem.name isEqualToString:@"container-folder-name"]) {
-            containerFolderName = queryItem.value;
+            //containerFolderName = queryItem.value;
         }
     }
     if(launchBundleId) {
@@ -143,7 +143,8 @@ extern NSBundle *lcMainBundle;
         
         // Attempt to restart LiveContainer with the selected guest app
         [lcUserDefaults setObject:launchBundleId forKey:@"selected"];
-        [lcUserDefaults setObject:containerFolderName forKey:@"selectedContainer"];
+        //[lcUserDefaults setObject:containerFolderName forKey:@"selectedContainer"];
+        [lcUserDefaults setObject:@"GeometryDash" forKey:@"selectedContainer"];
         return [self launchToGuestApp];
     }
     
