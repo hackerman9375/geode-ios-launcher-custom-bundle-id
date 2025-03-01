@@ -1,4 +1,5 @@
 #import "LogsView.h"
+#import "Utils.h"
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 
@@ -19,14 +20,34 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+
+    UIBarButtonItem *shareButton = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"square.and.arrow.up"] style:UIBarButtonItemStylePlain target:self action:@selector(shareLogs)];
+    self.navigationItem.rightBarButtonItem = shareButton;
+
     self.textView = [[UITextView alloc] initWithFrame:self.view.bounds];
+    self.textView.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
+    self.textView.alwaysBounceVertical = YES;
+    self.textView.contentSize = self.view.bounds.size;
+    self.textView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     self.textView.translatesAutoresizingMaskIntoConstraints = NO;
     self.textView.editable = NO;
     self.textView.selectable = YES;
+    self.textView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
 
-    self.textView.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
-    self.textView.alwaysBounceVertical = YES;
+    self.view.clipsToBounds = YES;
+    self.view.autoresizesSubviews = YES;
+
+    // fix invisible padding
+    self.textView.contentInset = UIEdgeInsetsMake(60, 0, 0, 0);
+    self.textView.textContainerInset = UIEdgeInsetsZero;
+
     [self.view addSubview:self.textView];
+    [NSLayoutConstraint activateConstraints:@[
+        [self.textView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [self.textView.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+        [self.textView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        [self.textView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+    ]];
     NSError *error;
 
     if ([self.fileURL checkResourceIsReachableAndReturnError:&error]) {
@@ -36,6 +57,18 @@
         NSLog(@"Error reading log file: %@", error);
         self.textView.text = [NSString stringWithFormat:@"%@ could not be read.", self.fileURL.lastPathComponent];
     }
+}
+
+- (void)shareLogs {
+    if (self.textView.text.length == 0) {
+        [Utils showError:self title:@"There is no file you can share!" error:nil];
+        return;
+    }
+    UIActivityViewController *activityViewController = [
+        [UIActivityViewController alloc] initWithActivityItems:[NSArray arrayWithObjects:self.fileURL, nil] applicationActivities:nil
+    ];
+    activityViewController.popoverPresentationController.sourceView = self.view;
+    [self presentViewController:activityViewController animated:YES completion:nil];
 }
 
 @end

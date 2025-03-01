@@ -85,44 +85,32 @@ extern NSBundle *lcMainBundle;
 }
 
 + (BOOL)askForJIT {
-    NSString *urlScheme;
-    NSString *tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", NSBundle.mainBundle.bundlePath];
-    if (!access(tsPath.UTF8String, F_OK)) {
-        urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
-        NSURL *launchURL = [NSURL URLWithString:[NSString stringWithFormat:urlScheme, NSBundle.mainBundle.bundleIdentifier]];
-        UIApplication *application = [NSClassFromString(@"UIApplication") sharedApplication];
-        if ([application canOpenURL:launchURL]) {
-            [application openURL:launchURL options:@{} completionHandler:nil];
-            [LCSharedUtils launchToGuestApp];
-            return YES;
-        }
-    } else {
-        NSUserDefaults* groupUserDefaults = [[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]];
-        
-        NSString* sideJITServerAddress = [groupUserDefaults objectForKey:@"SideJITServerAddr"];
-        NSString* deviceUDID = [groupUserDefaults objectForKey:@"JITDeviceUDID"];
-        if (!sideJITServerAddress || !deviceUDID) {
-            return NO;
-        }
-        NSString* launchJITUrlStr = [NSString stringWithFormat: @"%@/%@/%@", sideJITServerAddress, deviceUDID, NSBundle.mainBundle.bundleIdentifier];
-        NSURLSession* session = [NSURLSession sharedSession];
-        NSURL* launchJITUrl = [NSURL URLWithString:launchJITUrlStr];
-        NSURLRequest* req = [[NSURLRequest alloc] initWithURL:launchJITUrl];
-        NSURLSessionDataTask *task = [session dataTaskWithRequest:req completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-            if(error) {
-                NSLog(@"[LC] failed to contact SideJITServer: %@", error);
-            }
-        }];
-        [task resume];
-        
+    NSUserDefaults* groupUserDefaults = [NSUserDefaults standardUserDefaults];
+    
+    NSString* sideJITServerAddress = [groupUserDefaults objectForKey:@"SideJITServerAddr"];
+    if (!sideJITServerAddress || ![[NSUserDefaults standardUserDefaults] boolForKey:@"AUTO_JIT"]) {
+        //[Utils showError:root title:@"Server Address or Device UDID not set." error:nil];
+        //@"Server Address or Device UDID not set."
+        return YES;
     }
+    //NSString* launchJITUrlStr = [NSString stringWithFormat: @"%@/%@/%@", sideJITServerAddress, deviceUDID, NSBundle.mainBundle.bundleIdentifier];
+    NSString* launchJITUrlStr = [NSString stringWithFormat: @"%@/launch_app/%@", sideJITServerAddress, NSBundle.mainBundle.bundleIdentifier];
+    NSURLSession* session = [NSURLSession sharedSession];
+    NSURL* launchJITUrl = [NSURL URLWithString:launchJITUrlStr];
+    NSURLRequest* req = [[NSURLRequest alloc] initWithURL:launchJITUrl];
+    NSURLSessionDataTask *task = [session dataTaskWithRequest:req completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        if(error) {
+            NSLog(@"Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
+        }
+    }];
+    [task resume];
     return NO;
 }
 
 + (BOOL)launchToGuestAppWithURL:(NSURL *)url {
     NSURLComponents* components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
     if(![components.host isEqualToString:@"geode-launch"]) return NO;
-
+ 
     NSString* launchBundleId = nil;
     NSString* openUrl = nil;
     //NSString* containerFolderName = nil;
@@ -147,7 +135,6 @@ extern NSBundle *lcMainBundle;
         [lcUserDefaults setObject:@"GeometryDash" forKey:@"selectedContainer"];
         return [self launchToGuestApp];
     }
-    
     return NO;
 }
 

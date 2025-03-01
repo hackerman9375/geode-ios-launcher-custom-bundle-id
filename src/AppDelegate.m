@@ -87,19 +87,6 @@
             }
         }
     } else if ([url.host isEqualToString:@"geode-launch"] || [url.host isEqualToString:@"launch"]) {
-        /*NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
-        NSString *bundleId = nil;
-        NSString *containerName = nil;
-        for (NSURLQueryItem *item in components.queryItems) {
-            if ([item.name isEqualToString:@"bundle-name"]) {
-                bundleId = item.value;
-            } else if ([item.name isEqualToString:@"container-folder-name"]) {
-                containerName = item.value;
-            }
-        }
-        if (bundleId) {
-            [AppDelegate launchApp:bundleId container:containerName];
-        }*/ 
         [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];
         [[NSUserDefaults standardUserDefaults] setValue:@"GeometryDash" forKey:@"selectedContainer"];
         [LCUtils launchToGuestApp];

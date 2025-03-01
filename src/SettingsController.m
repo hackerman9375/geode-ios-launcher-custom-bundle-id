@@ -63,7 +63,7 @@
         case 0:
             return 5;
         case 1:
-            return 2;
+            return 3;
         case 2:
             return 2;
         case 5:
@@ -76,10 +76,11 @@
     }
 }
 
-- (UISwitch*)createSwitch:(BOOL)enabled tag:(NSInteger)tag {
+- (UISwitch*)createSwitch:(BOOL)enabled tag:(NSInteger)tag disable:(BOOL)disable {
     UISwitch *uiSwitch = [[UISwitch alloc] init];
     [uiSwitch setOn:enabled];
     [uiSwitch setTag:tag];
+    [uiSwitch setEnabled:!disable];
     [uiSwitch addTarget:self action:@selector(switchValueChanged:) forControlEvents:UIControlEventValueChanged];
     return uiSwitch;
 }
@@ -107,7 +108,7 @@
             } else if (indexPath.row == 3) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Enable Automatic Updates";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"UPDATE_AUTOMATICALLY"] tag:0];
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"UPDATE_AUTOMATICALLY"] tag:0 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 4) {
                 cell.textLabel.text = @"Check for Updates";
@@ -123,26 +124,33 @@
             } else if (indexPath.row == 1) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Automatically Launch";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"LOAD_AUTOMATICALLY"] tag:1];
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"LOAD_AUTOMATICALLY"] tag:1 disable:NO];
+                return cellval1;
+            } else if (indexPath.row == 2) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+                cellval1.textLabel.text = @"Fix Screen Rotation";
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"FIX_ROTATION"] tag:5 disable:NO];
                 return cellval1;
             }
             break;
         case 2: {
-            UITextField *textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
-            textField.textAlignment = NSTextAlignmentRight;
-            textField.delegate = self;
-            textField.returnKeyType = UIReturnKeyDone;
-            textField.autocorrectionType = UITextAutocorrectionTypeNo;
-            textField.keyboardType = UIKeyboardTypeURL;
-            textField.tag = indexPath.row;
-            cell.accessoryView = textField;
             if (indexPath.row == 0) {
-                cell.textLabel.text = @"Address";
-                textField.placeholder = @"http://x.x.x.x:8080";
-                textField.text = [[NSUserDefaults standardUserDefaults] stringForKey:@"SideJITServerAddr"];
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+                cellval1.textLabel.text = @"Enable Auto JIT";
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"AUTO_JIT"] tag:4 disable:NO];
+                return cellval1;
             } else if (indexPath.row == 1) {
-                cell.textLabel.text = @"UDID";
-                textField.text = [[NSUserDefaults standardUserDefaults] stringForKey:@"JITDeviceUDID"];
+                UITextField *textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
+                textField.textAlignment = NSTextAlignmentRight;
+                textField.delegate = self;
+                textField.returnKeyType = UIReturnKeyDone;
+                textField.autocorrectionType = UITextAutocorrectionTypeNo;
+                textField.keyboardType = UIKeyboardTypeURL;
+                textField.tag = indexPath.row;
+                cell.accessoryView = textField;
+                cell.textLabel.text = @"Address";
+                textField.placeholder = @"http://x.x.x.x:9172";
+                textField.text = [[NSUserDefaults standardUserDefaults] stringForKey:@"SideJITServerAddr"];
             }
             break;
         }
@@ -150,15 +158,19 @@
             if (indexPath.row == 0) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Developer Mode";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"DEVELOPER_MODE"] tag:2];
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:YES];
+                cellval1.textLabel.textColor = [UIColor systemGrayColor];
                 return cellval1;
             } else if (indexPath.row == 1) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-                cellval1.textLabel.text = @"Use Tweak than JIT";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"USE_TWEAK"] tag:4];
+                if (![Utils isJailbroken]) {
+                    cellval1.textLabel.textColor = [UIColor systemGrayColor];
+                }
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"USE_TWEAK"] tag:3 disable:![Utils isJailbroken]];
+                cellval1.textLabel.text = @"Use Tweak instead of JIT";
                 return cellval1;
             } else if (indexPath.row == 2) {
-                cell.textLabel.text = @"View Application Logs";
+                cell.textLabel.text = @"View Recent Logs";
                 cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             } else if (indexPath.row == 3) {
                 cell.textLabel.text = @"View Recent Crash";
@@ -229,10 +241,8 @@
     switch (section) {
         case 0:
             return [NSString stringWithFormat:@"Current loader version: %@", [Utils getGeodeVersion]];
-        case 1:
-            return @"Launches the game after a short delay.";
         case 2:
-            return @"Set up your SideJITServer/JITStreamer server. Local Network permission is required. This is not necessary to set up if you use TrollStore, or if you're jailbroken.";
+            return @"Set up your JITStreamer server. Local Network permission is required. This is not necessary to set up if you use TrollStore, or if you're jailbroken.";
         case 5:
             return @"Thanks to these contributors who helped contribute towards making Geode on iOS a possibility!";
         default:
@@ -251,8 +261,8 @@
                 MSColorSelectionViewController *colorSelectionController = [[MSColorSelectionViewController alloc] init];
                 UINavigationController *navCtrl = [[UINavigationController alloc] initWithRootViewController:colorSelectionController];
 
-                navCtrl.modalPresentationStyle = UIModalPresentationPopover;
                 navCtrl.popoverPresentationController.delegate = self;
+                navCtrl.modalInPresentation = YES;
                 navCtrl.preferredContentSize = [colorSelectionController.view systemLayoutSizeFittingSize:UILayoutFittingCompressedSize];
                 navCtrl.modalPresentationStyle = UIModalPresentationOverFullScreen;
 
@@ -288,6 +298,7 @@
             case 4: { // Check for updates
                 if ([VerifyInstall verifyGeodeInstalled]) {
                     [[GeodeInstaller alloc] checkUpdates:_root download:YES];
+                    [self dismissViewControllerAnimated:YES completion:nil];
                 } else {
                     [Utils showError:_root title:@"You do not have Geode installed!" error:nil];
                 }
@@ -302,21 +313,22 @@
                 NSString *openURL = @"geode://safe-mode";
                 NSURL* url = [NSURL URLWithString:openURL];
                 if([[UIApplication sharedApplication] canOpenURL:url]){
+                    [_root.launchButton setEnabled:NO];
                     [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-                    return;
+                    [self dismissViewControllerAnimated:YES completion:nil];
                 }
                 break;
             }
         }
     } else if (indexPath.section == 3) {
         switch (indexPath.row) {
-            case 3: // View app logs
+            case 2: // View app logs
                 [[self navigationController] pushViewController:
                     [[LogsViewController alloc] initWithFile:[Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/logs/"].path]]
                     animated:YES
                 ];
                 break;
-            case 4: // View recent crash
+            case 3: // View recent crash
                 [[self navigationController] pushViewController:
                     [[LogsViewController alloc] initWithFile:[Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/crashlogs/"].path]]
                     animated:YES
@@ -346,7 +358,16 @@
             [Utils toggleKey:@"DEVELOPER_MODE"];
             break;
         case 3: // Use Tweak instead of JIT
+            if ([sender isOn]) {
+                [Utils showNotice:self title:@"Functionality such as safe mode, updating, etc, may not be available when this setting is enabled.\nIf you installed the .tipa version of this launcher, you may ignore this warning."];
+            }
             [Utils toggleKey:@"USE_TWEAK"];
+            break;
+        case 4: // Auto JIT
+            [Utils toggleKey:@"AUTO_JIT"];
+            break;
+        case 5: // Rotate Fix
+            [Utils toggleKey:@"FIX_ROTATION"];
             break;
     }
 }

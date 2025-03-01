@@ -4,6 +4,7 @@
 #import "utils.h"
 #import <LocalAuthentication/LocalAuthentication.h>
 
+UIInterfaceOrientation LCOrientationLock = UIInterfaceOrientationLandscapeRight;
 NSMutableArray<NSString*>* LCSupportedUrlSchemes = nil;
 
 __attribute__((constructor))
@@ -14,6 +15,15 @@ static void UIKitGuestHooksInit() {
     swizzle(UIApplication.class, @selector(canOpenURL:), @selector(hook_canOpenURL:));
     swizzle(UIScene.class, @selector(scene:didReceiveActions:fromTransitionContext:), @selector(hook_scene:didReceiveActions:fromTransitionContext:));
     swizzle(UIScene.class, @selector(openURL:options:completionHandler:), @selector(hook_openURL:options:completionHandler:));
+    if([UIDevice.currentDevice userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
+        if ([NSUserDefaults.lcUserDefaults boolForKey:@"FIX_ROTATION"]) {
+            swizzle(UIApplication.class, @selector(_handleDelegateCallbacksWithOptions:isSuspended:restoreState:), @selector(hook__handleDelegateCallbacksWithOptions:isSuspended:restoreState:));
+            swizzle(FBSSceneParameters.class, @selector(initWithXPCDictionary:), @selector(hook_initWithXPCDictionary:));
+            swizzle(UIViewController.class, @selector(__supportedInterfaceOrientations), @selector(hook___supportedInterfaceOrientations));
+            swizzle(UIViewController.class, @selector(shouldAutorotateToInterfaceOrientation:), @selector(hook_shouldAutorotateToInterfaceOrientation:));
+            swizzle(UIWindow.class, @selector(setAutorotates:forceUpdateInterfaceOrientation:), @selector(hook_setAutorotates:forceUpdateInterfaceOrientation:));
+        }
+    }
 }
 
 NSString* findDefaultContainerWithBundleId(NSString* bundleId) {
@@ -429,6 +439,10 @@ BOOL canAppOpenItself(NSURL* url) {
     FBSSceneParameters* ans = [self hook_initWithXPCDictionary:dict];
     UIMutableApplicationSceneSettings* settings = [ans.settings mutableCopy];
     UIMutableApplicationSceneClientSettings* clientSettings = [ans.clientSettings mutableCopy];
+    if ([NSUserDefaults.lcUserDefaults boolForKey:@"FIX_ROTATION"]) {
+        [settings setInterfaceOrientation:LCOrientationLock];
+        [clientSettings setInterfaceOrientation:LCOrientationLock];
+    }
     ans.settings = settings;
     ans.clientSettings = clientSettings;
     return ans;

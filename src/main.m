@@ -375,10 +375,10 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
 
     }
     
-    if([guestAppInfo[@"fixBlackScreen"] boolValue]) {
-        dlopen("/System/Library/Frameworks/UIKit.framework/UIKit", RTLD_GLOBAL);
-        NSLog(@"[LC] Fix BlackScreen2 %@", [NSClassFromString(@"UIScreen") mainScreen]);
-    }
+    //if([guestAppInfo[@"fixBlackScreen"] boolValue]) {
+    dlopen("/System/Library/Frameworks/UIKit.framework/UIKit", RTLD_GLOBAL);
+    NSLog(@"[LC] Fix BlackScreen2 %@", [NSClassFromString(@"UIScreen") mainScreen]);
+    //}
 
     setenv("CFFIXED_USER_HOME", newHomePath.UTF8String, 1);
     setenv("HOME", newHomePath.UTF8String, 1);

@@ -47,6 +47,7 @@
     }
     [root progressVisibility:NO];
     _root.optionalTextLabel.text = @"Downloading Geode...";
+    [self setVersion];
     NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
     downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/Geode.ios.dylib"]];
     [downloadTask resume];
@@ -62,6 +63,35 @@ private const val GITHUB_API_BASE = "https://api.github.com"
 
         private const val GEODE_API_BASE = "https://api.geode-sdk.org/v1"
 */
+
+- (void)setVersion {
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeReleaseURL]]];
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
+    NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) {
+            NSLog(@"Error during request: %@", error);
+        }
+        if (data) {
+            NSError *jsonError;
+            id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+            if (jsonError) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    NSLog(@"Error parsing JSON: %@", jsonError);
+                });
+            } else {
+                if ([jsonObject isKindOfClass:[NSDictionary class]]) {
+                    NSDictionary *jsonDict = (NSDictionary *)jsonObject;
+                    NSString *tagName = jsonDict[@"tag_name"];
+                    if (tagName && [tagName isKindOfClass:[NSString class]]) {
+                        [Utils updateGeodeVersion:tagName];
+                    }
+                }
+            }
+        }
+    }];
+    [dataTask resume];
+}
+
 - (void)checkUpdates:(RootViewController*)root download:(BOOL)download {
     _root = root;
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeReleaseURL]]];

@@ -6,6 +6,8 @@
 #import "LCUtils.h"
 #import "LCVersionInfo.h"
 #import "ZSign/zsigner.h"
+#import "src/Utils.h"
+#import <MobileCoreServices/MobileCoreServices.h>
 #import "Shared.h"
 
 Class LCSharedUtilsClass = nil;
@@ -43,17 +45,17 @@ Class LCSharedUtilsClass = nil;
     return [LCSharedUtilsClass certificatePassword];
 }
 
-+ (void)setCertificatePassword:(NSString *)certPassword {
-    [NSUserDefaults.standardUserDefaults setObject:certPassword forKey:@"LCCertificatePassword"];
-    [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] setObject:certPassword forKey:@"LCCertificatePassword"];
-}
-
 + (NSString *)appGroupID {
     return [LCSharedUtilsClass appGroupID];
 }
 
 #pragma mark LCSharedUtils wrappers
 + (BOOL)launchToGuestApp {
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"USE_TWEAK"] && [Utils isJailbroken]) {
+        NSString *appBundleIdentifier = @"com.robtop.geometryjump";
+        [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
+        return YES;
+    }
     if (![LCUtils askForJIT]) return NO;
     return [LCSharedUtilsClass launchToGuestApp];
 }
@@ -245,11 +247,6 @@ Class LCSharedUtilsClass = nil;
 
 + (NSString *)appUrlScheme {
     return NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
-}
-
-+ (BOOL)isAppGroupAltStoreLike {
-    if (self.appGroupID.length == 0) return NO;
-    return [NSFileManager.defaultManager fileExistsAtPath:self.storeBundlePath.path];
 }
 
 + (void)changeMainExecutableTo:(NSString *)exec error:(NSError **)error {
@@ -475,10 +472,6 @@ Class LCSharedUtilsClass = nil;
     return userDefaults ?: [NSUserDefaults standardUserDefaults];
 }
 
-+ (void)signFilesInFolder:(NSURL *)url signer:(Signer *)signer onProgressCreated:(void (^)(NSProgress *))onProgressCreated {
-    // Implementation goes here
-}
-
 + (NSString *)getStoreName {
     switch (LCUtils.store) {
         case AltStore:
@@ -498,24 +491,6 @@ Class LCSharedUtilsClass = nil;
     for (NSString *key in info) {
         NSString *value = info[key];
         if ([value isEqualToString:bundleId]) {
-            if ([key isEqualToString:[self appUrlScheme]]) {
-                return nil;
-            }
-            return key;
-        }
-    }
-    return nil;
-}
-
-+ (NSString *)getContainerUsingLCScheme:(NSString *)containerName {
-    NSURL *infoPath = [[LCPath lcGroupDocPath] URLByAppendingPathComponent:@"containerLock.plist"];
-    NSDictionary *info = [NSDictionary dictionaryWithContentsOfURL:infoPath];
-    if (!info) {
-        return nil;
-    }
-    for (NSString *key in info) {
-        NSString *value = info[key];
-        if ([value isEqualToString:containerName]) {
             if ([key isEqualToString:[self appUrlScheme]]) {
                 return nil;
             }

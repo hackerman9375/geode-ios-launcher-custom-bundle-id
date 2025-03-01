@@ -22,6 +22,7 @@
 @interface RootViewController ()
 
 @property (nonatomic, strong) ProgressBar *progressBar;
+@property (nonatomic, strong) NSTimer *launchTimer;
 
 @end
 
@@ -62,9 +63,10 @@
     if ([VerifyInstall verifyAll]) {
         [self.launchButton setTitle:@"Launch" forState:UIControlStateNormal];
         [self.launchButton setImage:[[UIImage systemImageNamed:@"play.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
-        [self.launchButton addTarget:self action:@selector(launchGame) forControlEvents:UIControlEventTouchUpInside];
         if ([[NSUserDefaults standardUserDefaults] boolForKey:@"LOAD_AUTOMATICALLY"]) {
-            [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(launchGame) userInfo:nil repeats:NO];
+            self.launchTimer = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(launchGame) userInfo:nil repeats:NO];
+        } else {
+            [self.launchButton addTarget:self action:@selector(launchGame) forControlEvents:UIControlEventTouchUpInside];
         }
     } else {
         [self.optionalTextLabel setHidden:NO];
@@ -188,6 +190,10 @@
 }
 
 - (void)showSettings {
+    if (self.launchTimer != nil) {
+        [self.launchTimer invalidate];
+        self.launchTimer = nil;
+    }
     SettingsController *settings = [[SettingsController alloc] initWithNibName:nil bundle:nil];
     settings.root = self;
     UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:settings];
@@ -223,33 +229,17 @@
 }
 
 - (void)launchGame {
+    [self.launchButton setEnabled:NO];
     NSString *openURL = [NSString stringWithFormat:@"geode://geode-launch?bundle-name=%@", [Utils gdBundleName]];
     NSURL* url = [NSURL URLWithString:openURL];
     if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
         [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
         return;
     }
-
     //try await signApp(force: false)
-    
     [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];
     [[NSUserDefaults standardUserDefaults] setValue:@"GeometryDash" forKey:@"selectedContainer"];
     [LCUtils launchToGuestApp];
-    /*UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"placeholder"
-        message:@"this is a placeholder for when you click launch. what? did you think you could just *launch* gd? also you're not jailbroken"
-        preferredStyle:UIAlertControllerStyleAlert];
-
-    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"yes i did" style:UIAlertActionStyleDefault handler:nil];
-    [alert addAction:okAction];
-    if ([Utils isJailbroken]) {
-        // Get the default workspace
-        
-        //NSString *appBundleIdentifier = @"com.robtop.geometryjump";
-        //[[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
-        
-    } else {
-        [self presentViewController:alert animated:YES completion:nil];
-    }*/
 }
 
 /*
