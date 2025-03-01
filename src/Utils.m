@@ -1,4 +1,6 @@
 #import "Utils.h"
+#import "LCUtils/Shared.h"
+#import <CommonCrypto/CommonCrypto.h>
 #import <mach-o/arch.h>
 
 @implementation Utils
@@ -7,16 +9,17 @@
     //return @"GeometryDash";
 }
 + (BOOL)isJailbroken {
-    return [[NSFileManager defaultManager] fileExistsAtPath:@"/var/jb"];
+    return [[NSFileManager defaultManager] fileExistsAtPath:@"/var/jb"] || access("/var/mobile", R_OK) == 0;
 }
 
 + (NSString*)getGeodeVersion {
-    return [[NSUserDefaults standardUserDefaults] stringForKey:@"CURRENT_VERSION_TAG"];
+    NSString *verTag = [[NSUserDefaults standardUserDefaults] stringForKey:@"CURRENT_VERSION_TAG"];
+    return (verTag) ? verTag : @"Geode not installed";
 }
 + (void)updateGeodeVersion:(NSString *)newVer {
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setObject:newVer forKey:@"CURRENT_VERSION_TAG"];
-    [userDefaults synchronize];
+    [userDefaults synchronize]; // apple says this is not recommended... DOES ANYWAYS
 }
 
 + (NSString*)getGeodeReleaseURL {
@@ -98,9 +101,17 @@
     return logFiles.firstObject;
 }
 
++ (void)showNotice:(UIViewController*)root title:(NSString *)title {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Notice"
+        message:title
+        preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
+    [alert addAction:okAction];
+    [root presentViewController:alert animated:YES completion:nil];
+}
 + (void)showError:(UIViewController*)root title:(NSString *)title error:(NSError *)error  {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error"
-        message:[NSString stringWithFormat:@"%@: %@", title, error.localizedDescription]
+        message:(error == nil) ? title : [NSString stringWithFormat:@"%@: %@", title, error.localizedDescription]
         preferredStyle:UIAlertControllerStyleAlert];
     UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
     [alert addAction:okAction];
@@ -116,6 +127,25 @@
 + (void)toggleKey:(NSString *)key {
     NSLog(@"godelol %@", key);
     [[NSUserDefaults standardUserDefaults] setBool:![[NSUserDefaults standardUserDefaults] boolForKey:key] forKey:key];
+}
+
+// https://appideas.com/checksum-files-in-ios/
++ (NSString*)sha256sum:(NSString*)path {
+    NSData *data = [NSData dataWithContentsOfFile:path];
+
+    // getting the half only because the first few bytes are overwritten for some unknown reason, i blame ios!
+    NSUInteger startData = data.length / 2;
+    NSData *subdata = [data subdataWithRange:NSMakeRange(startData, data.length - startData)];
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(subdata.bytes, (CC_LONG)subdata.length, digest);
+    NSMutableString *output = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
+    for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
+        [output appendFormat:@"%02x", digest[i]];
+    }
+    return output;
+}
++ (NSString*)getGDBinaryHash {
+    return [Utils sha256sum:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/GeometryJump"].path];
 }
 
 @end

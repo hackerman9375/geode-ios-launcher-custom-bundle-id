@@ -10,7 +10,7 @@ include $(THEOS)/makefiles/common.mk
 APPLICATION_NAME = Geode
 
 Geode_FILES = $(wildcard src/*.m) $(wildcard src/components/*.m) $(wildcard src/LCUtils/*.m) $(wildcard src/LCUtils/AltStoreCore*.m) fishhook/fishhook.c $(wildcard MSColorPicker/MSColorPicker/*.m)
-Geode_FRAMEWORKS = UIKit CoreGraphics
+Geode_FRAMEWORKS = UIKit CoreGraphics Security
 Geode_CFLAGS = -fobjc-arc
 Geode_CODESIGN_FLAGS = -Sentitlements.xml
 Geode_LIBRARIES = archive # thats dumb

@@ -29,6 +29,10 @@
     NSURLSessionDownloadTask *downloadTask;
 }
 
+- (BOOL)progressVisible {
+    return ![self.progressBar isHidden];
+}
+
 - (void)progressVisibility:(BOOL)hidden {
     if (self.progressBar != nil) {
         [self.progressBar setHidden:hidden];
@@ -48,7 +52,6 @@
     //self.settingsButton.frame = CGRectMake(self.view.center.x + 50, CGRectGetMaxY(self.optionalTextLabel.frame), 45, 45);
     self.launchButton.frame = CGRectMake(self.view.center.x - 95, CGRectGetMaxY(self.projectLabel.frame) + 15, 140, 45);
     self.settingsButton.frame = CGRectMake(self.view.center.x + 50, CGRectGetMaxY(self.projectLabel.frame) + 15, 45, 45);
-    self.infoButton.frame = CGRectMake((self.view.bounds.size.width) - 60, 50, 45, 45);
     self.launchButton.backgroundColor = [Theming getAccentColor];//[UIColor colorWithRed: 0.70 green: 0.77 blue: 1.00 alpha: 1.00];
     [self.launchButton setTitleColor:[Theming getTextColor:[Theming getAccentColor]] forState:UIControlStateNormal];
     [self.launchButton setTintColor:[Theming getTextColor:[Theming getAccentColor]]];
@@ -75,7 +78,11 @@
         } else if (![VerifyInstall verifyGDInstalled] || ![VerifyInstall verifyGeodeInstalled]) {
             self.launchButton.frame = CGRectMake(self.launchButton.frame.origin.x, CGRectGetMaxY(self.optionalTextLabel.frame) + 10, 140, 45);
             self.settingsButton.frame = CGRectMake(self.settingsButton.frame.origin.x, CGRectGetMaxY(self.optionalTextLabel.frame) + 10, 45, 45);
-            self.optionalTextLabel.text = @"Geode is not installed.";
+            if (![VerifyInstall verifyGDInstalled]) {
+                self.optionalTextLabel.text = @"Geometry Dash is not installed.";
+            } else {
+                self.optionalTextLabel.text = @"Geode is not installed.";
+            }
             [self.launchButton setTitle:@"Download" forState:UIControlStateNormal];
             [self.launchButton setImage:[[UIImage systemImageNamed:@"tray.and.arrow.down"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
             [self.launchButton addTarget:self action:@selector(downloadGame) forControlEvents:UIControlEventTouchUpInside];
@@ -145,15 +152,6 @@
     [self.settingsButton addTarget:self action:@selector(showSettings) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:self.settingsButton];
 
-    // Info Button for Credits and other
-    self.infoButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    [self.infoButton setTitle:@"?" forState:UIControlStateNormal];
-    [self.infoButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    self.infoButton.backgroundColor = [Theming getDarkColor];
-    self.infoButton.clipsToBounds = YES;
-    self.infoButton.layer.cornerRadius = 22.5;
-    [self.view addSubview:self.infoButton];
-
     // progress bar for downloading!
     self.progressBar = [[ProgressBar alloc]
         initWithFrame:CGRectMake(self.view.center.x - 140, self.view.center.y + 200, 280, 68)
@@ -219,19 +217,13 @@
     } else {
         [self.progressBar setHidden:NO];
         NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
-        downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"http://192.168.200.213:3000/Geometry-2.207.ipa"]];
+        downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/Geometry-2.207.ipa"]];
         [downloadTask resume];
     }
 }
 
 - (void)launchGame {
-    NSString *openURL = [
-        //NSString stringWithFormat:@"%@://geode-launch?bundle-name=%@",
-        NSString stringWithFormat:@"com.geode.launcher://geode-launch?bundle-name=%@",
-        //[LCSharedUtils getContainerUsingLCSchemeWithFolderName:[Utils gdBundleName]],
-        [Utils gdBundleName]
-    ];
-    //URL(string: "\(runningLC)://livecontainer-launch?bundle-name=\(self.appInfo.relativeBundlePath!)&container-folder-name=\(fn)")!
+    NSString *openURL = [NSString stringWithFormat:@"geode://geode-launch?bundle-name=%@", [Utils gdBundleName]];
     NSURL* url = [NSURL URLWithString:openURL];
     if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
         [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];

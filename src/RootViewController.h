@@ -7,11 +7,11 @@
 @property (nonatomic, strong) UILabel *optionalTextLabel;
 @property (nonatomic, strong) UIButton *launchButton;
 @property (nonatomic, strong) UIButton *settingsButton;
-@property (nonatomic, strong) UIButton *infoButton;
 - (void)updateState;
 - (void)cancelDownload;
 
 // sorry i dont want to deal with dumb link errors
+- (BOOL)progressVisible;
 - (void)progressVisibility:(BOOL)hidden;
 - (void)barProgress:(CGFloat)value;
 @end

@@ -1,18 +1,13 @@
 #import "SettingsController.h"
-#import "src/GeodeInstaller.h"
+#import "VerifyInstall.h"
+#import "GeodeInstaller.h"
 #import <UIKit/UIKit.h>
-#import "src/LCUtils/Shared.h"
-#import "src/Theming.h"
+#import "LCUtils/Shared.h"
+#import "Theming.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 #import "Utils.h"
 #import "LogsView.h"
 #import <sys/utsname.h>
-
-NSString *deviceArchitecture() {
-    struct utsname systemInfo;
-    uname(&systemInfo);
-    return [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
-}
 
 @interface SettingsController () 
 @property (nonatomic, strong) NSArray *creditsArray;
@@ -60,19 +55,21 @@ NSString *deviceArchitecture() {
 #pragma mark - Table View Data Source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-	return 5;
+	return 6;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
 	switch (section) {
         case 0:
-        case 2:
             return 5;
         case 1:
             return 2;
-        case 4:
+        case 2:
+            return 2;
+        case 5:
             return [self.creditsArray count];
         case 3:
+        case 4:
             return 4;
         default:
             return 0;
@@ -130,7 +127,26 @@ NSString *deviceArchitecture() {
                 return cellval1;
             }
             break;
-        case 2: 
+        case 2: {
+            UITextField *textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
+            textField.textAlignment = NSTextAlignmentRight;
+            textField.delegate = self;
+            textField.returnKeyType = UIReturnKeyDone;
+            textField.autocorrectionType = UITextAutocorrectionTypeNo;
+            textField.keyboardType = UIKeyboardTypeURL;
+            textField.tag = indexPath.row;
+            cell.accessoryView = textField;
+            if (indexPath.row == 0) {
+                cell.textLabel.text = @"Address";
+                textField.placeholder = @"http://x.x.x.x:8080";
+                textField.text = [[NSUserDefaults standardUserDefaults] stringForKey:@"SideJITServerAddr"];
+            } else if (indexPath.row == 1) {
+                cell.textLabel.text = @"UDID";
+                textField.text = [[NSUserDefaults standardUserDefaults] stringForKey:@"JITDeviceUDID"];
+            }
+            break;
+        }
+        case 3: 
             if (indexPath.row == 0) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Developer Mode";
@@ -138,23 +154,18 @@ NSString *deviceArchitecture() {
                 return cellval1;
             } else if (indexPath.row == 1) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-                cellval1.textLabel.text = @"Run with JIT";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"USE_JIT"] tag:3];
-                return cellval1;
-            } else if (indexPath.row == 2) {
-                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Use Tweak than JIT";
                 cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"USE_TWEAK"] tag:4];
                 return cellval1;
-            } else if (indexPath.row == 3) {
+            } else if (indexPath.row == 2) {
                 cell.textLabel.text = @"View Application Logs";
                 cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-            } else if (indexPath.row == 4) {
+            } else if (indexPath.row == 3) {
                 cell.textLabel.text = @"View Recent Crash";
                 cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             }
             break;
-        case 3: {
+        case 4: {
             cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
             if (indexPath.row == 0) {
                 cellval1.textLabel.text = @"iOS Launcher";
@@ -180,7 +191,7 @@ NSString *deviceArchitecture() {
             }
             return cellval1;
         }
-        case 4: {
+        case 5: {
             cell.textLabel.text = self.creditsArray[indexPath.row][@"name"];
             cell.textLabel.textColor = [Theming getAccentColor];
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
@@ -202,10 +213,12 @@ NSString *deviceArchitecture() {
         case 1:
             return @"Gameplay";
         case 2:
-            return @"Advanced";
+            return @"JIT";
         case 3:
-            return @"About";
+            return @"Advanced";
         case 4:
+            return @"About";
+        case 5:
             return @"Credits";
         default:
             return @"Unknown";
@@ -218,7 +231,9 @@ NSString *deviceArchitecture() {
             return [NSString stringWithFormat:@"Current loader version: %@", [Utils getGeodeVersion]];
         case 1:
             return @"Launches the game after a short delay.";
-        case 4:
+        case 2:
+            return @"Set up your SideJITServer/JITStreamer server. Local Network permission is required. This is not necessary to set up if you use TrollStore, or if you're jailbroken.";
+        case 5:
             return @"Thanks to these contributors who helped contribute towards making Geode on iOS a possibility!";
         default:
             return nil;
@@ -271,7 +286,11 @@ NSString *deviceArchitecture() {
                 break;
             }
             case 4: { // Check for updates
-                [[GeodeInstaller alloc] checkUpdates:_root download:YES];
+                if ([VerifyInstall verifyGeodeInstalled]) {
+                    [[GeodeInstaller alloc] checkUpdates:_root download:YES];
+                } else {
+                    [Utils showError:_root title:@"You do not have Geode installed!" error:nil];
+                }
                 break;
             }
             default:
@@ -280,10 +299,16 @@ NSString *deviceArchitecture() {
     } else if (indexPath.section == 1) {
         switch (indexPath.row) {
             case 0: { // Safe Mode
+                NSString *openURL = @"geode://safe-mode";
+                NSURL* url = [NSURL URLWithString:openURL];
+                if([[UIApplication sharedApplication] canOpenURL:url]){
+                    [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+                    return;
+                }
                 break;
             }
         }
-    } else if (indexPath.section == 2) {
+    } else if (indexPath.section == 3) {
         switch (indexPath.row) {
             case 3: // View app logs
                 [[self navigationController] pushViewController:
@@ -292,10 +317,13 @@ NSString *deviceArchitecture() {
                 ];
                 break;
             case 4: // View recent crash
-                //[Utils toggleKey:@"LOAD_AUTOMATICALLY"];
+                [[self navigationController] pushViewController:
+                    [[LogsViewController alloc] initWithFile:[Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/crashlogs/"].path]]
+                    animated:YES
+                ];
                 break;
         }
-    } else if (indexPath.section == 4) {
+    } else if (indexPath.section == 5) {
         NSURL* url = [NSURL URLWithString:self.creditsArray[indexPath.row][@"url"]];
         if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
             [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
@@ -317,13 +345,27 @@ NSString *deviceArchitecture() {
         case 2: // Dev Mode
             [Utils toggleKey:@"DEVELOPER_MODE"];
             break;
-        case 3: // Run With JIT
-            //[Utils toggleKey:@"USE_JIT"];
-            break;
-        case 4: // Use Tweak instead of JIT
-            //[Utils toggleKey:@"USE_TWEAK"];
+        case 3: // Use Tweak instead of JIT
+            [Utils toggleKey:@"USE_TWEAK"];
             break;
     }
+}
+
+#pragma mark - Text Field Delegate
+- (void)textFieldDidEndEditing:(UITextField *)textField {
+    switch (textField.tag) {
+        case 0: // address 
+            [[NSUserDefaults standardUserDefaults] setValue:textField.text forKey:@"SideJITServerAddr"];
+            break;
+        case 1: // udid 
+            [[NSUserDefaults standardUserDefaults] setValue:textField.text forKey:@"JITDeviceUDID"];
+            break;
+    }
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    [textField resignFirstResponder];
+    return YES;
 }
 
 - (void)ms_dismissViewController:(id)sender

@@ -68,6 +68,7 @@ BOOL hasDoneUpdate = NO;
     if ([
         [NSFileManager defaultManager] fileExistsAtPath:[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName] isDirectory:YES].path isDirectory:&res
     ]) {
+        if ([[NSUserDefaults standardUserDefaults] boolForKey:@"GDNeedsUpdate"]) return NO;
         return res;
     };
     return NO;
@@ -87,8 +88,10 @@ BOOL hasDoneUpdate = NO;
 // I CANT (return BOOL instead?)
 + (void)startGDInstall:(RootViewController*)root url:(NSURL*)url {
     @autoreleasepool {
+        [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"GDNeedsUpdate"];
         //https://github.com/khanhduytran0/LiveContainer/blob/d950e0501944282d757bc5c3b60557d8b64e43c9/LiveContainerSwiftUI/LCAppListView.swift#L348
         NSFileManager *fm = [NSFileManager defaultManager];
+        [fm removeItemAtURL:[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] error:nil];
         [fm createDirectoryAtURL:[LCPath bundlePath] withIntermediateDirectories:YES attributes:nil error:nil];
         NSURL *payloadPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Payload"];
         NSError *error = nil;
@@ -179,11 +182,13 @@ BOOL hasDoneUpdate = NO;
 
             finalNewApp.signer = [[NSUserDefaults standardUserDefaults] integerForKey:@"LCDefaultSigner"];
             [finalNewApp patchExecAndSignIfNeedWithCompletionHandler:^(BOOL success, NSString *errorInfo) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    //[root updateState];
-                    root.optionalTextLabel.text = @"Downloading Geode...";
-                    [[[GeodeInstaller alloc] init] startInstall:root ignoreRoot:NO];
-                });
+                if (![VerifyInstall verifyGeodeInstalled]) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        //[root updateState];
+                        root.optionalTextLabel.text = @"Downloading Geode...";
+                        [[[GeodeInstaller alloc] init] startInstall:root ignoreRoot:NO];
+                    });
+                }
                 if (success) {
                     LCAppModel *newAppModel = [[LCAppModel alloc] initWithAppInfo:finalNewApp delegate:nil];
                     if (appToReplace != nil) {

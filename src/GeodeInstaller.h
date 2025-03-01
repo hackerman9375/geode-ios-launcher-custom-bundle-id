@@ -6,4 +6,6 @@
 @property (nonatomic, strong) RootViewController *root;
 - (void)startInstall:(RootViewController*)root ignoreRoot:(BOOL)ignoreRoot;
 - (void)checkUpdates:(RootViewController*)root download:(BOOL)download;
+- (void)verifyChecksum;
+- (void)cancelDownload;
 @end

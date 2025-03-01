@@ -103,6 +103,11 @@
         [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];
         [[NSUserDefaults standardUserDefaults] setValue:@"GeometryDash" forKey:@"selectedContainer"];
         [LCUtils launchToGuestApp];
+    } else if ([url.host isEqualToString:@"safe-mode"]) {
+        [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];
+        [[NSUserDefaults standardUserDefaults] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"safemode"];
+        [LCUtils launchToGuestApp];
     }
     return NO;
 }

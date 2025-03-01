@@ -218,7 +218,7 @@ void* new_dlsym(void * __handle, const char * __symbol) {
     return orig_dlsym(__handle, __symbol);
 }
 
-static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContainer, int argc, char *argv[]) {
+static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContainer, BOOL safeMode, int argc, char *argv[]) {
     NSString *appError = nil;
     if (!LCSharedUtils.certificatePassword) {
         // First of all, let's check if we have JIT
@@ -383,6 +383,9 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     setenv("CFFIXED_USER_HOME", newHomePath.UTF8String, 1);
     setenv("HOME", newHomePath.UTF8String, 1);
     setenv("TMPDIR", newTmpPath.UTF8String, 1);
+    if (safeMode) {
+        setenv("LAUNCHARGS", "--geode:safe-mode", 1);
+    }
 
     // Setup directories
     NSArray *dirList = @[@"Library/Caches", @"Documents", @"SystemData"];
@@ -502,6 +505,7 @@ int GeodeMain(int argc, char *argv[]) {
     
     NSString *selectedApp = [lcUserDefaults stringForKey:@"selected"];
     NSString *selectedContainer = [lcUserDefaults stringForKey:@"selectedContainer"];
+    BOOL safeMode = [lcUserDefaults boolForKey:@"safemode"];
     if(selectedApp && !selectedContainer) {
         selectedContainer = [LCSharedUtils findDefaultContainerWithBundleId:selectedApp];
     }
@@ -509,6 +513,7 @@ int GeodeMain(int argc, char *argv[]) {
     if(selectedApp && runningLC) {
         [lcUserDefaults removeObjectForKey:@"selected"];
         [lcUserDefaults removeObjectForKey:@"selectedContainer"];
+        [lcUserDefaults removeObjectForKey:@"safemode"];
         NSString* selectedAppBackUp = selectedApp;
         selectedApp = nil;
         dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC));
@@ -550,6 +555,7 @@ int GeodeMain(int argc, char *argv[]) {
         NSString *launchUrl = [lcUserDefaults stringForKey:@"launchAppUrlScheme"];
         [lcUserDefaults removeObjectForKey:@"selected"];
         [lcUserDefaults removeObjectForKey:@"selectedContainer"];
+        [lcUserDefaults removeObjectForKey:@"safemode"];
         // wait for app to launch so that it can receive the url
         if(launchUrl) {
             [lcUserDefaults removeObjectForKey:@"launchAppUrlScheme"];
@@ -567,7 +573,7 @@ int GeodeMain(int argc, char *argv[]) {
         }
         NSSetUncaughtExceptionHandler(&exceptionHandler);
         setenv("LC_HOME_PATH", getenv("HOME"), 1);
-        NSString *appError = invokeAppMain(selectedApp, selectedContainer, argc, argv);
+        NSString *appError = invokeAppMain(selectedApp, selectedContainer, safeMode, argc, argv);
         if (appError) {
             [lcUserDefaults setObject:appError forKey:@"error"];
             //[LCSharedUtils setAppRunningByThisLC:nil];

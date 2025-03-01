@@ -1,4 +1,6 @@
 #import "GeodeInstaller.h"
+#import "LCUtils/Shared.h"
+#import "VerifyInstall.h"
 #import "Utils.h"
 
 // ai
@@ -43,9 +45,10 @@
     if (!ignoreRoot) {
         _root = root;
     }
+    [root progressVisibility:NO];
     _root.optionalTextLabel.text = @"Downloading Geode...";
     NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
-    downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"http://192.168.200.213:3000/Geode.ios.dylib"]];
+    downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/Geode.ios.dylib"]];
     [downloadTask resume];
 }
 
@@ -93,9 +96,8 @@ private const val GITHUB_API_BASE = "https://api.github.com"
                                 NSLog(@"Updated launcher ver!");
                                 [Utils updateGeodeVersion:tagName];
                             }
-                            // yeah this makes literally no sense
                             dispatch_async(dispatch_get_main_queue(), ^{
-                                [self.root updateState];
+                                [self verifyChecksum];
                             });
                         } else if (!greaterThanVer) {
                             // assume out of date 
@@ -103,7 +105,6 @@ private const val GITHUB_API_BASE = "https://api.github.com"
                                 if (download) {
                                     [Utils updateGeodeVersion:tagName];
                                     NSLog(@"Geode is out of date, updating...");
-                                    [root progressVisibility:NO];
                                     [self startInstall:nil ignoreRoot:YES];
                                 } else {
                                     root.optionalTextLabel.text = @"Update is available!";
@@ -118,25 +119,69 @@ private const val GITHUB_API_BASE = "https://api.github.com"
     }];
     [dataTask resume];
 }
+- (void)verifyChecksum {
+    if (_root == nil || ![VerifyInstall verifyGDInstalled]) return;
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/checksum.txt"]];
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
+    NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) {
+            return dispatch_async(dispatch_get_main_queue(), ^{
+                [Utils showError:_root title:@"Request failed" error:error];
+                [self.root updateState];
+                NSLog(@"Error during request: %@", error);
+            });
+        }
+        if (data) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSString* str = [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+                NSString* hash = [Utils getGDBinaryHash];
+                
+                NSLog(@"Checksums: %@ & %@", hash, str);
+                NSLog(@"hash length: %lu, str length: %lu", (unsigned long)[hash length], (unsigned long)[str length]);
+                if (![hash isEqualToString:str]) {
+                    NSLog(@"Checksums don't match. Assume GD needs an update!");
+                    [Utils showNotice:_root title:@"Geometry Dash requires an update! Relaunch the app to update it!"];
+                    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"GDNeedsUpdate"];
+                }
+                [self.root updateState];
+            });
+        }
+    }];
+    [dataTask resume];
+}
 
 // updating
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location {
-    [_root progressVisibility:YES];
-    [_root updateState];
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
+    NSString *tweakPath = [NSString stringWithFormat:@"%@/Tweaks/Geode.ios.dylib", docPath];
+    NSError* error;
+    [fm moveItemAtPath:location.path toPath:tweakPath error:&error];
+    if (error) {
+        [Utils showError:_root title:@"Failed to move Geode lib" error:error];
+    }
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [_root progressVisibility:YES];
+        [_root updateState];
+    });
 }
 
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
     dispatch_async(dispatch_get_main_queue(), ^{
         CGFloat progress = (CGFloat)totalBytesWritten / (CGFloat)totalBytesExpectedToWrite * 100.0;
+        if (![_root progressVisible]) return [self cancelDownload];
         [self.root barProgress:progress];
     });
+}
+
+- (void)cancelDownload {
+    [downloadTask cancel];
 }
 
 // error
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (error) {
-            // something must have horribly gone wrong for this to happen...
             [Utils showError:_root title:@"Download failed, please restart the app" error:error];
         }
     });

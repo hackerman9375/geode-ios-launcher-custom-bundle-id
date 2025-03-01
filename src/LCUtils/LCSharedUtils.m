@@ -99,8 +99,8 @@ extern NSBundle *lcMainBundle;
     } else {
         NSUserDefaults* groupUserDefaults = [[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]];
         
-        NSString* sideJITServerAddress = [groupUserDefaults objectForKey:@"LCSideJITServerAddress"];
-        NSString* deviceUDID = [groupUserDefaults objectForKey:@"LCDeviceUDID"];
+        NSString* sideJITServerAddress = [groupUserDefaults objectForKey:@"SideJITServerAddr"];
+        NSString* deviceUDID = [groupUserDefaults objectForKey:@"JITDeviceUDID"];
         if (!sideJITServerAddress || !deviceUDID) {
             return NO;
         }

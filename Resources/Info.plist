@@ -198,9 +198,15 @@
 		<string>nearby-interaction</string>
 		<string>remote-notification</string>
 	</array>
+	<key>SBAppUsesLocalNotifications</key>
+	<integer>1</integer>
 
-    <!-- Permissions -->
-    <key>NSMicrophoneUsageDescription</key>
+	<!-- Permissions -->
+	<key>NSMicrophoneUsageDescription</key>
 	<string>The mod you are using is requesting this permission.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>The mod you are using is requesting this permission.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This permission is needed for accessing the JIT server.</string>
 </dict>
 </plist>

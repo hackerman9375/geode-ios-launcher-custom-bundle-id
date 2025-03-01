@@ -54,6 +54,7 @@ Class LCSharedUtilsClass = nil;
 
 #pragma mark LCSharedUtils wrappers
 + (BOOL)launchToGuestApp {
+    if (![LCUtils askForJIT]) return NO;
     return [LCSharedUtilsClass launchToGuestApp];
 }
 
