@@ -325,10 +325,10 @@
         int center = view.center.x - 45;
         switch (i) {
             case 0:
-                center = center - 100;
+                center = center - 110;
                 break;
             case 2:
-                center = center + 100;
+                center = center + 110;
                 break;
         }
         UIView *storeOptionContainer = [[UIView alloc] initWithFrame:CGRectMake(center, view.center.y - 100, 90, 200)];
@@ -449,7 +449,7 @@
     RootViewController *rootViewController = [[RootViewController alloc] init];
     UIWindowScene *scene = (id)[UIApplication.sharedApplication.connectedScenes allObjects].firstObject;
     UIWindow *window = scene.windows.firstObject;
-    [UIView transitionWithView:window duration:0.5 options:UIViewAnimationOptionTransitionFlipFromRight animations:^{
+    [UIView transitionWithView:window duration:1.0 options:UIViewAnimationOptionTransitionFlipFromRight animations:^{
         window.rootViewController = rootViewController;
     } completion:nil];
 }
