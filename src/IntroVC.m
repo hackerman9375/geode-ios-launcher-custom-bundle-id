@@ -27,7 +27,7 @@
                 [self showInstallMethodStep];
             } else {
                 _currentStep = InstallStepLaunchMethod;
-                [self completeSetup];
+                [self showWarningStep];
             }
             break;
         
@@ -101,7 +101,7 @@
     [logoImageView setTintColor:[Theming getAccentColor]];
     //[41, 36].map(x => x * 6);
     float sizeMult = 7.F;
-    logoImageView.frame = CGRectMake(view.center.x - ((41 * sizeMult) / 2), view.bounds.size.height / 6, 41 * sizeMult, 36 * sizeMult);
+    logoImageView.frame = CGRectMake(view.center.x - ((41 * sizeMult) / 2), view.bounds.size.height / 8, 41 * sizeMult, 36 * sizeMult);
     [view addSubview:logoImageView];
 
     UILabel *titleLabel = [[UILabel alloc] init];
@@ -279,7 +279,7 @@
     normalLabel.font = [UIFont boldSystemFontOfSize:16];
     [normalOptionContainer addSubview:normalLabel];
 
-    UILabel *normalDescription = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(normalIcon.frame) + 5, CGRectGetMaxY(normalLabel.frame) + 10, view.bounds.size.width - 150, view.bounds.size.height/8)];
+    UILabel *normalDescription = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(normalIcon.frame) + 10, CGRectGetMaxY(normalLabel.frame) + 10, view.bounds.size.width - 150, view.bounds.size.height/8)];
     normalDescription.text = @"This method works between all iOS devices, jailbroken or not. However, you will have to launch the app with JIT every time you want to open Geode.";
     normalDescription.textColor = [UIColor lightGrayColor];
     normalDescription.font = [UIFont systemFontOfSize:13];
@@ -317,7 +317,7 @@
     tweakLabel.font = [UIFont boldSystemFontOfSize:16];
     [tweakOptionContainer addSubview:tweakLabel];
 
-    UILabel *tweakDescription = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(tweakIcon.frame) + 5, CGRectGetMaxY(tweakLabel.frame) + 10, view.bounds.size.width - 150, view.bounds.size.height/6)];
+    UILabel *tweakDescription = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(tweakIcon.frame) + 10, CGRectGetMaxY(tweakLabel.frame) + 10, view.bounds.size.width - 150, view.bounds.size.height/6)];
     tweakDescription.text = @"Recommended for Jailbreak users. This injects Geode directly into Geometry Dash. However, Geode will not appear once you're unjailbroken.\nIt's recommended to install the TrollStore (.tipa) version of this launcher if you plan on using this.";
     tweakDescription.textColor = [UIColor lightGrayColor];
     tweakDescription.font = [UIFont systemFontOfSize:13];
@@ -504,7 +504,7 @@
     RootViewController *rootViewController = [[RootViewController alloc] init];
     UIWindowScene *scene = (id)[UIApplication.sharedApplication.connectedScenes allObjects].firstObject;
     UIWindow *window = scene.windows.firstObject;
-    [UIView transitionWithView:window duration:1.0 options:UIViewAnimationOptionTransitionFlipFromRight animations:^{
+    [UIView transitionWithView:window duration:0.5 options:UIViewAnimationOptionTransitionFlipFromRight animations:^{
         window.rootViewController = rootViewController;
     } completion:nil];
 }
