@@ -12,6 +12,7 @@
     self.window.backgroundColor = [Theming getBackgroundColor];
 //18, 19, 24
 
+    self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"CompletedSetup"]) {
         RootViewController *rootViewController = [[RootViewController alloc] init];
         self.window.rootViewController = rootViewController;

@@ -494,14 +494,14 @@ int GeodeMain(int argc, char *argv[]) {
     
     NSString *selectedApp = [lcUserDefaults stringForKey:@"selected"];
     NSString *selectedContainer = [lcUserDefaults stringForKey:@"selectedContainer"];
-    /*NSFileManager *fm = [NSFileManager defaultManager];
+    NSFileManager *fm = [NSFileManager defaultManager];
     NSString *docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask]
         .lastObject.path;
     if ([fm fileExistsAtPath:[docPath stringByAppendingPathComponent:@"jitflag"]]) {
         selectedApp = [Utils gdBundleName];
         selectedContainer = @"GeometryDash";
         [fm removeItemAtPath:[docPath stringByAppendingPathComponent:@"jitflag"] error:nil];
-    }*/
+    }
     BOOL safeMode = [lcUserDefaults boolForKey:@"safemode"];
     if(selectedApp && !selectedContainer) {
         selectedContainer = [LCSharedUtils findDefaultContainerWithBundleId:selectedApp];

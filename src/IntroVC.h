@@ -7,6 +7,7 @@ typedef NS_ENUM(NSInteger, InstallStep) {
     InstallStepInstallMethod,
     InstallStepJailbreakStore,
     InstallStepLaunchMethod,
+    InstallStepWarning,
     InstallStepComplete
 };
 

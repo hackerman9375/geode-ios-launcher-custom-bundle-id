@@ -51,6 +51,7 @@ Class LCSharedUtilsClass = nil;
 
 #pragma mark LCSharedUtils wrappers
 + (BOOL)launchToGuestApp {
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"MANUAL_REOPEN"]) return NO;
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"USE_TWEAK"] && [Utils isJailbroken]) {
         NSString *appBundleIdentifier = @"com.robtop.geometryjump";
         [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];

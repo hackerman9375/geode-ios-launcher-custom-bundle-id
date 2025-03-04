@@ -1,11 +1,37 @@
 #import "Theming.h"
 
 @implementation Theming
++ (BOOL)darkModeEnabled {
+    UIWindow *keyWindow = nil;
+    for (UIWindow *window in [UIApplication sharedApplication].windows) {
+        if (window.isKeyWindow) {
+            keyWindow = window;
+            break;
+        }
+    }
+    if (!keyWindow) {
+        keyWindow = [UIApplication sharedApplication].windows.firstObject;
+    }
+    if (!keyWindow) {
+        return NO;
+    }
+    return (keyWindow.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
+}
 + (UIColor*)getDarkColor {
     return [UIColor colorWithRed: 0.15 green: 0.15 blue: 0.15 alpha: 1.00];
+    if ([Theming darkModeEnabled]) {
+        return [UIColor colorWithRed: 0.15 green: 0.15 blue: 0.15 alpha: 1.00];
+    } else {
+        return [UIColor colorWithRed: 0.85 green: 0.85 blue: 0.85 alpha: 1.00];
+    }
 }
 + (UIColor*)getBackgroundColor {
     return [UIColor colorWithRed: 0.07 green: 0.07 blue: 0.09 alpha: 1.00];
+    if ([Theming darkModeEnabled]) {
+        return [UIColor colorWithRed: 0.07 green: 0.07 blue: 0.09 alpha: 1.00];
+    } else {
+        return [UIColor colorWithRed: 1 green: 1 blue: 1 alpha: 1.00];
+    }
 }
 + (UIColor *)getAccentColor {
     NSData *colorData = [[NSUserDefaults standardUserDefaults] dataForKey:@"accentColor"];

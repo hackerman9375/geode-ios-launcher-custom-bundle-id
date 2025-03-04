@@ -2,6 +2,7 @@
 #import <UIKit/UIKit.h>
 
 @interface Theming : NSObject
++ (BOOL)darkModeEnabled;
 + (UIColor*)getDarkColor;
 + (UIColor*)getBackgroundColor;
 + (UIColor*)getAccentColor;

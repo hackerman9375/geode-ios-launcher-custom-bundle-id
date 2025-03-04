@@ -167,6 +167,21 @@
     [root presentViewController:alert animated:YES completion:nil];
 }
 
++ (void)showErrorGlobal:(NSString *)title error:(NSError *)error {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error"
+        message:(error == nil) ? title : [NSString stringWithFormat:@"%@: %@", title, error.localizedDescription]
+        preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
+    [alert addAction:okAction];
+
+
+    UIWindowScene *scene = (id)[UIApplication.sharedApplication.connectedScenes allObjects].firstObject;
+    UIWindow *window = scene.windows.firstObject;
+    if (window != nil) {
+        [window.rootViewController presentViewController:alert animated:YES completion:nil];
+    }
+}
+
 + (NSString *)archName {
     const NXArchInfo *info = NXGetLocalArchInfo();
     NSString *typeOfCpu = [NSString stringWithUTF8String:info->description];
@@ -174,7 +189,6 @@
 }
 
 + (void)toggleKey:(NSString *)key {
-    NSLog(@"godelol %@", key);
     [[NSUserDefaults standardUserDefaults] setBool:![[NSUserDefaults standardUserDefaults] boolForKey:key] forKey:key];
 }
 

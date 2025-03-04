@@ -62,6 +62,7 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
 	switch (section) {
         case 0:
+        case 3:
             return 5;
         case 1:
             return 3;
@@ -69,7 +70,6 @@
             return 2;
         case 5:
             return [self.creditsArray count];
-        case 3:
         case 4:
             return 4;
         case 6:
@@ -149,7 +149,7 @@
                 textField.returnKeyType = UIReturnKeyDone;
                 textField.autocorrectionType = UITextAutocorrectionTypeNo;
                 textField.keyboardType = UIKeyboardTypeURL;
-                textField.tag = indexPath.row;
+                textField.tag = 0;
                 cell.accessoryView = textField;
                 cell.textLabel.text = @"Address";
                 textField.placeholder = @"http://x.x.x.x:9172";
@@ -172,9 +172,14 @@
                 cellval1.textLabel.text = @"Use Tweak instead of JIT";
                 return cellval1;
             } else if (indexPath.row == 2) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:NO];
+                cellval1.textLabel.text = @"Manual reopen with JIT";
+                return cellval1;
+            } else if (indexPath.row == 3) {
                 cell.textLabel.text = @"View Recent Logs";
                 cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-            } else if (indexPath.row == 3) {
+            } else if (indexPath.row == 4) {
                 cell.textLabel.text = @"View Recent Crash";
                 cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             }
@@ -358,13 +363,13 @@
         }
     } else if (indexPath.section == 3) {
         switch (indexPath.row) {
-            case 2: // View app logs
+            case 3: // View app logs
                 [[self navigationController] pushViewController:
                     [[LogsViewController alloc] initWithFile:[Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/logs/"].path]]
                     animated:YES
                 ];
                 break;
-            case 3: // View recent crash
+            case 4: // View recent crash
                 [[self navigationController] pushViewController:
                     [[LogsViewController alloc] initWithFile:[Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/crashlogs/"].path]]
                     animated:YES
@@ -425,6 +430,9 @@
             break;
         case 6: // Completed Setup 
             [Utils toggleKey:@"CompletedSetup"];
+            break;
+        case 7:
+            [Utils toggleKey:@"MANUAL_REOPEN"];
             break;
     }
 }

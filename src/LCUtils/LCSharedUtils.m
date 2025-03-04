@@ -102,18 +102,22 @@ extern NSBundle *lcMainBundle;
 + (BOOL)askForJIT {
     NSString* sideJITServerAddress = [lcUserDefaults objectForKey:@"SideJITServerAddr"];
     if (!sideJITServerAddress || ![lcUserDefaults boolForKey:@"AUTO_JIT"]) {
-        //[Utils showError:root title:@"Server Address or Device UDID not set." error:nil];
-        //@"Server Address or Device UDID not set."
+        if ([lcUserDefaults boolForKey:@"AUTO_JIT"]) {
+            [Utils showErrorGlobal:@"JITStreamer Server Address not set." error:nil];
+            return NO;
+        }
         return YES;
     }
-    //NSString* launchJITUrlStr = [NSString stringWithFormat: @"%@/%@/%@", sideJITServerAddress, deviceUDID, NSBundle.mainBundle.bundleIdentifier];
-    NSString* launchJITUrlStr = [NSString stringWithFormat: @"%@/launch_app/%@", sideJITServerAddress, NSBundle.mainBundle.bundleIdentifier];
+    NSString* launchJITUrlStr = [NSString stringWithFormat: @"%@/launch_app/%@", sideJITServerAddress, lcMainBundle.bundleIdentifier];
     NSURLSession* session = [NSURLSession sharedSession];
     NSURL* launchJITUrl = [NSURL URLWithString:launchJITUrlStr];
     NSURLRequest* req = [[NSURLRequest alloc] initWithURL:launchJITUrl];
     NSURLSessionDataTask *task = [session dataTaskWithRequest:req completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         if(error) {
-            NSLog(@"Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
+            return dispatch_async(dispatch_get_main_queue(), ^{
+                [Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer", sideJITServerAddress, lcMainBundle.bundleIdentifier] error:error];
+                NSLog(@"Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
+            });
         }
     }];
     [task resume];

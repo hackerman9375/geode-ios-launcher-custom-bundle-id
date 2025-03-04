@@ -23,9 +23,20 @@ BOOL hasDoneUpdate = NO;
 
 + (BOOL)canLaunchAppWithBundleID:(NSString *)bundleID {
     Class LSApplicationWorkspace_class = objc_getClass("LSApplicationWorkspace");
+    if (!LSApplicationWorkspace_class) return NO;
     id workspace = [LSApplicationWorkspace_class performSelector:@selector(defaultWorkspace)];
-    BOOL canLaunch = [workspace performSelector:@selector(openApplicationWithBundleID:) withObject:bundleID];
+    if (!workspace) return NO;
+    SEL selector = NSSelectorFromString(@"openApplicationWithBundleID:");
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[workspace methodSignatureForSelector:selector]];
+    [invocation setTarget:workspace];
+    [invocation setSelector:selector];
+    [invocation setArgument:&bundleID atIndex:2];
+
+    [invocation invoke];
+    //BOOL canLaunch = [workspace performSelector:@selector(openApplicationWithBundleID:) withObject:bundleID];
     [NSThread sleepForTimeInterval:1.0];
+    BOOL canLaunch;
+    [invocation getReturnValue:&canLaunch];
     return canLaunch;
 }
 
@@ -59,12 +70,6 @@ BOOL hasDoneUpdate = NO;
 // after the user installed the patched ipa
 + (BOOL)verifyGDInstalled {
     BOOL res = NO;
-    /*[
-        [NSFileManager defaultManager]
-        moveItemAtPath:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app" isDirectory:YES].path
-        toPath:[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName] isDirectory:YES].path
-        error:nil
-    ];*/
     if ([
         [NSFileManager defaultManager] fileExistsAtPath:[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName] isDirectory:YES].path isDirectory:&res
     ]) {
