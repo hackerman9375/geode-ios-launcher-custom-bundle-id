@@ -2,7 +2,7 @@
 #import "MSColorPicker/MSColorPicker/MSColorSelectionViewController.h"
 #import "RootViewController.h"
 
-@interface SettingsController : UIViewController<UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MSColorSelectionViewControllerDelegate>
+@interface SettingsVC : UIViewController<UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MSColorSelectionViewControllerDelegate>
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) RootViewController *root;
 @end

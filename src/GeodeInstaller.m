@@ -1,7 +1,10 @@
 #import "GeodeInstaller.h"
+#import "LCUtils/unarchive.h"
 #import "LCUtils/Shared.h"
 #import "VerifyInstall.h"
 #import "Utils.h"
+
+typedef void (^DecompressCompletion)(NSError * _Nullable error);
 
 // ai
 @interface CompareSemVer : NSObject
@@ -45,24 +48,61 @@
     if (!ignoreRoot) {
         _root = root;
     }
-    [root progressVisibility:NO];
-    _root.optionalTextLabel.text = @"Downloading Geode...";
+    _root.optionalTextLabel.text = @"Getting current version...";
     [self setVersion];
+    
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeReleaseURL]]];
     NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
-    downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/Geode.ios.dylib"]];
-    [downloadTask resume];
+    NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) {
+            return dispatch_async(dispatch_get_main_queue(), ^{
+                [Utils showError:_root title:@"Request failed" error:error];
+                [self.root updateState];
+                NSLog(@"Error during request: %@", error);
+            });
+        }
+        if (data) {
+            NSError *jsonError;
+            id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+            if (jsonError) {
+                return dispatch_async(dispatch_get_main_queue(), ^{
+                    [Utils showError:_root title:@"JSON parsing failed" error:jsonError];
+                    [self.root updateState];
+                    NSLog(@"Error during JSON: %@", error);
+                });
+                return;
+            }
+            if ([jsonObject isKindOfClass:[NSDictionary class]]) {
+                NSDictionary *jsonDict = (NSDictionary *)jsonObject;
+                NSArray *assets = jsonDict[@"assets"];
+                if ([assets isKindOfClass:[NSArray class]]) {
+                    for (NSDictionary *asset in assets) {
+                        if ([asset isKindOfClass:[NSDictionary class]]) {
+                            NSString *assetName = asset[@"name"];
+                            if ([assetName isKindOfClass:[NSString class]]) {
+                                if ([assetName hasSuffix:@"-mac.zip"]) { // TODO: change to -ios.zip when it releases officially
+                                    NSString *downloadURL = asset[@"browser_download_url"];
+                                    if ([downloadURL isKindOfClass:[NSString class]]) {
+                                        dispatch_async(dispatch_get_main_queue(), ^{
+                                            [_root progressVisibility:NO];
+                                            _root.optionalTextLabel.text = @"Downloading Geode...";
+                                            NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
+                                            downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/geode-v4.2.0-ios.zip"]];
+                                            //downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:downloadURL]];
+                                            [downloadTask resume];
+                                        });
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }];
+    [dataTask resume];
 }
-
-/*
-private const val GITHUB_API_BASE = "https://api.github.com"
-        private const val GITHUB_API_HEADER = "X-GitHub-Api-Version"
-        private const val GITHUB_API_VERSION = "2022-11-28"
-
-        private const val GITHUB_RATELIMIT_REMAINING = "x-ratelimit-remaining"
-        private const val GITHUB_RATELIMIT_RESET = "x-ratelimit-reset"
-
-        private const val GEODE_API_BASE = "https://api.geode-sdk.org/v1"
-*/
 
 - (void)setVersion {
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeReleaseURL]]];
@@ -170,7 +210,7 @@ private const val GITHUB_API_BASE = "https://api.github.com"
                 NSLog(@"hash length: %lu, str length: %lu", (unsigned long)[hash length], (unsigned long)[str length]);
                 if (![hash isEqualToString:str]) {
                     NSLog(@"Checksums don't match. Assume GD needs an update!");
-                    [Utils showNotice:_root title:@"Geometry Dash requires an update! Relaunch the app to update it!"];
+                    [Utils showNotice:_root title:@"Geode requires an update! Relaunch the app to update it!"];
                     [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"GDNeedsUpdate"];
                 }
                 [self.root updateState];
@@ -180,20 +220,38 @@ private const val GITHUB_API_BASE = "https://api.github.com"
     [dataTask resume];
 }
 
+- (void)decompress:(NSString*) fileToExtract
+    extractionPath:(NSString *)extractionPath
+    completion:(DecompressCompletion)completion {
+    NSLog(@"Starting decomp of %@ to %@", fileToExtract, extractionPath);
+    [[NSFileManager defaultManager] createDirectoryAtPath:extractionPath withIntermediateDirectories:YES attributes:nil error:nil];
+    int res = extract(fileToExtract, extractionPath, nil);
+    if (res != 0) return completion([NSError errorWithDomain:@"DecompressError" code:res userInfo:nil]);
+    return completion(nil);
+}
+
 // updating
-- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location {
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)url {
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
     NSString *tweakPath = [NSString stringWithFormat:@"%@/Tweaks/Geode.ios.dylib", docPath];
-    NSError* error;
-    [fm moveItemAtPath:location.path toPath:tweakPath error:&error];
-    if (error) {
-        [Utils showError:_root title:@"Failed to move Geode lib" error:error];
-    }
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [_root progressVisibility:YES];
-        [_root updateState];
-    });
+    [self decompress:url.path extractionPath:[[fm temporaryDirectory] path] completion:^(NSError * _Nullable decompError) {
+        if (decompError) {
+            [Utils showError:_root title:@"Decompressing ZIP failed" error:decompError];
+            [_root updateState];
+            return NSLog(@"Error trying to decompress ZIP: %@", decompError);
+        }
+        NSError* error;
+        NSURL *dylibPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Geode.ios.dylib"];
+        [fm moveItemAtPath:dylibPath.path toPath:tweakPath error:&error];
+        if (error) {
+            [Utils showError:_root title:@"Failed to move Geode lib" error:error];
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [_root progressVisibility:YES];
+            [_root updateState];
+        });
+    }];
 }
 
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {

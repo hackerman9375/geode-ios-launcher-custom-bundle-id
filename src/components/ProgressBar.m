@@ -1,5 +1,4 @@
 #import "ProgressBar.h"
-#import "../RootViewController.h"
 #import "../Theming.h"
 
 @interface ProgressBar ()

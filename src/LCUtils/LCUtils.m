@@ -56,7 +56,7 @@ Class LCSharedUtilsClass = nil;
         [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
         return YES;
     }
-    if (![LCUtils askForJIT]) return NO;
+    if (![LCUtils askForJIT]) return YES;
     return [LCSharedUtilsClass launchToGuestApp];
 }
 

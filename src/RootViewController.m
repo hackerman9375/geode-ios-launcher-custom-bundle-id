@@ -1,6 +1,6 @@
 #import "RootViewController.h"
 #import "GeodeInstaller.h"
-#import "SettingsController.h"
+#import "SettingsVC.h"
 #import "LCUtils/Shared.h"
 #import "LCUtils/LCSharedUtils.h"
 #import "LCUtils/LCUtils.h"
@@ -23,6 +23,7 @@
 
 @property (nonatomic, strong) ProgressBar *progressBar;
 @property (nonatomic, strong) NSTimer *launchTimer;
+@property (nonatomic, assign) NSInteger countdown;
 
 @end
 
@@ -44,16 +45,25 @@
         [self.progressBar setProgress:value];
     }
 }
+
+- (void)countdownUpdate {
+    self.countdown--;
+    self.optionalTextLabel.text = [NSString stringWithFormat:@"Automatically launching in %li...", (long)self.countdown];
+
+    if (self.countdown <= 0) {
+        [self.launchTimer invalidate];
+        self.launchTimer = nil;
+        [self launchGame];
+    }
+}
+
 - (void)updateState {
-    self.logoImageView.frame = CGRectMake(self.view.center.x - 70, self.view.center.y - 130, 150, 150);
-    self.projectLabel.frame = CGRectMake(0, CGRectGetMaxY(self.logoImageView.frame) + 15, self.view.bounds.size.width, 35);
-    //self.optionalTextLabel.frame = CGRectMake(0, CGRectGetMaxY(self.projectLabel.frame) + 15, self.view.bounds.size.width, 20);
-    self.optionalTextLabel.frame = CGRectMake(0, CGRectGetMaxY(self.projectLabel.frame) + 10, self.view.bounds.size.width, 40);
-    //self.launchButton.frame = CGRectMake(self.view.center.x - 95, CGRectGetMaxY(self.optionalTextLabel.frame), 140, 45);
-    //self.settingsButton.frame = CGRectMake(self.view.center.x + 50, CGRectGetMaxY(self.optionalTextLabel.frame), 45, 45);
-    self.launchButton.frame = CGRectMake(self.view.center.x - 95, CGRectGetMaxY(self.projectLabel.frame) + 15, 140, 45);
-    self.settingsButton.frame = CGRectMake(self.view.center.x + 50, CGRectGetMaxY(self.projectLabel.frame) + 15, 45, 45);
-    self.launchButton.backgroundColor = [Theming getAccentColor];//[UIColor colorWithRed: 0.70 green: 0.77 blue: 1.00 alpha: 1.00];
+    self.logoImageView.frame = CGRectMake(self.view.center.x - 75, self.view.center.y - 130, 150, 150);
+    self.titleLabel.frame = CGRectMake(0, CGRectGetMaxY(self.logoImageView.frame) + 15, self.view.bounds.size.width, 35);
+    self.optionalTextLabel.frame = CGRectMake(0, CGRectGetMaxY(self.titleLabel.frame) + 10, self.view.bounds.size.width, 40);
+    self.launchButton.frame = CGRectMake(self.view.center.x - 95, CGRectGetMaxY(self.titleLabel.frame) + 15, 140, 45);
+    self.settingsButton.frame = CGRectMake(self.view.center.x + 50, CGRectGetMaxY(self.titleLabel.frame) + 15, 45, 45);
+    self.launchButton.backgroundColor = [Theming getAccentColor];
     [self.launchButton setTitleColor:[Theming getTextColor:[Theming getAccentColor]] forState:UIControlStateNormal];
     [self.launchButton setTintColor:[Theming getTextColor:[Theming getAccentColor]]];
 
@@ -64,7 +74,12 @@
         [self.launchButton setTitle:@"Launch" forState:UIControlStateNormal];
         [self.launchButton setImage:[[UIImage systemImageNamed:@"play.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
         if ([[NSUserDefaults standardUserDefaults] boolForKey:@"LOAD_AUTOMATICALLY"]) {
-            self.launchTimer = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(launchGame) userInfo:nil repeats:NO];
+            [self.optionalTextLabel setHidden:NO];
+            self.launchButton.frame = CGRectMake(self.view.center.x - 95, CGRectGetMaxY(self.optionalTextLabel.frame) + 15, 140, 45);
+            self.settingsButton.frame = CGRectMake(self.view.center.x + 50, CGRectGetMaxY(self.optionalTextLabel.frame) + 15, 45, 45);
+            self.countdown = 3;
+            [self countdownUpdate];
+            self.launchTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(countdownUpdate) userInfo:nil repeats:YES];
         } else {
             [self.launchButton addTarget:self action:@selector(launchGame) forControlEvents:UIControlEventTouchUpInside];
         }
@@ -80,11 +95,7 @@
         } else if (![VerifyInstall verifyGDInstalled] || ![VerifyInstall verifyGeodeInstalled]) {
             self.launchButton.frame = CGRectMake(self.launchButton.frame.origin.x, CGRectGetMaxY(self.optionalTextLabel.frame) + 10, 140, 45);
             self.settingsButton.frame = CGRectMake(self.settingsButton.frame.origin.x, CGRectGetMaxY(self.optionalTextLabel.frame) + 10, 45, 45);
-            if (![VerifyInstall verifyGDInstalled]) {
-                self.optionalTextLabel.text = @"Geometry Dash is not installed.";
-            } else {
-                self.optionalTextLabel.text = @"Geode is not installed.";
-            }
+            self.optionalTextLabel.text = @"Geode is not installed.";
             [self.launchButton setTitle:@"Download" forState:UIControlStateNormal];
             [self.launchButton setImage:[[UIImage systemImageNamed:@"tray.and.arrow.down"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
             [self.launchButton addTarget:self action:@selector(downloadGame) forControlEvents:UIControlEventTouchUpInside];
@@ -119,12 +130,12 @@
         NSLog(@"Image is null");
     }
 
-    self.projectLabel = [[UILabel alloc] init];
-    self.projectLabel.text = @"Geode";
-    self.projectLabel.textColor = [UIColor whiteColor];
-    self.projectLabel.textAlignment = NSTextAlignmentCenter;
-    self.projectLabel.font = [UIFont systemFontOfSize:35 weight:UIFontWeightRegular];
-    [self.view addSubview:self.projectLabel];
+    self.titleLabel = [[UILabel alloc] init];
+    self.titleLabel.text = @"Geode";
+    self.titleLabel.textColor = [UIColor whiteColor];
+    self.titleLabel.textAlignment = NSTextAlignmentCenter;
+    self.titleLabel.font = [UIFont systemFontOfSize:35 weight:UIFontWeightRegular];
+    [self.view addSubview:self.titleLabel];
 
     // for things like if it errored or needs installing...
     self.optionalTextLabel = [[UILabel alloc] init];
@@ -194,7 +205,7 @@
         [self.launchTimer invalidate];
         self.launchTimer = nil;
     }
-    SettingsController *settings = [[SettingsController alloc] initWithNibName:nil bundle:nil];
+    SettingsVC *settings = [[SettingsVC alloc] initWithNibName:nil bundle:nil];
     settings.root = self;
     UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:settings];
     [self presentViewController:navController animated:YES completion:nil];
@@ -230,16 +241,25 @@
 
 - (void)launchGame {
     [self.launchButton setEnabled:NO];
-    NSString *openURL = [NSString stringWithFormat:@"geode://geode-launch?bundle-name=%@", [Utils gdBundleName]];
+    /*NSString *openURL = [NSString stringWithFormat:@"geode://geode-launch?bundle-name=%@", [Utils gdBundleName]];
     NSURL* url = [NSURL URLWithString:openURL];
     if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
         [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
         return;
-    }
+    }*/
     //try await signApp(force: false)
     [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];
     [[NSUserDefaults standardUserDefaults] setValue:@"GeometryDash" forKey:@"selectedContainer"];
-    [LCUtils launchToGuestApp];
+    if (![LCUtils launchToGuestApp]) {
+        NSFileManager *fm = [NSFileManager defaultManager];
+        [fm createFileAtPath:
+            [[LCPath docPath] URLByAppendingPathComponent:@"jitflag"].path 
+            contents:[[NSData alloc] init]
+            attributes:@{}
+        ];
+         // get around NSUserDefaults because sometimes it works and doesnt work when relaunching...
+        [Utils showNotice:self title:@"Relaunch the app with JIT to start Geode!"];
+    }
 }
 
 /*

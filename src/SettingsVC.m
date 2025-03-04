@@ -1,19 +1,20 @@
-#import "SettingsController.h"
+#import "SettingsVC.h"
+#include <spawn.h>
+#include <dlfcn.h>
 #import "VerifyInstall.h"
 #import "GeodeInstaller.h"
 #import <UIKit/UIKit.h>
-#import "LCUtils/Shared.h"
-#import "Theming.h"
+#import "src/LCUtils/Shared.h"
+#import "src/Theming.h"
 #import <MobileCoreServices/MobileCoreServices.h>
-#import "Utils.h"
+#import "src/Utils.h"
 #import "LogsView.h"
-#import <sys/utsname.h>
 
-@interface SettingsController () 
+@interface SettingsVC () 
 @property (nonatomic, strong) NSArray *creditsArray;
 @end
 
-@implementation SettingsController
+@implementation SettingsVC
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setTitle:@"Settings"];
@@ -55,7 +56,7 @@
 #pragma mark - Table View Data Source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-	return 6;
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"DEVELOPER_MODE"] ? 7 : 6;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -70,6 +71,8 @@
             return [self.creditsArray count];
         case 3:
         case 4:
+            return 4;
+        case 6:
             return 4;
         default:
             return 0;
@@ -158,8 +161,7 @@
             if (indexPath.row == 0) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Developer Mode";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:YES];
-                cellval1.textLabel.textColor = [UIColor systemGrayColor];
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 1) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -209,9 +211,42 @@
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             return cell;
         }
+        case 6: {
+            if (indexPath.row == 0) {
+                UITextField *textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
+                textField.textAlignment = NSTextAlignmentRight;
+                textField.delegate = self;
+                textField.returnKeyType = UIReturnKeyDone;
+                textField.autocorrectionType = UITextAutocorrectionTypeNo;
+                textField.keyboardType = UIKeyboardTypeURL;
+                textField.tag = 2;
+                cell.accessoryView = textField;
+                cell.textLabel.text = @"Reinstall Addr";
+                textField.placeholder = @"http://x.x.x.x:3000";
+                textField.text = [[NSUserDefaults standardUserDefaults] stringForKey:@"DEV_REINSTALL_ADDR"];
+            } else if (indexPath.row == 1) {
+                cell.textLabel.text = @"TrollStore App Reinstall";
+                cell.textLabel.textColor = [Theming getAccentColor];
+                cell.accessoryType = UITableViewCellAccessoryNone;
+            } else if (indexPath.row == 2) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+                cellval1.textLabel.text = @"Completed Setup";
+                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"CompletedSetup"] tag:6 disable:NO];
+                return cellval1;
+            } else if (indexPath.row == 3) {
+                cell.textLabel.text = @"Test GD Bundle Access";
+                cell.textLabel.textColor = [Theming getAccentColor];
+                cell.accessoryType = UITableViewCellAccessoryNone;
+            }
+            break;
+        }
     }
 
 	return cell;
+}
+
+- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
+    return NO;
 }
 
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -232,6 +267,8 @@
             return @"About";
         case 5:
             return @"Credits";
+        case 6:
+            return @"Developer";
         default:
             return @"Unknown";
     }
@@ -292,7 +329,6 @@
                 if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
                     [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
                 }
-                //[[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:@"com.apple.DocumentsApp"];
                 break;
             }
             case 4: { // Check for updates
@@ -340,6 +376,24 @@
         if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
             [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
         }
+    } else if (indexPath.section == 6) {
+        switch (indexPath.row) {
+            case 1: { // TS App Reinstall 
+                NSURL* url = [
+                    NSURL URLWithString:[
+                        NSString stringWithFormat:@"apple-magnifier://install?url=%@", [[NSUserDefaults standardUserDefaults] stringForKey:@"DEV_REINSTALL_ADDR"]
+                    ]
+                ];
+                if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
+                    [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
+                }
+                break;
+            }
+            case 3: { // Bundle Path 
+                [Utils showNotice:self title:[Utils getGDDocPath]];
+                break;
+            }
+        }
     }
 
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
@@ -359,7 +413,7 @@
             break;
         case 3: // Use Tweak instead of JIT
             if ([sender isOn]) {
-                [Utils showNotice:self title:@"Functionality such as safe mode, updating, etc, may not be available when this setting is enabled.\nIf you installed the .tipa version of this launcher, you may ignore this warning."];
+                [Utils showNotice:self title:@"Functionality such as safe mode may not be available when this setting is enabled.\nYou also will need to use the TrollStore (.tipa) in order to install & update Geode automatically, otherwise you will need to manually download Geode each time."];
             }
             [Utils toggleKey:@"USE_TWEAK"];
             break;
@@ -368,6 +422,9 @@
             break;
         case 5: // Rotate Fix
             [Utils toggleKey:@"FIX_ROTATION"];
+            break;
+        case 6: // Completed Setup 
+            [Utils toggleKey:@"CompletedSetup"];
             break;
     }
 }
@@ -380,6 +437,9 @@
             break;
         case 1: // udid 
             [[NSUserDefaults standardUserDefaults] setValue:textField.text forKey:@"JITDeviceUDID"];
+            break;
+        case 2: // reinstall addr 
+            [[NSUserDefaults standardUserDefaults] setValue:textField.text forKey:@"DEV_REINSTALL_ADDR"];
             break;
     }
 }

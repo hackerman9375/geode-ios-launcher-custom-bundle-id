@@ -1,4 +1,4 @@
-#import "src/RootViewController.h"
+#import "RootViewController.h"
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 

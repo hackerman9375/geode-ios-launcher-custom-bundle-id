@@ -1,4 +1,5 @@
 #import "LCUtils/FoundationPrivate.h"
+#import "Utils.h"
 #import <Foundation/Foundation.h>
 #import "LCUtils/LCSharedUtils.h"
 #import "LCUtils/UIKitPrivate.h"
@@ -53,9 +54,6 @@ void NUDGuestHooksInit();
 @end
 
 static BOOL checkJITEnabled() {
-    if([lcUserDefaults boolForKey:@"LCIgnoreJITOnLaunch"]) {
-        return NO;
-    }
     // check if jailbroken
     if (access("/var/mobile", R_OK) == 0) {
         return YES;
@@ -220,15 +218,13 @@ void* new_dlsym(void * __handle, const char * __symbol) {
 
 static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContainer, BOOL safeMode, int argc, char *argv[]) {
     NSString *appError = nil;
-    if (!LCSharedUtils.certificatePassword) {
-        // First of all, let's check if we have JIT
-        for (int i = 0; i < 10 && !checkJITEnabled(); i++) {
-            usleep(1000*100);
-        }
-        if (!checkJITEnabled()) {
-            appError = @"JIT was not enabled. If you want to use LiveContainer without JIT, setup JITLess mode in settings.";
-            return appError;
-        }
+    // First of all, let's check if we have JIT
+    for (int i = 0; i < 10 && !checkJITEnabled(); i++) {
+        usleep(1000*100);
+    }
+    if (!checkJITEnabled()) {
+        appError = @"JIT was not enabled. If you want to use LiveContainer without JIT, setup JITLess mode in settings.";
+        return appError;
     }
 
     NSFileManager *fm = NSFileManager.defaultManager;
@@ -243,7 +239,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     // not found locally, let's look for the app in shared folder
     if (!appBundle) {
         NSURL *appGroupPath = [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[LCSharedUtils appGroupID]];
-        appGroupFolder = [appGroupPath URLByAppendingPathComponent:@"LiveContainer"];
+        appGroupFolder = [appGroupPath URLByAppendingPathComponent:@"Geode"];
         
         bundlePath = [NSString stringWithFormat:@"%@/Applications/%@", appGroupFolder.path, selectedApp];
         appBundle = [[NSBundle alloc] initWithPath:bundlePath];
@@ -289,13 +285,6 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
         NSString *target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"TweakLoader.dylib"];
         symlink(target.UTF8String, tweakLoaderPath.UTF8String);
     }
-    NSString *tweakLoaderPath2 = [tweakFolder stringByAppendingPathComponent:@"Geode.ios.dylib"];
-    if (![fm fileExistsAtPath:tweakLoaderPath2]) {
-        remove(tweakLoaderPath2.UTF8String);
-        NSString *target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"Geode.ios.dylib"];
-        symlink(target.UTF8String, tweakLoaderPath2.UTF8String);
-    }
-    
 
     // If JIT is enabled, bypass library validation so we can load arbitrary binaries
     if (checkJITEnabled()) {
@@ -429,7 +418,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     appExecutableHandle = appHandle;
     const char *dlerr = dlerror();
 
-    if (!appHandle || (uint64_t)appHandle > 0xf00000000000 || (dlerr && ![guestAppInfo[@"ignoreDlopenError"] boolValue]) ) {
+    if (!appHandle || (uint64_t)appHandle > 0xf00000000000 || dlerr) {
         if (dlerr) {
             appError = @(dlerr);
         } else {
@@ -505,6 +494,14 @@ int GeodeMain(int argc, char *argv[]) {
     
     NSString *selectedApp = [lcUserDefaults stringForKey:@"selected"];
     NSString *selectedContainer = [lcUserDefaults stringForKey:@"selectedContainer"];
+    /*NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask]
+        .lastObject.path;
+    if ([fm fileExistsAtPath:[docPath stringByAppendingPathComponent:@"jitflag"]]) {
+        selectedApp = [Utils gdBundleName];
+        selectedContainer = @"GeometryDash";
+        [fm removeItemAtPath:[docPath stringByAppendingPathComponent:@"jitflag"] error:nil];
+    }*/
     BOOL safeMode = [lcUserDefaults boolForKey:@"safemode"];
     if(selectedApp && !selectedContainer) {
         selectedContainer = [LCSharedUtils findDefaultContainerWithBundleId:selectedApp];
@@ -551,7 +548,7 @@ int GeodeMain(int argc, char *argv[]) {
             }
         });
     }
-    if (selectedApp) {
+    if (selectedApp && ![lcUserDefaults boolForKey:@"USE_TWEAK"]) {
         NSString *launchUrl = [lcUserDefaults stringForKey:@"launchAppUrlScheme"];
         [lcUserDefaults removeObjectForKey:@"selected"];
         [lcUserDefaults removeObjectForKey:@"selectedContainer"];
@@ -588,9 +585,6 @@ int GeodeMain(int argc, char *argv[]) {
     //[LCSharedUtils setContainerUsingByThisLC:nil];
     //
     @autoreleasepool {
-        if ([lcUserDefaults boolForKey:@"LCLoadTweaksToSelf"]) {
-            dlopen("@executable_path/Frameworks/TweakLoader.dylib", RTLD_LAZY);
-        }
         void *uikitHandle = dlopen("/System/Library/Frameworks/UIKit.framework/UIKit", RTLD_GLOBAL);
         int (*UIApplicationMain)(int, char**, NSString *, NSString *) = dlsym(uikitHandle, "UIApplicationMain");
         return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));

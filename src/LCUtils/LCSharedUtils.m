@@ -1,4 +1,5 @@
 #import "LCSharedUtils.h"
+#import "src/Utils.h"
 #import "UIKitPrivate.h"
 
 extern NSUserDefaults *lcUserDefaults;
@@ -57,27 +58,41 @@ extern NSBundle *lcMainBundle;
     }
 }
 
++ (void)relaunchApp {
+    [lcUserDefaults setValue:[Utils gdBundleName] forKey:@"selected"];
+    [lcUserDefaults setValue:@"GeometryDash" forKey:@"selectedContainer"];
+    if ([lcUserDefaults boolForKey:@"USE_TWEAK"] && [Utils isJailbroken]) {
+        NSString *appBundleIdentifier = @"com.robtop.geometryjump";
+        [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
+        exit(0);
+        return;
+    }
+    if (![LCSharedUtils askForJIT]) return;
+    [LCSharedUtils launchToGuestApp];
+}
+
 + (BOOL)launchToGuestApp {
+    UIApplication *application = [NSClassFromString(@"UIApplication") sharedApplication];
     NSString *urlScheme;
-    NSString *tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", NSBundle.mainBundle.bundlePath];
+    
+    NSString *tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", lcMainBundle.bundlePath];
     int tries = 1;
     if (!access(tsPath.UTF8String, F_OK)) {
         urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
-    } else if (self.certificatePassword) {
+    } else if ([application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) {
+        urlScheme = @"sidestore://sidejit-enable?bid=%@";
+    } else {
         tries = 2;
         urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", lcAppUrlScheme];
-    } else {
-        urlScheme = @"sidestore://sidejit-enable?bid=%@";
     }
-    NSURL *launchURL = [NSURL URLWithString:[NSString stringWithFormat:urlScheme, NSBundle.mainBundle.bundleIdentifier]];
+    NSURL *launchURL = [NSURL URLWithString:[NSString stringWithFormat:urlScheme, lcMainBundle.bundleIdentifier]];
 
-    UIApplication *application = [NSClassFromString(@"UIApplication") sharedApplication];
     if ([application canOpenURL:launchURL]) {
         //[UIApplication.sharedApplication suspend];
         for (int i = 0; i < tries; i++) {
-        [application openURL:launchURL options:@{} completionHandler:^(BOOL b) {
-            exit(0);
-        }];
+            [application openURL:launchURL options:@{} completionHandler:^(BOOL b) {
+                exit(0);
+            }];
         }
         return YES;
     }
@@ -85,10 +100,8 @@ extern NSBundle *lcMainBundle;
 }
 
 + (BOOL)askForJIT {
-    NSUserDefaults* groupUserDefaults = [NSUserDefaults standardUserDefaults];
-    
-    NSString* sideJITServerAddress = [groupUserDefaults objectForKey:@"SideJITServerAddr"];
-    if (!sideJITServerAddress || ![[NSUserDefaults standardUserDefaults] boolForKey:@"AUTO_JIT"]) {
+    NSString* sideJITServerAddress = [lcUserDefaults objectForKey:@"SideJITServerAddr"];
+    if (!sideJITServerAddress || ![lcUserDefaults boolForKey:@"AUTO_JIT"]) {
         //[Utils showError:root title:@"Server Address or Device UDID not set." error:nil];
         //@"Server Address or Device UDID not set."
         return YES;

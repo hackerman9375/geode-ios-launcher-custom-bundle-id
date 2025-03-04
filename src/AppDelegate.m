@@ -1,7 +1,8 @@
 #import "AppDelegate.h"
-#import "src/LCUtils/LCUtils.h"
-#import "src/Utils.h"
-#import "src/Theming.h"
+#import "IntroVC.h"
+#import "LCUtils/LCUtils.h"
+#import "Utils.h"
+#import "Theming.h"
 #import "RootViewController.h"
 
 // https://www.uicolor.io/
@@ -10,8 +11,14 @@
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.backgroundColor = [Theming getBackgroundColor];
 //18, 19, 24
-    RootViewController *rootViewController = [[RootViewController alloc] init];
-    self.window.rootViewController = rootViewController;
+
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"CompletedSetup"]) {
+        RootViewController *rootViewController = [[RootViewController alloc] init];
+        self.window.rootViewController = rootViewController;
+    } else {
+        IntroVC* introViewController = [[IntroVC alloc] init];
+        self.window.rootViewController = introViewController;
+    }
 
     [self.window makeKeyAndVisible];
     return YES;
@@ -86,9 +93,10 @@
                 }
             }
         }
-    } else if ([url.host isEqualToString:@"geode-launch"] || [url.host isEqualToString:@"launch"]) {
+    } else if ([url.host isEqualToString:@"geode-launch"] || [url.host isEqualToString:@"launch"] || [url.host isEqualToString:@"relaunch"]) {
         [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];
         [[NSUserDefaults standardUserDefaults] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+        if ([url.host isEqualToString:@"relaunch"] && [[NSUserDefaults standardUserDefaults] boolForKey:@"USE_TWEAK"]) return NO;
         [LCUtils launchToGuestApp];
     } else if ([url.host isEqualToString:@"safe-mode"]) {
         [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];

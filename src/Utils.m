@@ -4,6 +4,9 @@
 #import <mach-o/arch.h>
 
 @implementation Utils
++ (NSString*)launcherBundleName {
+    return @"com.geode.launcher";
+}
 + (NSString*)gdBundleName {
     return @"com.robtop.geometryjump.app";
     //return @"GeometryDash";
@@ -16,6 +19,11 @@
     NSString *verTag = [[NSUserDefaults standardUserDefaults] stringForKey:@"CURRENT_VERSION_TAG"];
     return (verTag) ? verTag : @"Geode not installed";
 }
+
++ (NSString*)getGeodeDebURL {
+    return @"";
+}
+
 + (void)updateGeodeVersion:(NSString *)newVer {
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setObject:newVer forKey:@"CURRENT_VERSION_TAG"];
@@ -99,6 +107,47 @@
     }];
 
     return logFiles.firstObject;
+}
++ (BOOL)canAccessDirectory:(NSString *)path {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    return [fileManager fileExistsAtPath:path isDirectory:nil];
+}
++ (NSString*)getGDDocPath {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSError* err;
+    NSArray *dirs = [fm contentsOfDirectoryAtPath:@"/var/mobile/Containers/Data/Application" error:&err];
+    if (err) {
+        // assume we arent on jb or trollstore
+        return nil;
+    }
+    // probably the most inefficient way of getting a bundle id, i need to figure out another way of doing this because this is just bad...
+    for (NSString *dir in dirs) {
+        NSString *checkPrefs = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/Library/HTTPStorages/com.robtop.geometryjump", dir];
+        if ([fm fileExistsAtPath:checkPrefs isDirectory:nil]) {
+            return [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@", dir];
+        }
+    }
+    
+    return nil;
+}
+
++ (NSString*)getGDBinaryPath {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSError* err;
+    NSArray *dirs = [fm contentsOfDirectoryAtPath:@"/var/containers/Bundle/Application" error:&err];
+    if (err) {
+        // assume we arent on jb or trollstore
+        return nil;
+    }
+    // probably the most inefficient way of getting a bundle id, i need to figure out another way of doing this because this is just bad...
+    for (NSString *dir in dirs) {
+        NSString *checkPrefs = [NSString stringWithFormat:@"/var/containers/Bundle/Application/%@/GeometryJump.app", dir];
+        if ([fm fileExistsAtPath:checkPrefs isDirectory:nil]) {
+            return [NSString stringWithFormat:@"/var/containers/Bundle/Application/%@/GeometryJump.app/GeometryJump", dir];
+        }
+    }
+    
+    return nil;
 }
 
 + (void)showNotice:(UIViewController*)root title:(NSString *)title {

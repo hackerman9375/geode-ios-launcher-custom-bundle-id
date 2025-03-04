@@ -3,7 +3,9 @@
 
 @interface Utils : NSObject
 + (NSString*)gdBundleName;
++ (NSString*)launcherBundleName;
 + (NSString*)getGeodeVersion;
++ (NSString*)getGeodeDebURL;
 + (void)updateGeodeVersion:(NSString*)newVer;
 + (BOOL)isJailbroken;
 + (NSString*)getGeodeReleaseURL;
@@ -15,5 +17,7 @@
 + (void)toggleKey:(NSString*)key;
 + (NSString*)sha256sum:(NSString*)path;
 + (NSString*)getGDBinaryHash;
++ (NSString*)getGDDocPath;
++ (NSString*)getGDBinaryPath;
 @end
 

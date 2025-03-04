@@ -6,6 +6,7 @@
 + (NSURL*) appGroupPath;
 + (NSString *)certificatePassword;
 + (BOOL)askForJIT;
++ (void)relaunchApp;
 + (BOOL)launchToGuestApp;
 + (BOOL)launchToGuestAppWithURL:(NSURL *)url;
 + (void)setWebPageUrlForNextLaunch:(NSString*)urlString;

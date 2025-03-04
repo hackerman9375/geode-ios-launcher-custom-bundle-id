@@ -342,6 +342,20 @@ BOOL canAppOpenItself(NSURL* url) {
 }
 
 - (void)hook_openURL:(NSURL *)url options:(NSDictionary<NSString *,id> *)options completionHandler:(void (^)(_Bool))completion {
+    if ([url.host isEqualToString:@"launch"]) { // assume restart 
+        NSLog(@"godelol here we GOOOOOOO");
+        //[NSClassFromString(@"LCSharedUtils") launchToGuestApp];
+        UIWindow *window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
+        window.rootViewController = [UIViewController new];
+        window.windowLevel = UIApplication.sharedApplication.windows.lastObject.windowLevel + 1;
+        window.windowScene = (id)UIApplication.sharedApplication.connectedScenes.anyObject;
+        [window makeKeyAndVisible];
+
+        [NSClassFromString(@"LCSharedUtils") relaunchApp];
+        window.windowScene = nil;
+        //[UIApplication.sharedApplication suspend];
+        return;
+    }
     if(canAppOpenItself(url)) {
         NSData *data = [url.absoluteString dataUsingEncoding:NSUTF8StringEncoding];
         NSString *encodedUrl = [data base64EncodedStringWithOptions:0];

@@ -19,5 +19,17 @@
     <true/>
     <key>platform-application</key>
     <true/>
+
+
+    <!-- TODO: figure out another entitlement than this, because this just breaks JIT -->
+    <!--<key>com.apple.security.exception.files.absolute-path.read-write</key>
+    <array>
+        <string>/</string>
+        <string>/var/mobile/Containers/Data/Application</string>
+    </array>
+
+    <key>com.apple.private.security.no-container</key>
+    <true/>
+    -->
 </dict>
 </plist>
