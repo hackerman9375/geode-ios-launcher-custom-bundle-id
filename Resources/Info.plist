@@ -180,11 +180,6 @@
 	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
-	<key>UISupportedDevices</key>
-	<array>
-		<string>iPhone11,8</string>
-		<string>iPhone12,1</string>
-	</array>
 	<key>UIPrerenderedIcon</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
