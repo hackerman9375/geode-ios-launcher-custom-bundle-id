@@ -101,24 +101,24 @@
     [logoImageView setTintColor:[Theming getAccentColor]];
     //[41, 36].map(x => x * 6);
     float sizeMult = 7.F;
-    logoImageView.frame = CGRectMake(view.center.x - ((41 * sizeMult) / 2), view.bounds.size.height / 8, 41 * sizeMult, 36 * sizeMult);
+    logoImageView.frame = CGRectMake(view.center.x - ((41 * sizeMult) / 2), (view.bounds.size.height / 8) - 20, 41 * sizeMult, 36 * sizeMult);
     [view addSubview:logoImageView];
 
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.text = @"Warning";
-    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.textColor = [Theming getWhiteColor];
     titleLabel.textAlignment = NSTextAlignmentCenter;
     titleLabel.font = [UIFont boldSystemFontOfSize:48];
-    titleLabel.frame = CGRectMake(0, CGRectGetMaxY(logoImageView.frame) + 40, view.bounds.size.width, 44);
+    titleLabel.frame = CGRectMake(0, CGRectGetMaxY(logoImageView.frame) + 40, view.bounds.size.width, 60);
     [view addSubview:titleLabel];
 
     UILabel *subtitleLabel = [[UILabel alloc] init];
     subtitleLabel.text = @"If you are not jailbroken or don't have TrollStore, you will need a Computer to set up JIT. JIT is required for Geode, and will not work when installed with an Enterprise Certificate.\n\nPlease refrain from asking about this.";
     subtitleLabel.numberOfLines = 10;
-    subtitleLabel.textColor = [UIColor lightGrayColor];
+    subtitleLabel.textColor = [Theming getFooterColor];
     subtitleLabel.textAlignment = NSTextAlignmentCenter;
     subtitleLabel.font = [UIFont systemFontOfSize:14];
-    subtitleLabel.frame = CGRectMake(30, CGRectGetMaxY(titleLabel.frame) + 10, view.bounds.size.width - 60, 160);
+    subtitleLabel.frame = CGRectMake(30, CGRectGetMaxY(titleLabel.frame) + 5, view.bounds.size.width - 60, 170);
     [view addSubview:subtitleLabel];
 
     UIButton *nextButton = [UIButton buttonWithType:UIButtonTypeSystem];
@@ -157,7 +157,7 @@
 
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.text = @"Welcome to Geode!";
-    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.textColor = [Theming getWhiteColor];
     titleLabel.textAlignment = NSTextAlignmentCenter;
     titleLabel.font = [UIFont boldSystemFontOfSize:32];
     titleLabel.frame = CGRectMake(0, CGRectGetMaxY(logoImageView.frame) + 20, view.bounds.size.width, 44);
@@ -165,7 +165,7 @@
 
     UILabel *subtitleLabel = [[UILabel alloc] init];
     subtitleLabel.text = @"Let's get you started.";
-    subtitleLabel.textColor = [UIColor lightGrayColor];
+    subtitleLabel.textColor = [Theming getFooterColor];
     subtitleLabel.textAlignment = NSTextAlignmentCenter;
     subtitleLabel.font = [UIFont systemFontOfSize:16];
     subtitleLabel.frame = CGRectMake(0, CGRectGetMaxY(titleLabel.frame) + 10, view.bounds.size.width, 30);
@@ -183,7 +183,7 @@
 
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.text = @"Choose your Accent Color";
-    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.textColor = [Theming getWhiteColor];
     titleLabel.textAlignment = NSTextAlignmentCenter;
     titleLabel.font = [UIFont boldSystemFontOfSize:24];
     titleLabel.frame = CGRectMake(0, 80, view.bounds.size.width, 45);
@@ -191,7 +191,7 @@
 
     UILabel *subtitleLabel = [[UILabel alloc] init];
     subtitleLabel.text = @"You can change this later in the Settings.";
-    subtitleLabel.textColor = [UIColor lightGrayColor];
+    subtitleLabel.textColor = [Theming getFooterColor];
     subtitleLabel.textAlignment = NSTextAlignmentCenter;
     subtitleLabel.font = [UIFont systemFontOfSize:16];
     subtitleLabel.frame = CGRectMake(0, CGRectGetMaxY(titleLabel.frame) + 10, view.bounds.size.width, 30);
@@ -205,8 +205,8 @@
     colorButton.titleEdgeInsets = UIEdgeInsetsMake(0, 8, 0, 0);
     colorButton.imageEdgeInsets = UIEdgeInsetsMake(0, 0, 0, 8);
     [colorButton setImage:[[UIImage systemImageNamed:@"circle.lefthalf.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
-    [colorButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [colorButton setTintColor:[UIColor whiteColor]];
+    [colorButton setTitleColor:[Theming getWhiteColor] forState:UIControlStateNormal];
+    [colorButton setTintColor:[Theming getWhiteColor]];
     [colorButton addTarget:self action:@selector(onColorClickButton) forControlEvents:UIControlEventTouchUpInside];
     colorButton.frame = CGRectMake(view.center.x - 80, view.center.y + 40, 150, 45);
     [view addSubview:colorButton];
@@ -225,7 +225,7 @@
 
     UIButton *skipButton = [UIButton buttonWithType:UIButtonTypeSystem];
     [skipButton setTitle:@"Skip" forState:UIControlStateNormal];
-    [skipButton setTitleColor:[UIColor lightGrayColor] forState:UIControlStateNormal];
+    [skipButton setTitleColor:[Theming getFooterColor] forState:UIControlStateNormal];
     skipButton.titleLabel.font = [UIFont systemFontOfSize:18];
     [skipButton addTarget:self action:@selector(colorSkipPressed) forControlEvents:UIControlEventTouchUpInside];
     skipButton.frame = CGRectMake(CGRectGetMaxX(self.colorNextButton.frame) + 30, view.bounds.size.height - 150, 70, 45);
@@ -238,7 +238,7 @@
 
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.text = @"Installation Method";
-    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.textColor = [Theming getWhiteColor];
     titleLabel.textAlignment = NSTextAlignmentCenter;
     titleLabel.font = [UIFont boldSystemFontOfSize:24];
     titleLabel.frame = CGRectMake(0, 80, view.bounds.size.width, 45);
@@ -248,7 +248,7 @@
 
     UILabel *subtitleLabel = [[UILabel alloc] init];
     subtitleLabel.text = @"You can change this later in the Settings.";
-    subtitleLabel.textColor = [UIColor lightGrayColor];
+    subtitleLabel.textColor = [Theming getFooterColor];
     subtitleLabel.textAlignment = NSTextAlignmentCenter;
     subtitleLabel.font = [UIFont systemFontOfSize:16];
     subtitleLabel.frame = CGRectMake(0, CGRectGetMaxY(titleLabel.frame) + 10, view.bounds.size.width, 30);
@@ -267,7 +267,7 @@
     normalRadioButton.frame = CGRectMake(CGRectGetMaxX(normalIcon.frame) + 10, 10, 30, 30);
     normalRadioButton.layer.cornerRadius = 15;
     normalRadioButton.layer.borderWidth = 2;
-    normalRadioButton.layer.borderColor = [UIColor lightGrayColor].CGColor;
+    normalRadioButton.layer.borderColor = [Theming getFooterColor].CGColor;
     normalRadioButton.tag = 1;
     [normalRadioButton addTarget:self action:@selector(radioButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [normalOptionContainer addSubview:normalRadioButton];
@@ -275,13 +275,13 @@
     UILabel *normalLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(normalRadioButton.frame) + 10, 10, view.bounds.size.width - 160, 30)];
     normalLabel.text = @"Normal (Recommended)";
     //lock.open
-    normalLabel.textColor = [UIColor whiteColor];
+    normalLabel.textColor = [Theming getWhiteColor];
     normalLabel.font = [UIFont boldSystemFontOfSize:16];
     [normalOptionContainer addSubview:normalLabel];
 
     UILabel *normalDescription = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(normalIcon.frame) + 10, CGRectGetMaxY(normalLabel.frame) + 10, view.bounds.size.width - 150, view.bounds.size.height/8)];
     normalDescription.text = @"This method works between all iOS devices, jailbroken or not. However, you will have to launch the app with JIT every time you want to open Geode.";
-    normalDescription.textColor = [UIColor lightGrayColor];
+    normalDescription.textColor = [Theming getFooterColor];
     normalDescription.font = [UIFont systemFontOfSize:13];
     normalDescription.numberOfLines = 5;
     [normalOptionContainer addSubview:normalDescription];
@@ -306,20 +306,20 @@
     tweakRadioButton.frame = CGRectMake(CGRectGetMaxX(tweakIcon.frame) + 10, 10, 30, 30);
     tweakRadioButton.layer.cornerRadius = 15;
     tweakRadioButton.layer.borderWidth = 2;
-    tweakRadioButton.layer.borderColor = [UIColor lightGrayColor].CGColor;
+    tweakRadioButton.layer.borderColor = [Theming getFooterColor].CGColor;
     tweakRadioButton.tag = 2;
     [tweakRadioButton addTarget:self action:@selector(radioButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [tweakOptionContainer addSubview:tweakRadioButton];
 
     UILabel *tweakLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(tweakRadioButton.frame) + 10, 10, view.bounds.size.width - 160, 30)];
     tweakLabel.text = @"Tweak";
-    tweakLabel.textColor = [UIColor whiteColor];
+    tweakLabel.textColor = [Theming getWhiteColor];
     tweakLabel.font = [UIFont boldSystemFontOfSize:16];
     [tweakOptionContainer addSubview:tweakLabel];
 
     UILabel *tweakDescription = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(tweakIcon.frame) + 10, CGRectGetMaxY(tweakLabel.frame) + 10, view.bounds.size.width - 150, view.bounds.size.height/6)];
     tweakDescription.text = @"Recommended for Jailbreak users. This injects Geode directly into Geometry Dash. However, Geode will not appear once you're unjailbroken.\nIt's recommended to install the TrollStore (.tipa) version of this launcher if you plan on using this.";
-    tweakDescription.textColor = [UIColor lightGrayColor];
+    tweakDescription.textColor = [Theming getFooterColor];
     tweakDescription.font = [UIFont systemFontOfSize:13];
     tweakDescription.numberOfLines = 7;
     [tweakOptionContainer addSubview:tweakDescription];
@@ -358,7 +358,7 @@
 
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.text = @"Choose Jailbreak Store";
-    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.textColor = [Theming getWhiteColor];
     titleLabel.textAlignment = NSTextAlignmentCenter;
     titleLabel.font = [UIFont boldSystemFontOfSize:28];
     titleLabel.frame = CGRectMake(0, 80, view.bounds.size.width, 30);
@@ -367,7 +367,7 @@
     UILabel *subtitleLabel = [[UILabel alloc] init];
     subtitleLabel.text = @"If yours isn't listed, you can click the 'Share' button\nto open the repo link.";
     subtitleLabel.numberOfLines = 2;
-    subtitleLabel.textColor = [UIColor lightGrayColor];
+    subtitleLabel.textColor = [Theming getFooterColor];
     subtitleLabel.textAlignment = NSTextAlignmentCenter;
     subtitleLabel.font = [UIFont systemFontOfSize:12];
     subtitleLabel.frame = CGRectMake(0, CGRectGetMaxY(titleLabel.frame) + 15, view.bounds.size.width, 30);
@@ -396,7 +396,7 @@
 
         UILabel *storeLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 80, 90, 90)];
         storeLabel.text = [NSString stringWithFormat:@"Open in\n%@", stores[i]];
-        storeLabel.textColor = [UIColor whiteColor];
+        storeLabel.textColor = [Theming getWhiteColor];
         storeLabel.textAlignment = NSTextAlignmentCenter;
         storeLabel.numberOfLines = 2;
         storeLabel.font = [UIFont systemFontOfSize:16];
@@ -474,7 +474,7 @@
 
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.text = @"Setup complete!";
-    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.textColor = [Theming getWhiteColor];
     titleLabel.textAlignment = NSTextAlignmentCenter;
     titleLabel.font = [UIFont boldSystemFontOfSize:32];
     titleLabel.frame = CGRectMake(0, view.center.y - 40, view.bounds.size.width, 45);
@@ -482,7 +482,7 @@
 
     UILabel *subtitleLabel = [[UILabel alloc] init];
     subtitleLabel.text = @"Click next to start using Geode!";
-    subtitleLabel.textColor = [UIColor lightGrayColor];
+    subtitleLabel.textColor = [Theming getFooterColor];
     subtitleLabel.textAlignment = NSTextAlignmentCenter;
     subtitleLabel.font = [UIFont systemFontOfSize:16];
     subtitleLabel.frame = CGRectMake(0, CGRectGetMaxY(titleLabel.frame) + 10, view.bounds.size.width, 30);

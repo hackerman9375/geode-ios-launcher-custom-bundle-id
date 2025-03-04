@@ -132,7 +132,7 @@
 
     self.titleLabel = [[UILabel alloc] init];
     self.titleLabel.text = @"Geode";
-    self.titleLabel.textColor = [UIColor whiteColor];
+    self.titleLabel.textColor = [Theming getWhiteColor];
     self.titleLabel.textAlignment = NSTextAlignmentCenter;
     self.titleLabel.font = [UIFont systemFontOfSize:35 weight:UIFontWeightRegular];
     [self.view addSubview:self.titleLabel];
@@ -141,7 +141,7 @@
     self.optionalTextLabel = [[UILabel alloc] init];
     self.optionalTextLabel.numberOfLines = 2;
     self.optionalTextLabel.text = @"Geode is not installed.";
-    self.optionalTextLabel.textColor = [UIColor lightGrayColor];
+    self.optionalTextLabel.textColor = [Theming getFooterColor];
     self.optionalTextLabel.textAlignment = NSTextAlignmentCenter;
     self.optionalTextLabel.font = [UIFont systemFontOfSize:16];
     [self.optionalTextLabel setHidden:YES];
@@ -161,7 +161,7 @@
     self.settingsButton.clipsToBounds = YES;
     self.settingsButton.layer.cornerRadius = 22.5;
     [self.settingsButton setImage:[[UIImage systemImageNamed:@"gearshape.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
-    [self.settingsButton setTintColor:[UIColor whiteColor]];
+    [self.settingsButton setTintColor:[Theming getWhiteColor]];
     [self.settingsButton addTarget:self action:@selector(showSettings) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:self.settingsButton];
 

@@ -18,7 +18,6 @@
     return (keyWindow.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
 }
 + (UIColor*)getDarkColor {
-    return [UIColor colorWithRed: 0.15 green: 0.15 blue: 0.15 alpha: 1.00];
     if ([Theming darkModeEnabled]) {
         return [UIColor colorWithRed: 0.15 green: 0.15 blue: 0.15 alpha: 1.00];
     } else {
@@ -26,11 +25,24 @@
     }
 }
 + (UIColor*)getBackgroundColor {
-    return [UIColor colorWithRed: 0.07 green: 0.07 blue: 0.09 alpha: 1.00];
     if ([Theming darkModeEnabled]) {
         return [UIColor colorWithRed: 0.07 green: 0.07 blue: 0.09 alpha: 1.00];
     } else {
-        return [UIColor colorWithRed: 1 green: 1 blue: 1 alpha: 1.00];
+        return [UIColor colorWithRed: 1.0 green: 1.0 blue: 1.0 alpha: 1.00];
+    }
+}
++ (UIColor *)getWhiteColor {
+    if ([Theming darkModeEnabled]) {
+        return [UIColor whiteColor];
+    } else {
+        return [UIColor blackColor];
+    }
+}
++ (UIColor *)getFooterColor {
+    if ([Theming darkModeEnabled]) {
+        return [UIColor lightGrayColor];
+    } else {
+        return [UIColor darkGrayColor];
     }
 }
 + (UIColor *)getAccentColor {
@@ -44,7 +56,11 @@
             NSLog(@"Couldn't unarchive accent color: %@", error);
         }
     }
-    return [UIColor colorWithRed: 0.70 green: 0.77 blue: 1.00 alpha: 1.00];
+    if ([Theming darkModeEnabled]) {
+        return [UIColor colorWithRed: 0.70 green: 0.77 blue: 1.00 alpha: 1.00];
+    } else {
+        return [UIColor colorWithRed: 0.4 green: 0.55 blue: 1.00 alpha: 1.00];
+    }
     // apple loves blue
     //return [UIColor systemBlueColor];
 }

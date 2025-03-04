@@ -8,4 +8,6 @@
 + (UIColor*)getAccentColor;
 + (UIColor*)getTextColor:(UIColor*)color;
 + (void)saveAccentColor:(UIColor *)color;
++ (UIColor *)getWhiteColor;
++ (UIColor *)getFooterColor;
 @end

@@ -36,7 +36,7 @@
     if (self.progressText != nil) {
         self.progressLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, self.frame.size.width, textHeight)];
         self.progressLabel.textAlignment = NSTextAlignmentCenter;
-        self.progressLabel.textColor = [UIColor whiteColor];
+        self.progressLabel.textColor = [Theming getWhiteColor];
         self.progressLabel.text = [self.progressText stringByReplacingOccurrencesOfString:@"{percent}" withString:@"0"]; // Initialize with 0%
         [self addSubview:self.progressLabel];
     }
