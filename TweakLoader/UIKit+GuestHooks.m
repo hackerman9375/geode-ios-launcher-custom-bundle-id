@@ -342,7 +342,7 @@ BOOL canAppOpenItself(NSURL* url) {
 }
 
 - (void)hook_openURL:(NSURL *)url options:(NSDictionary<NSString *,id> *)options completionHandler:(void (^)(_Bool))completion {
-    if ([url.host isEqualToString:@"launch"]) { // assume restart 
+    if ([url.host isEqualToString:@"relaunch"]) { // assume restart 
         //[NSClassFromString(@"LCSharedUtils") launchToGuestApp];
         UIWindow *window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
         window.rootViewController = [UIViewController new];
