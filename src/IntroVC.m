@@ -27,6 +27,7 @@
                 [self showInstallMethodStep];
             } else {
                 _currentStep = InstallStepLaunchMethod;
+                [self completeSetup];
             }
             break;
         
@@ -194,6 +195,8 @@
     titleLabel.frame = CGRectMake(0, 80, view.bounds.size.width, 45);
     [view addSubview:titleLabel];
 
+    int maximumImageSize = view.bounds.size.width / 4;
+
     UILabel *subtitleLabel = [[UILabel alloc] init];
     subtitleLabel.text = @"You can change this later in the Settings.";
     subtitleLabel.textColor = [UIColor lightGrayColor];
@@ -204,7 +207,7 @@
 
     UIView *normalOptionContainer = [[UIView alloc] initWithFrame:CGRectMake(25, CGRectGetMaxY(subtitleLabel.frame) + 100, view.bounds.size.width, 140)];
 
-    UIImageView *normalIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 120, 120)];
+    UIImageView *normalIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, maximumImageSize, maximumImageSize)];
     normalIcon.contentMode = UIViewContentModeScaleAspectFit;
     normalIcon.tintColor = [Theming getAccentColor];
     UIImage *shieldImage = [UIImage systemImageNamed:@"shield.lefthalf.filled" withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:60]];
@@ -243,7 +246,7 @@
     // =============
 
     UIView *tweakOptionContainer = [[UIView alloc] initWithFrame:CGRectMake(25, CGRectGetMaxY(separator.frame) + 30, view.bounds.size.width, 150)];
-    UIImageView *tweakIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 120, 120)];
+    UIImageView *tweakIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, maximumImageSize, maximumImageSize)];
     tweakIcon.contentMode = UIViewContentModeScaleAspectFit;
     tweakIcon.tintColor = [Theming getAccentColor];
     UIImage *tweakImage = [UIImage systemImageNamed:@"cube.fill" withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:60]];
@@ -319,6 +322,7 @@
     subtitleLabel.frame = CGRectMake(0, CGRectGetMaxY(titleLabel.frame) + 10, view.bounds.size.width, 60);
     [view addSubview:subtitleLabel];
 
+    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"USE_TWEAK"];
     NSArray *stores = @[@"Sileo", @"Zebra", @"Cydia"];
 
     for (NSInteger i = 0; i < stores.count; i++) { //
@@ -422,7 +426,7 @@
     titleLabel.textColor = [UIColor whiteColor];
     titleLabel.textAlignment = NSTextAlignmentCenter;
     titleLabel.font = [UIFont boldSystemFontOfSize:32];
-    titleLabel.frame = CGRectMake(0, view.center.y, view.bounds.size.width, 45);
+    titleLabel.frame = CGRectMake(0, view.center.y - 40, view.bounds.size.width, 45);
     [view addSubview:titleLabel];
 
     UILabel *subtitleLabel = [[UILabel alloc] init];
