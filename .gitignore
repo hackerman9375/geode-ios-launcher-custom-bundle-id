@@ -7,6 +7,8 @@ compile_commands.json
 old/
 .cache/
 build.sh
+build-ts.sh
+build-alt.sh
 build-without.sh
 build-debug.sh
 .git

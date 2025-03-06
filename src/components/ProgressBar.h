@@ -15,4 +15,5 @@
     root:(RootViewController*)root;
 
 - (void)setProgress:(CGFloat)progress;
+- (void)setCancelHidden:(BOOL)hidden;
 @end

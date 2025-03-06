@@ -20,5 +20,7 @@
 + (NSString*)getGDBinaryHash;
 + (NSString*)getGDDocPath;
 + (NSString*)getGDBinaryPath;
++ (NSUserDefaults*)getPrefs;
++ (BOOL)isSandboxed;
++ (const char*)getKillAllPath;
 @end
-

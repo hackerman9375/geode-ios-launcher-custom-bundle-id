@@ -10,6 +10,8 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 #import "Shared.h"
 
+extern NSBundle *lcMainBundle;
+
 Class LCSharedUtilsClass = nil;
 
 // make SFSafariView happy and open data: URLs
@@ -36,13 +38,21 @@ Class LCSharedUtilsClass = nil;
 }
 
 + (NSData *)certificateData {
-    NSData* ans = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificateData"];
+    NSData* ans;
+    if([NSUserDefaults.standardUserDefaults boolForKey:@"LCCertificateImported"]) {
+        ans = [NSUserDefaults.standardUserDefaults objectForKey:@"LCCertificateData"];
+    } else {
+        ans = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificateData"];
+    }
     return ans;
-    
 }
 
 + (NSString *)certificatePassword {
     return [LCSharedUtilsClass certificatePassword];
+}
++ (void)setCertificatePassword:(NSString *)certPassword {
+    [NSUserDefaults.standardUserDefaults setObject:certPassword forKey:@"LCCertificatePassword"];
+    [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] setObject:certPassword forKey:@"LCCertificatePassword"];
 }
 
 + (NSString *)appGroupID {
@@ -51,13 +61,13 @@ Class LCSharedUtilsClass = nil;
 
 #pragma mark LCSharedUtils wrappers
 + (BOOL)launchToGuestApp {
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"MANUAL_REOPEN"]) return NO;
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"USE_TWEAK"] && [Utils isJailbroken]) {
+    if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"]) return NO;
+    if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"] && [Utils isJailbroken]) {
         NSString *appBundleIdentifier = @"com.robtop.geometryjump";
         [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
         return YES;
     }
-    if (![LCUtils askForJIT]) return YES;
+    if (![[Utils getPrefs] boolForKey:@"JITLESS"] && ![LCUtils askForJIT]) return YES;
     return [LCSharedUtilsClass launchToGuestApp];
 }
 
@@ -159,7 +169,7 @@ Class LCSharedUtilsClass = nil;
                     struct linkedit_data_command *csCommand = (struct linkedit_data_command *)command;
                     void *csData = (void *)((uint8_t *)header + csCommand->dataoff);
                     // Nuke it.
-                    NSLog(@"Removing code signature of %@", fileURL);
+                    NSLog(@"[Geode] Removing code signature of %@", fileURL);
                     bzero(csData, csCommand->datasize);
                     break;
                 }
@@ -177,7 +187,7 @@ Class LCSharedUtilsClass = nil;
 
     // I'm too lazy to reimplement signer, so let's borrow everything from SideStore
     // For sure this will break in the future as SideStore team planned to rewrite it
-    NSURL *profilePath = [NSBundle.mainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
+    NSURL *profilePath = [lcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
 
     // Load libraries from Documents, yeah
     [self loadStoreFrameworksWithError:&error];
@@ -188,17 +198,16 @@ Class LCSharedUtilsClass = nil;
 
     ALTCertificate *cert = [[NSClassFromString(@"ALTCertificate") alloc] initWithP12Data:self.certificateData password:self.certificatePassword];
     if (!cert) {
-        error = [NSError errorWithDomain:NSBundle.mainBundle.bundleIdentifier code:1 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create ALTCertificate. Please try: 1. make sure your store is patched 2. reopen your store 3. refresh all apps"}];
+        error = [NSError errorWithDomain:lcMainBundle.bundleIdentifier code:1 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create ALTCertificate. Please try: 1. make sure your store is patched 2. reopen your store 3. refresh all apps"}];
         completionHandler(NO, nil, nil, error);
         return nil;
     }
     ALTProvisioningProfile *profile = [[NSClassFromString(@"ALTProvisioningProfile") alloc] initWithURL:profilePath];
     if (!profile) {
-        error = [NSError errorWithDomain:NSBundle.mainBundle.bundleIdentifier code:2 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create ALTProvisioningProfile. Please try: 1. make sure your store is patched 2. reopen your store 3. refresh all apps"}];
+        error = [NSError errorWithDomain:lcMainBundle.bundleIdentifier code:2 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create ALTProvisioningProfile. Please try: 1. make sure your store is patched 2. reopen your store 3. refresh all apps"}];
         completionHandler(NO, nil, nil, error);
         return nil;
     }
-
     ALTAccount *account = [NSClassFromString(@"ALTAccount") new];
     ALTTeam *team = [[NSClassFromString(@"ALTTeam") alloc] initWithName:@"" identifier:@"" /*profile.teamIdentifier*/ type:ALTTeamTypeUnknown account:account];
     ALTSigner *signer = [[NSClassFromString(@"ALTSigner") alloc] initWithTeam:team certificate:cert];
@@ -206,7 +215,6 @@ Class LCSharedUtilsClass = nil;
     void (^signCompletionHandler)(BOOL success, NSError *error)  = ^(BOOL success, NSError *_Nullable error) {
         completionHandler(success, [profile expirationDate], [profile teamIdentifier], error);
     };
-
     return [signer signAppAtURL:path provisioningProfiles:@[(id)profile] completionHandler:signCompletionHandler];
 }
 
@@ -214,7 +222,7 @@ Class LCSharedUtilsClass = nil;
     NSError *error;
 
     // use zsign as our signer~
-    NSURL *profilePath = [NSBundle.mainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
+    NSURL *profilePath = [lcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
     NSData *profileData = [NSData dataWithContentsOfURL:profilePath];
     // Load libraries from Documents, yeah
     [self loadStoreFrameworksWithError2:&error];
@@ -228,6 +236,18 @@ Class LCSharedUtilsClass = nil;
     
     NSProgress* ans = [NSClassFromString(@"ZSigner") signWithAppPath:[path path] prov:profileData key: self.certificateData pass:self.certificatePassword completionHandler:completionHandler];
     
+    return ans;
+}
+
++ (NSString*)getCertTeamIdWithKeyData:(NSData*)keyData password:(NSString*)password {
+    NSError *error;
+    NSURL *profilePath = [lcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
+    NSData *profileData = [NSData dataWithContentsOfURL:profilePath];
+    [self loadStoreFrameworksWithError2:&error];
+    if (error) {
+        return nil;
+    }
+    NSString* ans = [NSClassFromString(@"ZSigner") getTeamIdWithProv:profileData key:keyData pass:password];
     return ans;
 }
 
@@ -247,7 +267,12 @@ Class LCSharedUtilsClass = nil;
 }
 
 + (NSString *)appUrlScheme {
-    return NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
+    return lcMainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
+}
+
++ (BOOL)isAppGroupAltStoreLike {
+    if (self.appGroupID.length == 0) return NO;
+    return [NSFileManager.defaultManager fileExistsAtPath:self.storeBundlePath.path];
 }
 
 + (void)changeMainExecutableTo:(NSString *)exec error:(NSError **)error {
@@ -297,7 +322,7 @@ Class LCSharedUtilsClass = nil;
     [info writeToFile:tmpInfoPath atomically:YES];
 
     // Sign the test app bundle
-    if(signer == AltSign) {
+    if(signer == AltSign && ![NSUserDefaults.standardUserDefaults boolForKey:@"LCCertificateImported"]) {
         [LCUtils signAppBundle:[NSURL fileURLWithPath:path]
         completionHandler:^(BOOL success, NSDate* expirationDate, NSString* teamId, NSError *_Nullable error) {
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -466,11 +491,12 @@ Class LCSharedUtilsClass = nil;
 
 
 
+#pragma mark - Extensions of LCUtils
 // ext 
 + (NSUserDefaults *)appGroupUserDefault {
     NSString *suiteName = [self appGroupID];
     NSUserDefaults *userDefaults = [[NSUserDefaults alloc] initWithSuiteName:suiteName];
-    return userDefaults ?: [NSUserDefaults standardUserDefaults];
+    return userDefaults ?: [Utils getPrefs];
 }
 
 + (NSString *)getStoreName {
@@ -501,4 +527,276 @@ Class LCSharedUtilsClass = nil;
     return nil;
 }
 
++ (void)signFilesInFolder:(NSURL *)url signer:(Signer)signer onProgressCreated:(void (^)(NSProgress *progress))onProgressCreated completion:(void (^)(NSString *error, NSDate *expirationDate))completion {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSURL *codesignPath = [url URLByAppendingPathComponent:@"_CodeSignature"];
+    NSURL *provisionPath = [url URLByAppendingPathComponent:@"embedded.mobileprovision"];
+    NSURL *tmpExecPath = [url URLByAppendingPathComponent:@"Geode.tmp"];
+    NSURL *tmpInfoPath = [url URLByAppendingPathComponent:@"Info.plist"];
+    
+    NSMutableDictionary *info = [lcMainBundle.infoDictionary mutableCopy];
+    [info setObject:@"Geode.tmp" forKey:@"CFBundleExecutable"];
+    [info writeToURL:tmpInfoPath atomically:YES];
+    
+    NSError *copyError = nil;
+    if (![fm copyItemAtURL:[lcMainBundle executableURL] toURL:tmpExecPath error:&copyError]) {
+        completion(copyError.localizedDescription, nil);
+        return;
+    }
+    
+    [self signAppBundle:url completionHandler:^(BOOL success, NSDate *expirationDate, NSString *teamId, NSError *error) {
+        NSString *ans = nil;
+        NSDate *ansDate = nil;
+        if (error) {
+            ans = error.localizedDescription;
+        }
+        if ([fm fileExistsAtPath:codesignPath.path]) {
+            [fm removeItemAtURL:codesignPath error:nil];
+        }
+        if ([fm fileExistsAtPath:provisionPath.path]) {
+            [fm removeItemAtURL:provisionPath error:nil];
+        }
+        [fm removeItemAtURL:tmpExecPath error:nil];
+        [fm removeItemAtURL:tmpInfoPath error:nil];
+        ansDate = expirationDate;
+        completion(ans, ansDate);
+    }];
+}
++ (void)signTweaks:(NSURL *)tweakFolderUrl force:(BOOL)force signer:(Signer)signer progressHandler:(void (^)(NSProgress *progress))progressHandler completion:(void (^)(NSError *error))completion {
+    if (![self certificatePassword]) {
+        completion([NSError errorWithDomain:@"CertificatePasswordMissing" code:0 userInfo:nil]);
+        return;
+    }
+    
+    NSFileManager *fm = [NSFileManager defaultManager];
+    BOOL isDir = NO;
+    if (![fm fileExistsAtPath:tweakFolderUrl.path isDirectory:&isDir] || !isDir) {
+        completion([NSError errorWithDomain:@"InvalidTweakFolder" code:0 userInfo:nil]);
+        return;
+    }
+    
+    NSMutableDictionary *tweakSignInfo = [NSMutableDictionary dictionaryWithContentsOfURL:[tweakFolderUrl URLByAppendingPathComponent:@"TweakInfo.plist"]];
+    NSDate *expirationDate = [tweakSignInfo objectForKey:@"expirationDate"];
+    BOOL signNeeded = force;
+    if (!force && expirationDate && [expirationDate compare:[NSDate date]] == NSOrderedDescending) {
+        NSMutableDictionary *tweakFileINodeRecord = [NSMutableDictionary dictionaryWithDictionary:[tweakSignInfo objectForKey:@"files"]];
+        NSArray *fileURLs = [fm contentsOfDirectoryAtURL:tweakFolderUrl includingPropertiesForKeys:nil options:0 error:nil];
+
+        for (NSURL *fileURL in fileURLs) {
+            NSError *error = nil;
+            NSDictionary *attributes = [fm attributesOfItemAtPath:fileURL.path error:&error];
+            if (error) continue;
+            NSString *fileType = attributes[NSFileType];
+            if (![fileType isEqualToString:NSFileTypeDirectory] && ![fileType isEqualToString:NSFileTypeRegular])
+                continue;
+            if ([fileType isEqualToString:NSFileTypeDirectory] && ![[fileURL lastPathComponent] hasSuffix:@".framework"])
+                continue;
+            if ([fileType isEqualToString:NSFileTypeRegular] && ![[fileURL lastPathComponent] hasSuffix:@".dylib"])
+                continue;
+            if ([[fileURL lastPathComponent] isEqualToString:@"TweakInfo.plist"])
+                continue;
+
+            NSNumber *inodeNumber = [fm attributesOfItemAtPath:fileURL.path error:nil][NSFileSystemNumber];
+            if ([tweakFileINodeRecord objectForKey:fileURL.lastPathComponent] != inodeNumber) {
+                signNeeded = YES;
+                break;
+            }
+
+            NSLog(@"%@", [fileURL lastPathComponent]);
+        }
+    } else {
+        signNeeded = YES;
+    }
+
+    if (!signNeeded) return completion(nil);
+    NSURL *tmpDir = [[fm temporaryDirectory] URLByAppendingPathComponent:@"TweakTmp.app"];
+    if ([fm fileExistsAtPath:tmpDir.path]) {
+        [fm removeItemAtURL:tmpDir error:nil];
+    }
+    [fm createDirectoryAtURL:tmpDir withIntermediateDirectories:YES attributes:nil error:nil];
+    NSMutableArray *tmpPaths = [NSMutableArray array];
+    NSArray *fileURLs = [fm contentsOfDirectoryAtURL:tweakFolderUrl includingPropertiesForKeys:nil options:0 error:nil];
+    for (NSURL *fileURL in fileURLs) {
+        NSError *error = nil;
+        NSDictionary *attributes = [fm attributesOfItemAtPath:fileURL.path error:&error];
+        if (error) continue;
+        NSString *fileType = attributes[NSFileType];
+
+        if (![fileType isEqualToString:NSFileTypeDirectory] && ![fileType isEqualToString:NSFileTypeRegular])
+            continue;
+        if ([fileType isEqualToString:NSFileTypeDirectory] && ![[fileURL lastPathComponent] hasSuffix:@".framework"])
+            continue;
+        if ([fileType isEqualToString:NSFileTypeRegular] && ![[fileURL lastPathComponent] hasSuffix:@".dylib"])
+            continue;
+        if ([[fileURL lastPathComponent] isEqualToString:@"TweakInfo.plist"])
+            continue;
+
+        NSURL *tmpPath = [tmpDir URLByAppendingPathComponent:fileURL.lastPathComponent];
+        [tmpPaths addObject:tmpPath];
+        [fm copyItemAtURL:fileURL toURL:tmpPath error:nil];
+    }
+    if ([tmpPaths count] == 0) {
+        [fm removeItemAtURL:tmpDir error:nil];
+        return completion(nil);
+    }
+    [self signFilesInFolder:tmpDir signer:signer onProgressCreated:progressHandler completion:^(NSString *error, NSDate *expirationDate2) {
+        if (error) return completion([NSError errorWithDomain:error code:0 userInfo:nil]);
+        NSMutableDictionary *newTweakSignInfo = [NSMutableDictionary dictionary];
+        newTweakSignInfo[@"expirationDate"] = expirationDate2;
+        NSMutableArray *fileInodes = [NSMutableArray array];
+        for (NSURL *tmpFile in tmpPaths) {
+            NSURL *toPath = [tweakFolderUrl URLByAppendingPathComponent:tmpFile.lastPathComponent];
+            if ([fm fileExistsAtPath:toPath.path]) {
+                [fm removeItemAtURL:toPath error:nil];
+            }
+            [fm moveItemAtURL:tmpFile toURL:toPath error:nil];
+            
+            NSNumber *inodeNumber = [fm attributesOfItemAtPath:toPath.path error:nil][NSFileSystemNumber];
+            [fileInodes addObject:inodeNumber];
+            [newTweakSignInfo setObject:inodeNumber forKey:tmpFile.lastPathComponent];
+        }
+        [fm removeItemAtURL:tmpDir error:nil];
+        [newTweakSignInfo writeToURL:[tweakFolderUrl URLByAppendingPathComponent:@"TweakInfo.plist"] atomically:YES];
+        completion(nil);
+    }];
+}
+
++ (BOOL)modifiedAtDifferent:(NSString *)datePath geodePath:(NSString *)geodePath {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSError *error;
+    NSString *currentHash = [NSString stringWithContentsOfFile:datePath encoding:NSUTF8StringEncoding error:&error];
+    if (!currentHash) return NO;
+    NSDictionary *attributes = [fm attributesOfItemAtPath:geodePath error:nil];
+    NSDate *modifiedDate = [attributes objectForKey:NSFileModificationDate];
+    if (!modifiedDate) return NO;
+    NSTimeInterval interval = [modifiedDate timeIntervalSince1970];
+    NSInteger modifiedMilliseconds = (NSInteger)(interval * 1000);
+    NSString *modifiedHash = [NSString stringWithFormat:@"%ld", (long)modifiedMilliseconds];
+    if ([currentHash isEqualToString:modifiedHash]) {
+        return YES;
+    }
+    NSLog(@"[Geode] Different hash detected, assuming to need signing: %@ / %@", currentHash, modifiedHash);
+    return NO;
+}
+
++ (void)signMods:(NSURL *)tweakFolderUrl force:(BOOL)force signer:(Signer)signer progressHandler:(void (^)(NSProgress *progress))progressHandler completion:(void (^)(NSError *error))completion {
+    if (![self certificatePassword]) {
+        completion([NSError errorWithDomain:@"CertificatePasswordMissing" code:0 userInfo:nil]);
+        return;
+    }
+    NSFileManager *fm = [NSFileManager defaultManager];
+    BOOL isDir = NO;
+    if (![fm fileExistsAtPath:tweakFolderUrl.path isDirectory:&isDir] || !isDir) {
+        completion([NSError errorWithDomain:@"InvalidModFolder" code:0 userInfo:nil]);
+        return;
+    }
+    
+    NSMutableDictionary *tweakSignInfo = [NSMutableDictionary dictionaryWithContentsOfURL:[tweakFolderUrl URLByAppendingPathComponent:@"ModInfo.plist"]];
+    NSDate *expirationDate = [tweakSignInfo objectForKey:@"expirationDate"];
+    BOOL signNeeded = force;
+    if (!force && expirationDate && [expirationDate compare:[NSDate date]] == NSOrderedDescending) {
+        NSMutableDictionary *tweakFileINodeRecord = [NSMutableDictionary dictionaryWithDictionary:[tweakSignInfo objectForKey:@"files"]];
+        NSArray *fileURLs = [fm contentsOfDirectoryAtURL:[tweakFolderUrl URLByAppendingPathComponent:@"unzipped"] includingPropertiesForKeys:nil options:0 error:nil];
+
+        for (NSURL *url in fileURLs) {
+            NSError *error = nil;
+            NSDictionary *attributes = [fm attributesOfItemAtPath:url.path error:&error];
+            if (error) continue;
+            NSString *fileType = attributes[NSFileType];
+            if (![fileType isEqualToString:NSFileTypeDirectory])
+                continue;
+            NSArray *modContents = [fm contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil];
+            for (NSURL *fileURL in modContents) {
+                NSDictionary *attributes = [fm attributesOfItemAtPath:fileURL.path error:&error];
+                if (error) continue;
+                NSString *fileType = attributes[NSFileType];
+                if (![fileType isEqualToString:NSFileTypeDirectory] && ![fileType isEqualToString:NSFileTypeRegular])
+                    continue;
+                if ([fileType isEqualToString:NSFileTypeDirectory] && ![[fileURL lastPathComponent] hasSuffix:@".framework"])
+                    continue;
+                if ([fileType isEqualToString:NSFileTypeRegular] && ![[fileURL lastPathComponent] hasSuffix:@".dylib"])
+                    continue;
+                if ([[fileURL lastPathComponent] isEqualToString:@"TweakInfo.plist"])
+                    continue;
+
+                NSNumber *inodeNumber = [fm attributesOfItemAtPath:fileURL.path error:nil][NSFileSystemNumber];
+                if ([tweakFileINodeRecord objectForKey:fileURL.lastPathComponent] != inodeNumber) {
+                    signNeeded = YES;
+                    break;
+                }
+                if (![self modifiedAtDifferent:fileURL.path geodePath:[tweakFolderUrl URLByAppendingPathComponent:[NSString stringWithFormat:@"mods/%@.geode", [[[url lastPathComponent] stringByDeletingPathExtension] stringByDeletingPathExtension]]].path]) {
+                    signNeeded = YES;
+                    break;
+                }
+
+                NSLog(@"%@", [fileURL lastPathComponent]);
+            }
+        }
+    } else {
+        signNeeded = YES;
+    }
+    if (!signNeeded) return completion(nil);
+    NSURL *tmpDir = [[fm temporaryDirectory] URLByAppendingPathComponent:@"ModTmp.app"];
+    if ([fm fileExistsAtPath:tmpDir.path]) {
+        [fm removeItemAtURL:tmpDir error:nil];
+    }
+    [fm createDirectoryAtURL:tmpDir withIntermediateDirectories:YES attributes:nil error:nil];
+    NSMutableArray *tmpPaths = [NSMutableArray array];
+    NSArray *fileURLs = [fm contentsOfDirectoryAtURL:[tweakFolderUrl URLByAppendingPathComponent:@"unzipped"] includingPropertiesForKeys:nil options:0 error:nil];
+
+    for (NSURL *url in fileURLs) {
+        NSError *error = nil;
+        NSDictionary *attributes = [fm attributesOfItemAtPath:url.path error:&error];
+        if (error) continue;
+        NSString *fileType = attributes[NSFileType];
+        if (![fileType isEqualToString:NSFileTypeDirectory])
+            continue;
+        NSArray *modContents = [fm contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil];
+        for (NSURL *fileURL in modContents) {
+            NSDictionary *attributes = [fm attributesOfItemAtPath:fileURL.path error:&error];
+            if (error) continue;
+
+            NSString *fileType = attributes[NSFileType];
+
+            if (![fileType isEqualToString:NSFileTypeDirectory] && ![fileType isEqualToString:NSFileTypeRegular])
+                continue;
+            if ([fileType isEqualToString:NSFileTypeDirectory] && ![[fileURL lastPathComponent] hasSuffix:@".framework"])
+                continue;
+            if ([fileType isEqualToString:NSFileTypeRegular] && ![[fileURL lastPathComponent] hasSuffix:@".dylib"])
+                continue;
+            if ([[fileURL lastPathComponent] isEqualToString:@"TweakInfo.plist"])
+                continue;
+
+            NSURL *tmpPath = [tmpDir URLByAppendingPathComponent:fileURL.lastPathComponent];
+            [tmpPaths addObject:tmpPath];
+            [fm copyItemAtURL:fileURL toURL:tmpPath error:nil];
+        }
+    }
+    if ([tmpPaths count] == 0) {
+        [fm removeItemAtURL:tmpDir error:nil];
+        return completion(nil);
+    }
+    [self signFilesInFolder:tmpDir signer:signer onProgressCreated:progressHandler completion:^(NSString *error, NSDate *expirationDate2) {
+        if (error) return completion([NSError errorWithDomain:error code:0 userInfo:nil]);
+        NSMutableDictionary *newTweakSignInfo = [NSMutableDictionary dictionary];
+        newTweakSignInfo[@"expirationDate"] = expirationDate2;
+        NSMutableArray *fileInodes = [NSMutableArray array];
+        for (NSURL *tmpFile in tmpPaths) {
+            //NSURL *toPath = [tweakFolderUrl URLByAppendingPathComponent:tmpFile.lastPathComponent];
+            NSURL *toPath = [tweakFolderUrl URLByAppendingPathComponent:
+                [NSString stringWithFormat:@"unzipped/%@/%@", [[[tmpFile lastPathComponent] stringByDeletingPathExtension] stringByDeletingPathExtension], tmpFile.lastPathComponent]
+            ];
+            if ([fm fileExistsAtPath:toPath.path]) {
+                [fm removeItemAtURL:toPath error:nil];
+            }
+            [fm moveItemAtURL:tmpFile toURL:toPath error:nil];
+            NSNumber *inodeNumber = [fm attributesOfItemAtPath:toPath.path error:nil][NSFileSystemNumber];
+            [fileInodes addObject:inodeNumber];
+            [newTweakSignInfo setObject:inodeNumber forKey:tmpFile.lastPathComponent];
+        }
+        [fm removeItemAtURL:tmpDir error:nil];
+        [newTweakSignInfo writeToURL:[tweakFolderUrl URLByAppendingPathComponent:@"ModInfo.plist"] atomically:YES];
+        completion(nil);
+    }];
+}
 @end

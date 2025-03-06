@@ -76,10 +76,14 @@
     }
 }
 
-// TODO: fix
 - (void)cancelButtonTapped {
     [_root cancelDownload];
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"CancelEvent" object:nil];
+}
+
+- (void)setCancelHidden:(BOOL)hidden {
+    if (self.cancelButton != nil) {
+        [self.cancelButton setHidden:hidden];
+    }
 }
 
 @end

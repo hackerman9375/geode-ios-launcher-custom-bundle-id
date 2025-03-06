@@ -1,9 +1,11 @@
 #import "AppDelegate.h"
+#import "LCUtils/Shared.h"
 #import "IntroVC.h"
 #import "LCUtils/LCUtils.h"
 #import "Utils.h"
 #import "Theming.h"
 #import "RootViewController.h"
+#import <spawn.h>
 
 // https://www.uicolor.io/
 @implementation AppDelegate
@@ -13,7 +15,7 @@
 //18, 19, 24
 
     //self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"CompletedSetup"]) {
+    if ([[Utils getPrefs] boolForKey:@"CompletedSetup"]) {
         RootViewController *rootViewController = [[RootViewController alloc] init];
         self.window.rootViewController = rootViewController;
     } else {
@@ -47,9 +49,9 @@
             delegate.urlStrToOpen = nil;
         });
     }
-    NSString *storedUrl = [[NSUserDefaults standardUserDefaults] stringForKey:@"webPageToOpen"];
+    NSString *storedUrl = [[Utils getPrefs] stringForKey:@"webPageToOpen"];
     if (storedUrl) {
-        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"webPageToOpen"];
+        [[Utils getPrefs] removeObjectForKey:@"webPageToOpen"];
         dispatch_async(dispatch_get_main_queue(), ^{
             handler(storedUrl);
         });
@@ -95,21 +97,46 @@
             }
         }
     } else if ([url.host isEqualToString:@"geode-launch"] || [url.host isEqualToString:@"launch"] || [url.host isEqualToString:@"relaunch"]) {
-        [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];
-        [[NSUserDefaults standardUserDefaults] setValue:@"GeometryDash" forKey:@"selectedContainer"];
-        if ([url.host isEqualToString:@"relaunch"] && [[NSUserDefaults standardUserDefaults] boolForKey:@"USE_TWEAK"]) return NO;
-        [LCUtils launchToGuestApp];
+        [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
+        [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+        if ([url.host isEqualToString:@"relaunch"] && [[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+            pid_t pid;
+            int status;
+            // sorry, -9 or itll show crash log...
+            const char* args[] = {"killall", "-9", "GeometryJump", NULL};
+            int spawnError = posix_spawn(&pid, [Utils getKillAllPath], NULL, NULL, (char *const *)args, NULL);
+            if (spawnError != 0) return NO;
+            if (waitpid(pid, &status, 0) != -1) {
+                if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+                    [LCUtils launchToGuestApp];
+                    return NO;
+                }
+            }
+            return NO;
+        }
+        if ([url.host isEqualToString:@"relaunch"] && [[Utils getPrefs] boolForKey:@"JITLESS"]) {
+            LCAppInfo *app = [[LCAppInfo alloc] initWithBundlePath:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app"].path];
+            app.signer = [[Utils getPrefs] boolForKey:@"USE_ZSIGN"] ? 1 : 0;
+            [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:NO signer:app.signer progressHandler:^(NSProgress *progress) {} completion:^(NSError *error) {
+                if (error != nil) {
+                    NSLog(@"[Geode] Detailed error for signing mods: %@", error);
+                }
+                [LCUtils launchToGuestApp];
+            }];
+        } else {
+            [LCUtils launchToGuestApp];
+        }
     } else if ([url.host isEqualToString:@"safe-mode"]) {
-        [[NSUserDefaults standardUserDefaults] setValue:[Utils gdBundleName] forKey:@"selected"];
-        [[NSUserDefaults standardUserDefaults] setValue:@"GeometryDash" forKey:@"selectedContainer"];
-        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"safemode"];
+        [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
+        [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+        [[Utils getPrefs] setBool:YES forKey:@"safemode"];
         [LCUtils launchToGuestApp];
     }
     return NO;
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [Utils getPrefs];
     [defaults removeObjectForKey:@"selected"];
     [defaults removeObjectForKey:@"selectedContainer"];
     if ([defaults objectForKey:@"LCLastLanguages"]) {

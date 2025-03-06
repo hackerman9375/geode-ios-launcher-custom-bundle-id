@@ -58,7 +58,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
             return dispatch_async(dispatch_get_main_queue(), ^{
                 [Utils showError:_root title:@"Request failed" error:error];
                 [self.root updateState];
-                NSLog(@"Error during request: %@", error);
+                NSLog(@"[Geode] Error during request: %@", error);
             });
         }
         if (data) {
@@ -68,7 +68,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
                 return dispatch_async(dispatch_get_main_queue(), ^{
                     [Utils showError:_root title:@"JSON parsing failed" error:jsonError];
                     [self.root updateState];
-                    NSLog(@"Error during JSON: %@", error);
+                    NSLog(@"[Geode] Error during JSON: %@", error);
                 });
                 return;
             }
@@ -109,14 +109,14 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
     NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
     NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
-            NSLog(@"Error during request: %@", error);
+            NSLog(@"[Geode] Error during request: %@", error);
         }
         if (data) {
             NSError *jsonError;
             id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
             if (jsonError) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    NSLog(@"Error parsing JSON: %@", jsonError);
+                    NSLog(@"[Geode] Error parsing JSON: %@", jsonError);
                 });
             } else {
                 if ([jsonObject isKindOfClass:[NSDictionary class]]) {
@@ -141,7 +141,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
             return dispatch_async(dispatch_get_main_queue(), ^{
                 [Utils showError:_root title:@"Request failed" error:error];
                 [self.root updateState];
-                NSLog(@"Error during request: %@", error);
+                NSLog(@"[Geode] Error during request: %@", error);
             });
         }
         if (data) {
@@ -153,7 +153,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
                     if (!download) dispatch_async(dispatch_get_main_queue(), ^{
                         [self.root updateState];
                     });
-                    NSLog(@"Error parsing JSON: %@", jsonError);
+                    NSLog(@"[Geode] Error parsing JSON: %@", jsonError);
                 });
             } else {
                 if ([jsonObject isKindOfClass:[NSDictionary class]]) {
@@ -163,7 +163,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
                         BOOL greaterThanVer = [CompareSemVer isVersion:tagName greaterThanVersion:[Utils getGeodeVersion]];
                         if (greaterThanVer) {
                             if ([Utils getGeodeVersion] == nil || [[Utils getGeodeVersion] isEqual:@""]) {
-                                NSLog(@"Updated launcher ver!");
+                                NSLog(@"[Geode] Updated launcher ver!");
                                 [Utils updateGeodeVersion:tagName];
                             }
                             dispatch_async(dispatch_get_main_queue(), ^{
@@ -174,7 +174,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
                             dispatch_async(dispatch_get_main_queue(), ^{
                                 if (download) {
                                     [Utils updateGeodeVersion:tagName];
-                                    NSLog(@"Geode is out of date, updating...");
+                                    NSLog(@"[Geode] Geode is out of date, updating...");
                                     [self startInstall:nil ignoreRoot:YES];
                                 } else {
                                     root.optionalTextLabel.text = @"Update is available!";
@@ -191,27 +191,28 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
 }
 - (void)verifyChecksum {
     if (_root == nil || ![VerifyInstall verifyGDInstalled]) return;
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/checksum.txt"]];
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/version.txt"]];
     NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
     NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             return dispatch_async(dispatch_get_main_queue(), ^{
                 [Utils showError:_root title:@"Request failed" error:error];
                 [self.root updateState];
-                NSLog(@"Error during request: %@", error);
+                NSLog(@"[Geode] Error during request: %@", error);
             });
         }
         if (data) {
             dispatch_async(dispatch_get_main_queue(), ^{
+                NSDictionary* gdPlist = [NSDictionary dictionaryWithContentsOfURL:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/Info.plist"]];
                 NSString* str = [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-                NSString* hash = [Utils getGDBinaryHash];
-                
-                NSLog(@"Checksums: %@ & %@", hash, str);
-                NSLog(@"hash length: %lu, str length: %lu", (unsigned long)[hash length], (unsigned long)[str length]);
+                //NSString* hash = [Utils getGDBinaryHash];
+                NSString* hash = gdPlist[@"CFBundleShortVersionString"];
+                NSLog(@"[Geode] Versions: %@ & %@", hash, str);
+                NSLog(@"[Geode] str length: %lu, str length: %lu", (unsigned long)[hash length], (unsigned long)[str length]);
                 if (![hash isEqualToString:str]) {
-                    NSLog(@"Checksums don't match. Assume GD needs an update!");
+                    NSLog(@"[Geode] Versions don't match. Assume GD needs an update!");
                     [Utils showNotice:_root title:@"Geode requires an update! Relaunch the app to update it!"];
-                    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"GDNeedsUpdate"];
+                    [[Utils getPrefs] setBool:YES forKey:@"GDNeedsUpdate"];
                 }
                 [self.root updateState];
             });
@@ -223,7 +224,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
 - (void)decompress:(NSString*) fileToExtract
     extractionPath:(NSString *)extractionPath
     completion:(DecompressCompletion)completion {
-    NSLog(@"Starting decomp of %@ to %@", fileToExtract, extractionPath);
+    NSLog(@"[Geode] Starting decomp of %@ to %@", fileToExtract, extractionPath);
     [[NSFileManager defaultManager] createDirectoryAtPath:extractionPath withIntermediateDirectories:YES attributes:nil error:nil];
     int res = extract(fileToExtract, extractionPath, nil);
     if (res != 0) return completion([NSError errorWithDomain:@"DecompressError" code:res userInfo:nil]);
@@ -239,7 +240,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
         if (decompError) {
             [Utils showError:_root title:@"Decompressing ZIP failed" error:decompError];
             [_root updateState];
-            return NSLog(@"Error trying to decompress ZIP: %@", decompError);
+            return NSLog(@"[Geode] Error trying to decompress ZIP: %@", decompError);
         }
         NSError* error;
         NSURL *dylibPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Geode.ios.dylib"];

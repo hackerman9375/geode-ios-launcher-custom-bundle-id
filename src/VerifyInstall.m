@@ -18,7 +18,7 @@ BOOL hasDoneUpdate = NO;
 @implementation VerifyInstall 
 // for actually knowing whether they own the app!
 + (BOOL)verifyGDAuthenticity {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"GDVerified"];
+    return [[Utils getPrefs] boolForKey:@"GDVerified"];
 }
 
 + (BOOL)canLaunchAppWithBundleID:(NSString *)bundleID {
@@ -56,9 +56,10 @@ BOOL hasDoneUpdate = NO;
             [root presentViewController:resultAlert animated:YES completion:nil];
             return;
         }
-        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"UPDATE_AUTOMATICALLY"];
-        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"GDVerified"];
-        [[NSUserDefaults standardUserDefaults] synchronize];
+        NSUserDefaults *prefs = [Utils getPrefs];
+        [prefs setBool:YES forKey:@"UPDATE_AUTOMATICALLY"];
+        [prefs setBool:YES forKey:@"GDVerified"];
+        [prefs synchronize];
         [root updateState];
     }];
 
@@ -73,7 +74,7 @@ BOOL hasDoneUpdate = NO;
     if ([
         [NSFileManager defaultManager] fileExistsAtPath:[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName] isDirectory:YES].path isDirectory:&res
     ]) {
-        if ([[NSUserDefaults standardUserDefaults] boolForKey:@"GDNeedsUpdate"]) return NO;
+        if ([[Utils getPrefs] boolForKey:@"GDNeedsUpdate"]) return NO;
         return res;
     };
     return NO;
@@ -81,7 +82,7 @@ BOOL hasDoneUpdate = NO;
 
 
 + (void)decompress:(NSString*) fileToExtract
-    extractionPath:(NSString *)extractionPath
+    extractionPath:(NSString*)extractionPath
     completion:(DecompressCompletion)completion {
     NSLog(@"Starting decomp of %@ to %@", fileToExtract, extractionPath);
     [[NSFileManager defaultManager] createDirectoryAtPath:extractionPath withIntermediateDirectories:YES attributes:nil error:nil];
@@ -93,7 +94,7 @@ BOOL hasDoneUpdate = NO;
 // I CANT (return BOOL instead?)
 + (void)startGDInstall:(RootViewController*)root url:(NSURL*)url {
     @autoreleasepool {
-        [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"GDNeedsUpdate"];
+        [[Utils getPrefs] setBool:NO forKey:@"GDNeedsUpdate"];
         //https://github.com/khanhduytran0/LiveContainer/blob/d950e0501944282d757bc5c3b60557d8b64e43c9/LiveContainerSwiftUI/LCAppListView.swift#L348
         NSFileManager *fm = [NSFileManager defaultManager];
         [fm removeItemAtURL:[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] error:nil];
@@ -112,6 +113,22 @@ BOOL hasDoneUpdate = NO;
         if (error) {
             return NSLog(@"Error removing item from url: %@", error);
         }*/
+
+
+        // async bad, i cant even update ui without it.. and it sometimes is unstable too!
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [root barProgress:0];
+            [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer * _Nonnull timer) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (getProgress() < 100) {
+                        [root barProgress:getProgress()];
+                    } else if (getProgress() >= 100) {
+                        [root progressVisibility:YES];
+                        [timer invalidate];
+                    }
+                });
+            }];
+        });
         [VerifyInstall decompress:url.path extractionPath:[[fm temporaryDirectory] path] completion:^(NSError * _Nullable decompError) {
             if (decompError) {
                 [Utils showError:root title:@"Decompressing IPA failed" error:decompError];
@@ -185,7 +202,7 @@ BOOL hasDoneUpdate = NO;
             }
             finalNewApp.relativeBundlePath = appRelativePath;
 
-            finalNewApp.signer = [[NSUserDefaults standardUserDefaults] integerForKey:@"LCDefaultSigner"];
+            finalNewApp.signer = [[Utils getPrefs] boolForKey:@"USE_ZSIGN"] ? 1 : 0;
             [finalNewApp patchExecAndSignIfNeedWithCompletionHandler:^(BOOL success, NSString *errorInfo) {
                 if (![VerifyInstall verifyGeodeInstalled]) {
                     dispatch_async(dispatch_get_main_queue(), ^{
@@ -198,9 +215,6 @@ BOOL hasDoneUpdate = NO;
                     LCAppModel *newAppModel = [[LCAppModel alloc] initWithAppInfo:finalNewApp delegate:nil];
                     if (appToReplace != nil) {
                         finalNewApp.autoSaveDisabled = true;
-                        finalNewApp.isLocked = appToReplace.appInfo.isLocked;
-                        finalNewApp.isHidden = appToReplace.appInfo.isHidden;
-                        finalNewApp.isJITNeeded = appToReplace.appInfo.isJITNeeded;
                         finalNewApp.isShared = appToReplace.appInfo.isShared;
                         finalNewApp.bypassAssertBarrierOnQueue = appToReplace.appInfo.bypassAssertBarrierOnQueue;
                         finalNewApp.doSymlinkInbox = appToReplace.appInfo.doSymlinkInbox;
@@ -212,13 +226,8 @@ BOOL hasDoneUpdate = NO;
                         finalNewApp.ignoreDlopenError = appToReplace.appInfo.ignoreDlopenError;
                         finalNewApp.autoSaveDisabled = false;
 
-                        if (appToReplace.uiIsHidden) {
-                            [sharedModel.hiddenApps removeObject:appToReplace];
-                            [sharedModel.hiddenApps addObject:newAppModel];
-                        } else {
-                            [sharedModel.apps removeObject:appToReplace];
-                            [sharedModel.apps addObject:newAppModel];
-                        }
+                        [sharedModel.apps removeObject:appToReplace];
+                        [sharedModel.apps addObject:newAppModel];
                     } else {
                         [sharedModel.apps addObject:newAppModel];
                     }
@@ -238,7 +247,7 @@ BOOL hasDoneUpdate = NO;
     return [[NSFileManager defaultManager] fileExistsAtPath:[[LCPath tweakPath] URLByAppendingPathComponent:@"Geode.ios.dylib"].path];
 }
 + (BOOL)verifyAll {
-    if (!hasDoneUpdate && [[NSUserDefaults standardUserDefaults] boolForKey:@"UPDATE_AUTOMATICALLY"]) {
+    if (!hasDoneUpdate && [[Utils getPrefs] boolForKey:@"UPDATE_AUTOMATICALLY"]) {
         hasDoneUpdate = YES;
         return NO;
     }

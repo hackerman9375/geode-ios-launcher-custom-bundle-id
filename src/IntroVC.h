@@ -6,21 +6,21 @@ typedef NS_ENUM(NSInteger, InstallStep) {
     InstallStepAccentColor,
     InstallStepInstallMethod,
     InstallStepJailbreakStore,
-    InstallStepLaunchMethod,
     InstallStepWarning,
+    InstallStepLaunchMethod,
     InstallStepComplete
 };
 
 @interface IntroVC : UIViewController<UITextFieldDelegate, UIPopoverPresentationControllerDelegate, MSColorSelectionViewControllerDelegate>
-#pragma mark - Temp
+#pragma mark - Color Temp
 @property (nonatomic, strong) UIButton *colorNextButton;
 @property (nonatomic, strong) UILabel *colorPreviewLabel;
 @property (nonatomic, strong) MSColorSelectionViewController *colorSelectionController;
-#pragma mark - Temp
+#pragma mark - Other
 @property (nonatomic, strong) UIColor *accentColor;
 @property (nonatomic, assign) BOOL skipColor;
 @property (nonatomic, assign) InstallStep currentStep;
 @property (nonatomic, strong) UIView *contentView;
 @property (nonatomic, strong) NSString *installMethod;
-@property (nonatomic, strong) NSString *launchMethod;
+@property (nonatomic, assign) BOOL useJITLess;
 @end

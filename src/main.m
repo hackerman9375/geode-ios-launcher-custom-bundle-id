@@ -54,6 +54,7 @@ void NUDGuestHooksInit();
 @end
 
 static BOOL checkJITEnabled() {
+    if ([lcUserDefaults boolForKey:@"JITLESS"]) return NO;
     // check if jailbroken
     if (access("/var/mobile", R_OK) == 0) {
         return YES;
@@ -218,13 +219,15 @@ void* new_dlsym(void * __handle, const char * __symbol) {
 
 static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContainer, BOOL safeMode, int argc, char *argv[]) {
     NSString *appError = nil;
-    // First of all, let's check if we have JIT
-    for (int i = 0; i < 10 && !checkJITEnabled(); i++) {
-        usleep(1000*100);
-    }
-    if (!checkJITEnabled()) {
-        appError = @"JIT was not enabled. If you want to use LiveContainer without JIT, setup JITLess mode in settings.";
-        return appError;
+    if (![lcUserDefaults boolForKey:@"JITLESS"]) {
+        // First of all, let's check if we have JIT
+        for (int i = 0; i < 10 && !checkJITEnabled(); i++) {
+            usleep(1000*100);
+        }
+        if (!checkJITEnabled()) {
+            appError = @"JIT was not enabled. If you want to use LiveContainer without JIT, setup JITLess mode in settings.";
+            return appError;
+        }
     }
 
     NSFileManager *fm = NSFileManager.defaultManager;
@@ -364,10 +367,11 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
 
     }
     
-    //if([guestAppInfo[@"fixBlackScreen"] boolValue]) {
-    dlopen("/System/Library/Frameworks/UIKit.framework/UIKit", RTLD_GLOBAL);
-    NSLog(@"[LC] Fix BlackScreen2 %@", [NSClassFromString(@"UIScreen") mainScreen]);
-    //}
+    BOOL fixBlackscreen2 = [lcUserDefaults boolForKey:@"FIX_BLACKSCREEN"];
+    if (fixBlackscreen2) {
+        dlopen("/System/Library/Frameworks/UIKit.framework/UIKit", RTLD_GLOBAL);
+        NSLog(@"[LC] Fix BlackScreen2 %@", [NSClassFromString(@"UIScreen") mainScreen]);
+    }
 
     setenv("CFFIXED_USER_HOME", newHomePath.UTF8String, 1);
     setenv("HOME", newHomePath.UTF8String, 1);
@@ -468,7 +472,7 @@ int GeodeMain(int argc, char *argv[]) {
     // This strangely fixes some apps getting stuck on black screen
     NSLog(@"ignore: %@", dispatch_get_main_queue());
     lcMainBundle = [NSBundle mainBundle];
-    lcUserDefaults = NSUserDefaults.standardUserDefaults;
+    lcUserDefaults = [Utils getPrefs];
     lcSharedDefaults = [[NSUserDefaults alloc] initWithSuiteName: [LCSharedUtils appGroupID]];
     lcAppUrlScheme = NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
     lcAppGroupPath = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[NSClassFromString(@"LCSharedUtils") appGroupID]] path];

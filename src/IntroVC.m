@@ -1,4 +1,5 @@
 #import "IntroVC.h"
+#import "src/LCUtils/Shared.h"
 #include <stdlib.h>
 #import "RootViewController.h"
 #import "Theming.h"
@@ -27,20 +28,23 @@
                 [self showInstallMethodStep];
             } else {
                 _currentStep = InstallStepLaunchMethod;
-                [self showWarningStep];
+                [self showLaunchMethodStep];
             }
             break;
-        
         case InstallStepInstallMethod:
             if ([_installMethod isEqualToString:@"Tweak"]) {
                 _currentStep = InstallStepJailbreakStore;
                 [self showJailbreakStoreStep];
             } else {
-                _currentStep = InstallStepWarning;
-                [self showWarningStep];
+                if (![Utils isSandboxed]) {
+                    [Utils showNotice:self title:@"You are using the TrollStore version of the launcher! Please note that launching with JIT may not work.\nIt's recommended to relaunch the app and install the tweak instead!"];
+                }
+                _currentStep = InstallStepComplete;
+                [self completeSetup];
             }
             break;
         case InstallStepWarning:
+        case InstallStepLaunchMethod:
             _currentStep = InstallStepComplete;
             [self completeSetup];
             break;
@@ -48,10 +52,6 @@
             _currentStep = InstallStepComplete;
             [self completeSetup];
             break;
-        /*case InstallStepLaunchMethod:
-            _currentStep = InstallStepComplete;
-            [self completeSetup];
-            break;*/
         default:
             break;
     }
@@ -152,7 +152,7 @@
         [view addSubview:logoImageView];
     } else {
         //self.logoImageView.backgroundColor = [UIColor redColor];
-        NSLog(@"Image is null");
+        NSLog(@"[Geode] Image is null");
     }
 
     UILabel *titleLabel = [[UILabel alloc] init];
@@ -334,11 +334,112 @@
     [self transitionToView:view];
 }
 
+- (void)showLaunchMethodStep {
+    UIView *view = [[UIView alloc] initWithFrame:self.view.bounds];
+
+    UILabel *titleLabel = [[UILabel alloc] init];
+    titleLabel.text = @"Launch Method";
+    titleLabel.textColor = [Theming getWhiteColor];
+    titleLabel.textAlignment = NSTextAlignmentCenter;
+    titleLabel.font = [UIFont boldSystemFontOfSize:24];
+    titleLabel.frame = CGRectMake(0, 80, view.bounds.size.width, 45);
+    [view addSubview:titleLabel];
+
+    int maximumImageSize = view.bounds.size.width / 4;
+
+    UILabel *subtitleLabel = [[UILabel alloc] init];
+    subtitleLabel.text = @"You can change this later in the Settings.";
+    subtitleLabel.textColor = [Theming getFooterColor];
+    subtitleLabel.textAlignment = NSTextAlignmentCenter;
+    subtitleLabel.font = [UIFont systemFontOfSize:16];
+    subtitleLabel.frame = CGRectMake(0, CGRectGetMaxY(titleLabel.frame) + 10, view.bounds.size.width, 30);
+    [view addSubview:subtitleLabel];
+
+    UIView *normalOptionContainer = [[UIView alloc] initWithFrame:CGRectMake(25, view.bounds.size.height/4, view.bounds.size.width, view.bounds.size.height/5)];
+
+    UIImageView *normalIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, maximumImageSize, maximumImageSize)];
+    normalIcon.contentMode = UIViewContentModeScaleAspectFit;
+    normalIcon.tintColor = [Theming getAccentColor];
+    UIImage *shieldImage = [UIImage systemImageNamed:@"bolt.slash.fill" withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:60]];
+    normalIcon.image = shieldImage;
+    [normalOptionContainer addSubview:normalIcon];
+
+    UIButton *normalRadioButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    normalRadioButton.frame = CGRectMake(CGRectGetMaxX(normalIcon.frame) + 10, 10, 30, 30);
+    normalRadioButton.layer.cornerRadius = 15;
+    normalRadioButton.layer.borderWidth = 2;
+    normalRadioButton.layer.borderColor = [Theming getFooterColor].CGColor;
+    normalRadioButton.tag = 3;
+    [normalRadioButton addTarget:self action:@selector(radioButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+    [normalOptionContainer addSubview:normalRadioButton];
+
+    UILabel *normalLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(normalRadioButton.frame) + 10, 10, view.bounds.size.width - 160, 30)];
+    normalLabel.text = @"JIT-Less";
+    //lock.open
+    normalLabel.textColor = [Theming getWhiteColor];
+    normalLabel.font = [UIFont boldSystemFontOfSize:16];
+    [normalOptionContainer addSubview:normalLabel];
+
+    UILabel *normalDescription = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(normalIcon.frame) + 7, CGRectGetMaxY(normalLabel.frame) + 10, view.bounds.size.width - 150, view.bounds.size.height/8)];
+    normalDescription.text = @"This method requires patching AltStore/SideStore, or importing a certificate if you didn't sideload this app with those stores. Note that launching may take longer, and restarting sometimes may not work.";
+    normalDescription.textColor = [Theming getFooterColor];
+    normalDescription.font = [UIFont systemFontOfSize:13];
+    normalDescription.numberOfLines = 5;
+    [normalOptionContainer addSubview:normalDescription];
+
+    [view addSubview:normalOptionContainer];
+
+    // =============
+    UIView *separator = [[UIView alloc] initWithFrame:CGRectMake(40, CGRectGetMaxY(normalOptionContainer.frame) + 10, view.bounds.size.width - 80, 1)];
+    separator.backgroundColor = [UIColor darkGrayColor];
+    [view addSubview:separator];
+    // =============
+
+    UIView *tweakOptionContainer = [[UIView alloc] initWithFrame:CGRectMake(25, CGRectGetMaxY(separator.frame) + 20, view.bounds.size.width, view.bounds.size.height/4)];
+    UIImageView *tweakIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, maximumImageSize, maximumImageSize)];
+    tweakIcon.contentMode = UIViewContentModeScaleAspectFit;
+    tweakIcon.tintColor = [Theming getAccentColor];
+    UIImage *tweakImage = [UIImage systemImageNamed:@"bolt.fill" withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:60]];
+    tweakIcon.image = tweakImage;
+    [tweakOptionContainer addSubview:tweakIcon];
+
+    UIButton *tweakRadioButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    tweakRadioButton.frame = CGRectMake(CGRectGetMaxX(tweakIcon.frame) + 10, 10, 30, 30);
+    tweakRadioButton.layer.cornerRadius = 15;
+    tweakRadioButton.layer.borderWidth = 2;
+    tweakRadioButton.layer.borderColor = [Theming getFooterColor].CGColor;
+    tweakRadioButton.tag = 4;
+    [tweakRadioButton addTarget:self action:@selector(radioButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+    [tweakOptionContainer addSubview:tweakRadioButton];
+
+    UILabel *tweakLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(tweakRadioButton.frame) + 10, 10, view.bounds.size.width - 160, 30)];
+    tweakLabel.text = @"JIT";
+    tweakLabel.textColor = [Theming getWhiteColor];
+    tweakLabel.font = [UIFont boldSystemFontOfSize:16];
+    [tweakOptionContainer addSubview:tweakLabel];
+
+    UILabel *tweakDescription = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(tweakIcon.frame) + 7, CGRectGetMaxY(tweakLabel.frame) + 10, view.bounds.size.width - 150, view.bounds.size.height/6)];
+    tweakDescription.text = @"This method requires you to run Geode with JIT everytime, or use a JITStreamer-EB instance (with Auto JIT or not). This method is more stable, however it requires an internet connection each time you want to launch Geometry Dash.";
+    tweakDescription.textColor = [Theming getFooterColor];
+    tweakDescription.font = [UIFont systemFontOfSize:13];
+    tweakDescription.numberOfLines = 7;
+    [tweakOptionContainer addSubview:tweakDescription];
+
+    [view addSubview:tweakOptionContainer];
+    [self radioButtonTapped:normalRadioButton];
+
+    UIButton *nextButton = [self addNextButton];
+    nextButton.frame = CGRectMake(view.center.x - 70, view.bounds.size.height - 120, 140, 45);
+    [view addSubview:nextButton];
+
+    [self transitionToView:view];
+}
+
+
 - (void)radioButtonTapped:(UIButton *)sender {
     for (UIView *subview in sender.superview.superview.subviews) {
         for (UIView *containerView in subview.subviews) {
-            if ([containerView isKindOfClass:[UIButton class]] && containerView != sender && 
-                ([(UIButton *)containerView tag] == 1 || [(UIButton *)containerView tag] == 2)) {
+            if ([containerView isKindOfClass:[UIButton class]] && containerView != sender) {
                 [(UIButton *)containerView setBackgroundColor:[UIColor clearColor]];
                 [(UIButton *)containerView layer].borderWidth = 2;
             }
@@ -348,8 +449,12 @@
     sender.layer.borderWidth = 0;
     if (sender.tag == 1) {
         self.installMethod = @"Normal";
-    } else {
+    } else if (sender.tag == 2) {
         self.installMethod = @"Tweak";
+    } else if (sender.tag == 3) {
+        self.useJITLess = YES;
+    } else if (sender.tag == 4) {
+        self.useJITLess = NO;
     }
 }
 
@@ -373,7 +478,7 @@
     subtitleLabel.frame = CGRectMake(0, CGRectGetMaxY(titleLabel.frame) + 15, view.bounds.size.width, 30);
     [view addSubview:subtitleLabel];
 
-    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"USE_TWEAK"];
+    [[Utils getPrefs] setBool:YES forKey:@"USE_TWEAK"];
     NSArray *stores = @[@"Sileo", @"Zebra", @"Cydia"];
 
     for (NSInteger i = 0; i < stores.count; i++) { //
@@ -471,7 +576,9 @@
 
 - (void)completeSetup {
     UIView *view = [[UIView alloc] initWithFrame:self.view.bounds];
-
+    if (self.useJITLess) {
+        [[Utils getPrefs] setBool:YES forKey:@"JITLESS"];
+    }
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.text = @"Setup complete!";
     titleLabel.textColor = [Theming getWhiteColor];
@@ -496,8 +603,8 @@
 
     [self transitionToView:view];
 
-    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"CompletedSetup"];
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    [[Utils getPrefs] setBool:YES forKey:@"CompletedSetup"];
+    [[Utils getPrefs] synchronize];
 }
 
 - (void)completeSetup2 {

@@ -1,4 +1,5 @@
 #import "Theming.h"
+#import "Utils.h"
 
 @implementation Theming
 + (BOOL)darkModeEnabled {
@@ -46,14 +47,14 @@
     }
 }
 + (UIColor *)getAccentColor {
-    NSData *colorData = [[NSUserDefaults standardUserDefaults] dataForKey:@"accentColor"];
+    NSData *colorData = [[Utils getPrefs] dataForKey:@"accentColor"];
     NSError *error = nil;
     if (colorData) {
         UIColor *accentColor = [NSKeyedUnarchiver unarchivedObjectOfClass:[UIColor class] fromData:colorData error:&error];
         if (accentColor) {
             return accentColor;
         } else if (error) {
-            NSLog(@"Couldn't unarchive accent color: %@", error);
+            NSLog(@"[Geode] Couldn't unarchive accent color: %@", error);
         }
     }
     if ([Theming darkModeEnabled]) {
@@ -66,11 +67,11 @@
 }
 
 + (void)saveAccentColor:(UIColor *)color {
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *userDefaults = [Utils getPrefs];
     NSError *error = nil;
     NSData *colorData = [NSKeyedArchiver archivedDataWithRootObject:color requiringSecureCoding:YES error:&error];
     if (error) {
-        NSLog(@"Couldn't archive accent color: %@", error);
+        NSLog(@"[Geode] Couldn't archive accent color: %@", error);
         return;
     }
     [userDefaults setObject:colorData forKey:@"accentColor"];

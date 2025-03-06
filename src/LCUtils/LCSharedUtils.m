@@ -1,4 +1,7 @@
 #import "LCSharedUtils.h"
+#import "src/LCUtils/Shared.h"
+#import "src/LCUtils/LCAppInfo.h"
+#import "src/LCUtils/LCUtils.h"
 #import "src/Utils.h"
 #import "UIKitPrivate.h"
 
@@ -49,12 +52,17 @@ extern NSBundle *lcMainBundle;
 }
 
 + (NSString *)certificatePassword {
-    // password of cert retrieved from the store tweak is always @"". We just keep this function so we can check if certificate presents without changing codes.
-    NSString* ans = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificatePassword"];
-    if(ans) {
-        return @"";
+    if([lcUserDefaults boolForKey:@"LCCertificateImported"]) {
+        NSString* ans = [lcUserDefaults objectForKey:@"LCCertificatePassword"];
+        return ans;
     } else {
-        return nil;
+        // password of cert retrieved from the store tweak is always @"". We just keep this function so we can check if certificate presents without changing codes.
+        NSString* ans = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificatePassword"];
+        if(ans) {
+            return @"";
+        } else {
+            return nil;
+        }
     }
 }
 
@@ -67,8 +75,22 @@ extern NSBundle *lcMainBundle;
         exit(0);
         return;
     }
-    if (![LCSharedUtils askForJIT]) return;
-    [LCSharedUtils launchToGuestApp];
+    if ([lcUserDefaults boolForKey:@"JITLESS"]) {
+        LCAppInfo *app = [[LCAppInfo alloc] initWithBundlePath:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app"].path];
+        app.signer = [lcUserDefaults boolForKey:@"USE_ZSIGN"] ? 1 : 0;
+        if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
+            app.signer = ZSign;
+        }
+        [LCUtils signMods:[[LCPath docPath] URLByAppendingPathComponent:@"game/geode"] force:NO signer:app.signer progressHandler:^(NSProgress *progress) {} completion:^(NSError *error) {
+            if (error != nil) {
+                NSLog(@"[Geode] Detailed error for signing mods: %@", error);
+            }
+            [LCUtils launchToGuestApp];
+        }];
+    } else {
+        if (![LCSharedUtils askForJIT]) return;
+        [LCSharedUtils launchToGuestApp];
+    }
 }
 
 + (BOOL)launchToGuestApp {
@@ -116,7 +138,7 @@ extern NSBundle *lcMainBundle;
         if(error) {
             return dispatch_async(dispatch_get_main_queue(), ^{
                 [Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer", sideJITServerAddress, lcMainBundle.bundleIdentifier] error:error];
-                NSLog(@"Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
+                NSLog(@"[Geode] Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
             });
         }
     }];

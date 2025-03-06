@@ -1,4 +1,5 @@
 #import "SettingsVC.h"
+#import "src/LCUtils/LCUtils.h"
 #include <spawn.h>
 #include <dlfcn.h>
 #import "VerifyInstall.h"
@@ -9,8 +10,9 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 #import "src/Utils.h"
 #import "LogsView.h"
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
-@interface SettingsVC () 
+@interface SettingsVC () <UIDocumentPickerDelegate>
 @property (nonatomic, strong) NSArray *creditsArray;
 @end
 
@@ -56,23 +58,24 @@
 #pragma mark - Table View Data Source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"DEVELOPER_MODE"] ? 7 : 6;
+    return [[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] ? 8 : 7;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
 	switch (section) {
         case 0:
-        case 3:
+        case 4:
             return 5;
         case 1:
-            return 3;
+        case 5:
+            return 4;
         case 2:
             return 2;
-        case 5:
-            return [self.creditsArray count];
-        case 4:
-            return 4;
+        case 3:
+            return 5;
         case 6:
+            return [self.creditsArray count];
+        case 7:
             return 4;
         default:
             return 0;
@@ -111,7 +114,7 @@
             } else if (indexPath.row == 3) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Enable Automatic Updates";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"UPDATE_AUTOMATICALLY"] tag:0 disable:NO];
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"UPDATE_AUTOMATICALLY"] tag:0 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 4) {
                 cell.textLabel.text = @"Check for Updates";
@@ -127,12 +130,17 @@
             } else if (indexPath.row == 1) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Automatically Launch";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"LOAD_AUTOMATICALLY"] tag:1 disable:NO];
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"LOAD_AUTOMATICALLY"] tag:1 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 2) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Fix Screen Rotation";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"FIX_ROTATION"] tag:5 disable:NO];
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_ROTATION"] tag:5 disable:NO];
+                return cellval1;
+            } if (indexPath.row == 3) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+                cellval1.textLabel.text = @"Fix Black Screen";
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_BLACKSCREEN"] tag:8 disable:NO];
                 return cellval1;
             }
             break;
@@ -140,7 +148,7 @@
             if (indexPath.row == 0) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Enable Auto JIT";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"AUTO_JIT"] tag:4 disable:NO];
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"AUTO_JIT"] tag:4 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 1) {
                 UITextField *textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
@@ -153,27 +161,67 @@
                 cell.accessoryView = textField;
                 cell.textLabel.text = @"Address";
                 textField.placeholder = @"http://x.x.x.x:9172";
-                textField.text = [[NSUserDefaults standardUserDefaults] stringForKey:@"SideJITServerAddr"];
+                textField.text = [[Utils getPrefs] stringForKey:@"SideJITServerAddr"];
             }
             break;
         }
-        case 3: 
+        case 3: {
+            if (indexPath.row == 0) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+                cellval1.textLabel.text = @"Enable JIT-Less";
+                if (![Utils isSandboxed]) {
+                    cellval1.textLabel.textColor = [UIColor systemGrayColor];
+                }
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"JITLESS"] tag:9 disable:![Utils isSandboxed]];
+                return cellval1;
+            } else if (indexPath.row == 1) {
+                cell.textLabel.text = [NSString stringWithFormat:@"Patch %@", [LCUtils getStoreName]];
+                if (![LCUtils isAppGroupAltStoreLike]) {
+                    cell.textLabel.textColor = [UIColor systemGrayColor];
+                } else {
+                    cell.textLabel.textColor = [Theming getAccentColor];
+                }
+                cell.accessoryType = UITableViewCellAccessoryNone;
+            } else if (indexPath.row == 2) {
+                if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
+                    cell.textLabel.text = @"Remove Certificate";
+                } else {
+                    cell.textLabel.text = @"Import Certificate";
+                }
+                cell.textLabel.textColor = [Theming getAccentColor];
+                cell.accessoryType = UITableViewCellAccessoryNone;
+                if ([LCUtils isAppGroupAltStoreLike]) {
+                    cellval1.textLabel.textColor = [UIColor systemGrayColor];
+                }
+            } else if (indexPath.row == 3) {
+                cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+                cellval1.textLabel.text = @"Use ZSign";
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_ZSIGN"] tag:10 disable:NO];
+                return cellval1;
+            } else if (indexPath.row == 4) {
+                cell.textLabel.text = @"Test JIT-Less Mode";
+                cell.textLabel.textColor = [Theming getAccentColor];
+                cell.accessoryType = UITableViewCellAccessoryNone;
+            }
+            break;
+        }
+        case 4: 
             if (indexPath.row == 0) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Developer Mode";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:NO];
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 1) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 if (![Utils isJailbroken]) {
                     cellval1.textLabel.textColor = [UIColor systemGrayColor];
                 }
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"USE_TWEAK"] tag:3 disable:![Utils isJailbroken]];
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_TWEAK"] tag:3 disable:![Utils isJailbroken]];
                 cellval1.textLabel.text = @"Use Tweak instead of JIT";
                 return cellval1;
             } else if (indexPath.row == 2) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:NO];
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:NO];
                 cellval1.textLabel.text = @"Manual reopen with JIT";
                 return cellval1;
             } else if (indexPath.row == 3) {
@@ -184,7 +232,7 @@
                 cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             }
             break;
-        case 4: {
+        case 5: {
             cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
             if (indexPath.row == 0) {
                 cellval1.textLabel.text = @"iOS Launcher";
@@ -210,13 +258,13 @@
             }
             return cellval1;
         }
-        case 5: {
+        case 6: {
             cell.textLabel.text = self.creditsArray[indexPath.row][@"name"];
             cell.textLabel.textColor = [Theming getAccentColor];
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             return cell;
         }
-        case 6: {
+        case 7: {
             if (indexPath.row == 0) {
                 UITextField *textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
                 textField.textAlignment = NSTextAlignmentRight;
@@ -228,7 +276,7 @@
                 cell.accessoryView = textField;
                 cell.textLabel.text = @"Reinstall Addr";
                 textField.placeholder = @"http://x.x.x.x:3000";
-                textField.text = [[NSUserDefaults standardUserDefaults] stringForKey:@"DEV_REINSTALL_ADDR"];
+                textField.text = [[Utils getPrefs] stringForKey:@"DEV_REINSTALL_ADDR"];
             } else if (indexPath.row == 1) {
                 cell.textLabel.text = @"TrollStore App Reinstall";
                 cell.textLabel.textColor = [Theming getAccentColor];
@@ -236,7 +284,7 @@
             } else if (indexPath.row == 2) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Completed Setup";
-                cellval1.accessoryView = [self createSwitch:[[NSUserDefaults standardUserDefaults] boolForKey:@"CompletedSetup"] tag:6 disable:NO];
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"CompletedSetup"] tag:6 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 3) {
                 cell.textLabel.text = @"Test GD Bundle Access";
@@ -267,12 +315,14 @@
         case 2:
             return @"JIT";
         case 3:
-            return @"Advanced";
+            return @"JIT-Less";
         case 4:
-            return @"About";
+            return @"Advanced";
         case 5:
-            return @"Credits";
+            return @"About";
         case 6:
+            return @"Credits";
+        case 7:
             return @"Developer";
         default:
             return @"Unknown";
@@ -283,9 +333,13 @@
     switch (section) {
         case 0:
             return [NSString stringWithFormat:@"Current loader version: %@", [Utils getGeodeVersion]];
+        case 1:
+            return @"Only enable the screen rotation fix or black screen fix if you are having problems.";
         case 2:
             return @"Set up your JITStreamer server. Local Network permission is required. This is not necessary to set up if you use TrollStore, or if you're jailbroken.";
-        case 5:
+        case 3:
+            return @"JIT-less allows you to use Geode without enabling JIT! You will need to patch AltStore or SideStore to enable, or use ZSign. If you signed Geode with a Developer / Enterprise Certificate, you may need to import the certificate.";
+        case 6:
             return @"Thanks to these contributors who helped contribute towards making Geode on iOS a possibility!";
         default:
             return nil;
@@ -293,10 +347,29 @@
 }
 
 
+- (void)patchAltstore:(BOOL)archive {
+    NSError *err;
+    NSURL *altStoreIpa = [LCUtils archiveTweakedAltStoreWithError:&err];
+    if (altStoreIpa == nil || err) return [Utils showError:self title:@"Failed to retrieve tweaked store" error:err];
+    NSURL *storeInstallUrl = [NSURL URLWithString:[NSString stringWithFormat:[LCUtils storeInstallURLScheme], altStoreIpa]];
+    if (archive) {
+        [[NSFileManager defaultManager]
+            moveItemAtURL:altStoreIpa
+            toURL:[
+                [LCPath docPath] URLByAppendingPathComponent:[NSString stringWithFormat:@"Patched%@.ipa", [LCUtils getStoreName]]
+            ]
+            error:&err
+        ];
+        if (err) return [Utils showError:self title:@"Failed to move patched store" error:err];
+        [Utils showNotice:self title:[NSString stringWithFormat:@"Patched %@ has been saved to Geode's document folder. Please sideload it.", [LCUtils getStoreName]]];
+    } else {
+        [[UIApplication sharedApplication] openURL:storeInstallUrl options:@{} completionHandler:nil];
+    }
+}
+
 #pragma mark - Table View Delegate
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    NSLog(@"godelol s:%ld,%ld",(long)indexPath.section,indexPath.row);
     if (indexPath.section == 0) {
         switch (indexPath.row) {
             case 0: { // Change accent color
@@ -320,7 +393,7 @@
                 break;
             }
             case 1: {
-                [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"accentColor"];
+                [[Utils getPrefs] removeObjectForKey:@"accentColor"];
                 [self.root updateState];
                 [self.tableView reloadData];
                 break;
@@ -331,8 +404,8 @@
                     [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents"].path
                 ];
                 NSURL* url = [NSURL URLWithString:openURL];
-                if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
-                    [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
+                if([[UIApplication sharedApplication] canOpenURL:url]){
+                    [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
                 }
                 break;
             }
@@ -362,6 +435,97 @@
             }
         }
     } else if (indexPath.section == 3) {
+        NSFileManager *fm = [NSFileManager defaultManager];
+        switch (indexPath.row) {
+            case 1: { // Patch
+                if (![LCUtils isAppGroupAltStoreLike]) break;
+                NSString *storeName = [LCUtils getStoreName];
+                BOOL isSideStore = [LCUtils store] == SideStore;
+                NSString *message;
+                if (isSideStore) {
+                    message = [NSString stringWithFormat:@"To use JIT-Less mode with %@, you must patch %@ in order to retrieve certificate. %@'s functions will not be affected. Please confirm that you can refresh %@ before applying the patch. Continue? (You will need to wait)\n\nIf you have multiple of %@ installed, please select \"Archive Only\" and install the tweaked IPA manually.", storeName, storeName, storeName, storeName, storeName];
+                } else {
+                    message = [NSString stringWithFormat:@"To use JIT-Less mode with %@, you must patch %@ in order to retrieve certificate. %@'s functions will not be affected. Please confirm that you can refresh %@ before applying the patch. Continue? (You will need to wait)", storeName, storeName, storeName, storeName];
+                }
+                UIAlertController *alert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Patch %@", storeName]
+                    message:message
+                    preferredStyle:UIAlertControllerStyleAlert];
+
+                UIAlertAction *continueAction = [UIAlertAction actionWithTitle:@"Continue" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                    [self patchAltstore:NO];
+                }];
+                UIAlertAction *archiveAction = [UIAlertAction actionWithTitle:@"Archive Only" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    [self patchAltstore:YES];
+                }];
+                UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+                [alert addAction:continueAction];
+                if (isSideStore) {
+                    [alert addAction:archiveAction];
+                }
+                [alert addAction:cancelAction];
+                [self presentViewController:alert animated:YES completion:nil];
+                break;
+            }
+            case 2: { // Import Cert
+                if ([LCUtils isAppGroupAltStoreLike]) break;
+                if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
+                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Warning"
+                        message:@"Are you sure you want to remove your certificate?"
+                        preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                        NSUserDefaults *NSUD = [Utils getPrefs];
+                        [NSUD setObject:nil forKey:@"LCCertificatePassword"];
+                        [NSUD setObject:nil forKey:@"LCCertificateData"];
+                        [NSUD setObject:nil forKey:@"LCCertificateTeamId"];
+                        [NSUD setBool:NO forKey:@"LCCertificateImported"];
+                        [self.tableView reloadData];
+                        [Utils showNotice:self title:@"Certificate removed."];
+                    }];
+                    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+                    [alert addAction:okAction];
+                    [alert addAction:cancelAction];
+                    [self presentViewController:alert animated:YES completion:nil];
+                    break;
+                }
+                // https://developer.apple.com/documentation/uniformtypeidentifiers/uttype-swift.struct/pkcs12
+                //public.x509-certificate
+                UTType* type = [UTType typeWithIdentifier:@"com.rsa.pkcs-12"];
+                UIDocumentPickerViewController *picker = [
+                    [UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[type] asCopy:YES];
+                picker.delegate = self;
+                picker.allowsMultipleSelection = NO;
+                [self presentViewController:picker animated:YES completion:nil];
+                break;
+            }
+            case 4: { // Test JIT-Less
+                if (![LCUtils isAppGroupAltStoreLike]) {
+                    [Utils showError:self title:@"You did not sideload this app with AltStore or SideStore! You can ignore this option if you imported a certificate." error:nil];
+                    break;
+                }
+                NSURL *appGroupURL = [LCUtils appGroupPath];
+                if (!appGroupURL) break;
+                NSURL *patchPath;
+                if ([LCUtils store] == AltStore) {
+                    patchPath = [appGroupURL URLByAppendingPathComponent:@"Apps/com.rileytestut.AltStore/App.app/Frameworks/AltStoreTweak.dylib"];
+                } else {
+                    patchPath = [appGroupURL URLByAppendingPathComponent:@"Apps/com.SideStore.SideStore/App.app/Frameworks/AltStoreTweak.dylib"];
+                }
+                if (![fm fileExistsAtPath:patchPath.path]) {
+                    [Utils showError:self title:@"You must patch before testing JIT-Less mode." error:nil];
+                    break;
+                }
+                [LCUtils validateJITLessSetupWithSigner:([[Utils getPrefs] boolForKey:@"USE_ZSIGN"] ? 1 : 0) completionHandler:^(BOOL success, NSError *error) {
+                    if (success) {
+                        return [Utils showNotice:self title:@"JIT-Less Mode Test Passed!"];
+                    } else {
+                        NSLog(@"[Geode] JIT-Less test failed: %@", error);
+                        return [Utils showError:self title:[NSString stringWithFormat:@"The test library has failed to load. This means your certificate may be having issue. Please try to: 1. Reopen %@; 2. Refresh all apps in %@; 3. Re-patch %@ and try again.", [LCUtils getStoreName], [LCUtils getStoreName], [LCUtils getStoreName]] error:nil];
+                    }
+                }];
+                break;
+            }
+        }
+    } else if (indexPath.section == 4) {
         switch (indexPath.row) {
             case 3: // View app logs
                 [[self navigationController] pushViewController:
@@ -376,17 +540,17 @@
                 ];
                 break;
         }
-    } else if (indexPath.section == 5) {
+    } else if (indexPath.section == 6) {
         NSURL* url = [NSURL URLWithString:self.creditsArray[indexPath.row][@"url"]];
         if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
             [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
         }
-    } else if (indexPath.section == 6) {
+    } else if (indexPath.section == 7) {
         switch (indexPath.row) {
             case 1: { // TS App Reinstall 
                 NSURL* url = [
                     NSURL URLWithString:[
-                        NSString stringWithFormat:@"apple-magnifier://install?url=%@", [[NSUserDefaults standardUserDefaults] stringForKey:@"DEV_REINSTALL_ADDR"]
+                        NSString stringWithFormat:@"apple-magnifier://install?url=%@", [[Utils getPrefs] stringForKey:@"DEV_REINSTALL_ADDR"]
                     ]
                 ];
                 if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
@@ -396,6 +560,39 @@
             }
             case 3: { // Bundle Path 
                 [Utils showNotice:self title:[Utils getGDDocPath]];
+                /*NSString *executablePath = [Utils getGDBinaryPath];
+                char *const argv[] = {(char *)[executablePath UTF8String], NULL};
+                char *const envp[] = {
+                    "LAUNCHARGS=--geode:safe-mode",
+                    NULL
+                };
+
+                pid_t pid;
+                int status = posix_spawn(&pid, [executablePath UTF8String], NULL, NULL, argv, envp);
+                if (status == 0) {
+                    waitpid(pid, NULL, 0);
+                }*/ 
+                /*pid_t pid;
+                int status;
+
+                posix_spawnattr_t attr;
+                posix_spawnattr_init(&attr);
+                
+                posix_spawnattr_setflags(&attr, POSIX_SPAWN_START_SUSPENDED);
+
+                int spawnError = posix_spawn(&pid, [executablePath UTF8String], NULL, &attr, argv, NULL);
+                posix_spawnattr_destroy(&attr);
+                NSLog(@"launching %@", executablePath);
+                if (spawnError != 0) {
+                    NSLog(@"posix_spawn failed: %s", strerror(spawnError));
+                    return;
+                }
+                kill(pid, SIGCONT);
+                if (waitpid(pid, &status, 0) != -1) {
+                    NSLog(@"Failed to find process");
+                } else {
+                    NSLog(@"waitpid failed: %s", strerror(errno));
+                }*/
                 break;
             }
         }
@@ -418,7 +615,7 @@
             break;
         case 3: // Use Tweak instead of JIT
             if ([sender isOn]) {
-                [Utils showNotice:self title:@"Functionality such as safe mode may not be available when this setting is enabled.\nYou also will need to use the TrollStore (.tipa) in order to install & update Geode automatically, otherwise you will need to manually download Geode each time."];
+                [Utils showNotice:self title:@"Functionality such as safe mode may not be available when this setting is enabled.\nYou also will need to use the TrollStore (.tipa) in order to install & update Geode automatically, otherwise you will need to manually download Geode each time using Filza."];
             }
             [Utils toggleKey:@"USE_TWEAK"];
             break;
@@ -434,6 +631,15 @@
         case 7:
             [Utils toggleKey:@"MANUAL_REOPEN"];
             break;
+        case 8:
+            [Utils toggleKey:@"FIX_BLACKSCREEN"];
+            break;
+        case 9:
+            [Utils toggleKey:@"JITLESS"];
+            break;
+        case 10:
+            [Utils toggleKey:@"USE_ZSIGN"];
+            break;
     }
 }
 
@@ -441,13 +647,13 @@
 - (void)textFieldDidEndEditing:(UITextField *)textField {
     switch (textField.tag) {
         case 0: // address 
-            [[NSUserDefaults standardUserDefaults] setValue:textField.text forKey:@"SideJITServerAddr"];
+            [[Utils getPrefs] setValue:textField.text forKey:@"SideJITServerAddr"];
             break;
         case 1: // udid 
-            [[NSUserDefaults standardUserDefaults] setValue:textField.text forKey:@"JITDeviceUDID"];
+            [[Utils getPrefs] setValue:textField.text forKey:@"JITDeviceUDID"];
             break;
         case 2: // reinstall addr 
-            [[NSUserDefaults standardUserDefaults] setValue:textField.text forKey:@"DEV_REINSTALL_ADDR"];
+            [[Utils getPrefs] setValue:textField.text forKey:@"DEV_REINSTALL_ADDR"];
             break;
     }
 }
@@ -470,6 +676,51 @@
     [self.root updateState];
     [self.tableView reloadData];
     //[self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationFade];
+}
+
+#pragma mark - Document Delegate Funcs (for importing cert mainly)
+- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url {
+    NSLog(@"Selected URL: %@", url);
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Input the password of the Certificate."
+        message:@"This will be used for signing."
+        preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Certificate Password";
+        textField.secureTextEntry = YES;
+    }];
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *field = alert.textFields.firstObject;
+        [self certPass:field.text url:url];
+    }];
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+    [alert addAction:okAction];
+    [alert addAction:cancelAction];
+    [self presentViewController:alert animated:YES completion:nil];
+
+}
+
+- (void)certPass:(NSString *)certPass url:(NSURL *)url {
+    NSError *err;
+    NSData *certData = [NSData dataWithContentsOfURL:url options:0 error:&err];
+    if (err) {
+        [Utils showError:self title:@"Couldn't read certificate" error:err];
+        return;
+    }
+    //[LCUtils teamid]
+    NSString *teamId = [LCUtils getCertTeamIdWithKeyData:certData password:certPass];
+    if (!teamId) {
+        [Utils showError:self title:@"Couldn't get Team ID from certificate." error:nil];
+        return;
+    }
+    NSUserDefaults *NSUD = [Utils getPrefs];
+    [NSUD setObject:certPass forKey:@"LCCertificatePassword"];
+    [NSUD setObject:certData forKey:@"LCCertificateData"];
+    [NSUD setObject:teamId forKey:@"LCCertificateTeamId"];
+    [NSUD setBool:YES forKey:@"LCCertificateImported"];
+    //UserDefaults.standard.set(teamId, forKey: "LCCertificateTeamId")
+    // Add your password handling logic here.
+    [Utils showNotice:self title:@"Certificate Imported!"];
+    [self.tableView reloadData];
 }
 
 @end

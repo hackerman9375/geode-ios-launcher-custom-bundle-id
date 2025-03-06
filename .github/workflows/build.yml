@@ -41,9 +41,10 @@ jobs:
           git submodule init
           git submodule update
           gmake package FINALPACKAGE=1 STRIP=0
+          gmake package FINALPACKAGE=1 STRIP=0 TROLLSTORE=1
 
       - name: Upload artifact
         uses: actions/upload-artifact@main
         with:
-          name: com.geode.launcher_0.0.1.ipa
-          path: packages/*.ipa
+          name: Geode Launcher
+          path: packages/*.*

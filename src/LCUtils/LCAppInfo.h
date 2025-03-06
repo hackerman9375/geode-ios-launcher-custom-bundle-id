@@ -10,9 +10,6 @@
 }
 @property NSString* relativeBundlePath;
 @property bool isShared;
-@property bool isJITNeeded;
-@property bool isLocked;
-@property bool isHidden;
 @property bool doSymlinkInbox;
 @property bool ignoreDlopenError;
 @property bool fixBlackScreen;
@@ -36,7 +33,6 @@
 - (NSMutableArray*) urlSchemes;
 - (void)setTweakFolder:(NSString *)tweakFolder;
 - (instancetype)initWithBundlePath:(NSString*)bundlePath;
-- (UIImage *)generateLiveContainerWrappedIcon;
 - (NSDictionary *)generateWebClipConfigWithContainerId:(NSString*)containerId;
 - (void)save;
 - (void)patchExecAndSignIfNeedWithCompletionHandler:(void(^)(bool success, NSString* errorInfo))completetionHandler progressHandler:(void(^)(NSProgress* progress))progressHandler  forceSign:(BOOL)forceSign;

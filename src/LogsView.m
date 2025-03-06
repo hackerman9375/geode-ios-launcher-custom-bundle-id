@@ -54,7 +54,7 @@
         self.textView.text = [NSString stringWithFormat:@"%@\n============================\n%@", self.fileURL.lastPathComponent, [NSString stringWithContentsOfURL:self.fileURL encoding:NSUTF8StringEncoding error:&error]];
     }
     if (error) {
-        NSLog(@"Error reading log file: %@", error);
+        NSLog(@"[Geode] Error reading log file: %@", error);
         self.textView.text = [NSString stringWithFormat:@"%@ could not be read.", self.fileURL.lastPathComponent];
     }
 }

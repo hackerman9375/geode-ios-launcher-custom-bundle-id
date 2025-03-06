@@ -2,6 +2,11 @@
 #import "LCUtils/Shared.h"
 #import <CommonCrypto/CommonCrypto.h>
 #import <mach-o/arch.h>
+#import <Security/Security.h>
+#import <Foundation/Foundation.h>
+
+BOOL checkedSandboxed = NO;
+BOOL sandboxValue = NO;
 
 @implementation Utils
 + (NSString*)launcherBundleName {
@@ -16,7 +21,7 @@
 }
 
 + (NSString*)getGeodeVersion {
-    NSString *verTag = [[NSUserDefaults standardUserDefaults] stringForKey:@"CURRENT_VERSION_TAG"];
+    NSString *verTag = [[Utils getPrefs] stringForKey:@"CURRENT_VERSION_TAG"];
     return (verTag) ? verTag : @"Geode not installed";
 }
 
@@ -25,7 +30,7 @@
 }
 
 + (void)updateGeodeVersion:(NSString *)newVer {
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *userDefaults = [Utils getPrefs];
     [userDefaults setObject:newVer forKey:@"CURRENT_VERSION_TAG"];
     [userDefaults synchronize]; // apple says this is not recommended... DOES ANYWAYS
 }
@@ -39,19 +44,16 @@
 + (UIImageView *)imageViewFromPDF:(NSString *)pdfName {
     NSURL *pdfURL = [[NSBundle mainBundle] URLForResource:pdfName withExtension:@"pdf"];
     if (!pdfURL) {
-        NSLog(@"PDF file not found in bundle: %@", pdfName);
         return nil;
     }
 
     CGPDFDocumentRef pdfDocument = CGPDFDocumentCreateWithURL((__bridge CFURLRef)pdfURL);
     if (!pdfDocument) {
-        NSLog(@"Failed to create PDF document from URL: %@", pdfURL);
         return nil;
     }
 
     CGPDFPageRef pdfPage = CGPDFDocumentGetPage(pdfDocument, 1); // Get the first page
     if (!pdfPage) {
-        NSLog(@"Failed to get the first page of the PDF document.");
         CGPDFDocumentRelease(pdfDocument);
         return nil;
     }
@@ -89,7 +91,7 @@
                                                               error:&error];
 
     if (error) {
-        NSLog(@"Error reading directory: %@", error.localizedDescription);
+        NSLog(@"[Geode] Error reading directory: %@", error.localizedDescription);
         return nil;
     }
 
@@ -118,6 +120,7 @@
     NSArray *dirs = [fm contentsOfDirectoryAtPath:@"/var/mobile/Containers/Data/Application" error:&err];
     if (err) {
         // assume we arent on jb or trollstore
+        NSLog(@"[Geode] Couldn't get doc path %@", err);
         return nil;
     }
     // probably the most inefficient way of getting a bundle id, i need to figure out another way of doing this because this is just bad...
@@ -189,7 +192,7 @@
 }
 
 + (void)toggleKey:(NSString *)key {
-    [[NSUserDefaults standardUserDefaults] setBool:![[NSUserDefaults standardUserDefaults] boolForKey:key] forKey:key];
+    [[Utils getPrefs] setBool:![[Utils getPrefs] boolForKey:key] forKey:key];
 }
 
 // https://appideas.com/checksum-files-in-ios/
@@ -208,7 +211,54 @@
     return output;
 }
 + (NSString*)getGDBinaryHash {
-    return [Utils sha256sum:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/GeometryJump"].path];
+    // TODO: change this to check for bundle version instead
+    return [Utils sha256sum:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/Info.plist"].path];
+}
+
++ (BOOL)isSandboxed {
+    // make sure we dont keep doing these read operations
+    if (checkedSandboxed) return sandboxValue;
+    checkedSandboxed = YES;
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSError* err;
+    NSArray *dirs = [fm contentsOfDirectoryAtPath:@"/var" error:&err];
+    if (err) {
+        NSLog(@"[Geode] we are sandboxed!");
+        sandboxValue = YES;
+        return YES;
+    }
+    if (dirs.count == 0) {
+        NSLog(@"[Geode] we are sandboxed!");
+        sandboxValue = YES;
+        return YES;
+    }
+    NSLog(@"[Geode] we are not sandboxed!");
+    sandboxValue = NO;
+    return NO;
+}
+
++ (NSUserDefaults*)getPrefs {
+    if (![Utils isSandboxed]) {
+        // fix for no sandbox because apparently it changes the pref location
+        NSURL *libPath = [[NSFileManager defaultManager] URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask].lastObject;
+        return [[NSUserDefaults alloc] initWithSuiteName:[libPath URLByAppendingPathComponent:@"Preferences/com.geode.launcher.plist"].path];
+    } else {
+        return [NSUserDefaults standardUserDefaults];
+    }
+}
++ (const char*)getKillAllPath {
+    const char* paths[] = {
+        "/usr/bin/killall",
+        "/var/jb/usr/bin/killall",
+        "/var/libexec/killall",
+    };
+    
+    for (int i = 0; i < sizeof(paths)/sizeof(paths[0]); i++) {
+        if (access(paths[i], X_OK) == 0) {
+            return paths[i];
+        }
+    }
+    return paths[0];
 }
 
 @end

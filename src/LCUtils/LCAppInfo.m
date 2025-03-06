@@ -4,6 +4,7 @@
 #import <UIKit/UIKit.h>
 #import "LCAppInfo.h"
 #import "LCUtils.h"
+#import "Shared.h"
 
 @implementation LCAppInfo
 - (instancetype)initWithBundlePath:(NSString*)bundlePath {
@@ -176,24 +177,6 @@
     return icon;
 }
 
-- (UIImage *)generateLiveContainerWrappedIcon {
-    UIImage *icon = self.icon;
-    if (![NSUserDefaults.standardUserDefaults boolForKey:@"LCFrameShortcutIcons"]) {
-        return icon;
-    }
-
-    UIImage *lcIcon = [UIImage imageNamed:@"AppIcon76x76"];
-    CGFloat iconXY = (lcIcon.size.width - 40) / 2;
-    UIGraphicsBeginImageContextWithOptions(lcIcon.size, NO, 0.0);
-    [lcIcon drawInRect:CGRectMake(0, 0, lcIcon.size.width, lcIcon.size.height)];
-    CGRect rect = CGRectMake(iconXY, iconXY, 40, 40);
-    [[UIBezierPath bezierPathWithRoundedRect:rect cornerRadius:7] addClip];
-    [icon drawInRect:rect];
-    UIImage *newIcon = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return newIcon;
-}
-
 - (NSDictionary *)generateWebClipConfigWithContainerId:(NSString*)containerId {
     NSString* appClipUrl;
     if(containerId) {
@@ -204,7 +187,6 @@
     
     NSDictionary *payload = @{
         @"FullScreen": @YES,
-        @"Icon": UIImagePNGRepresentation(self.generateLiveContainerWrappedIcon),
         @"IgnoreManifestScope": @YES,
         @"IsRemovable": @YES,
         @"Label": self.displayName,
@@ -269,6 +251,7 @@
     // Update patch
     int currentPatchRev = 5;
     if ([info[@"LCPatchRevision"] intValue] < currentPatchRev) {
+        //[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/GeometryJump"].path;
         NSString *execPath = [NSString stringWithFormat:@"%@/%@", appPath, _infoPlist[@"CFBundleExecutable"]];
         NSString *error = LCParseMachO(execPath.UTF8String, ^(const char *path, struct mach_header_64 *header) {
             LCPatchExecSlice(path, header);
@@ -379,45 +362,6 @@
         completetionHandler(YES, nil);
         return;
     }
-}
-
-- (bool)isJITNeeded {
-    if(_info[@"isJITNeeded"] != nil) {
-        return [_info[@"isJITNeeded"] boolValue];
-    } else {
-        return NO;
-    }
-}
-- (void)setIsJITNeeded:(bool)isJITNeeded {
-    _info[@"isJITNeeded"] = [NSNumber numberWithBool:isJITNeeded];
-    [self save];
-    
-}
-
-- (bool)isLocked {
-    if(_info[@"isLocked"] != nil) {
-        return [_info[@"isLocked"] boolValue];
-    } else {
-        return NO;
-    }
-}
-- (void)setIsLocked:(bool)isLocked {
-    _info[@"isLocked"] = [NSNumber numberWithBool:isLocked];
-    [self save];
-    
-}
-
-- (bool)isHidden {
-    if(_info[@"isHidden"] != nil) {
-        return [_info[@"isHidden"] boolValue];
-    } else {
-        return NO;
-    }
-}
-- (void)setIsHidden:(bool)isHidden {
-    _info[@"isHidden"] = [NSNumber numberWithBool:isHidden];
-    [self save];
-    
 }
 
 - (bool)doSymlinkInbox {
