@@ -1,4 +1,5 @@
 #import "Utils.h"
+#import "components/LogUtils.h"
 #import "LCUtils/Shared.h"
 #import <CommonCrypto/CommonCrypto.h>
 #import <mach-o/arch.h>
@@ -18,6 +19,11 @@ BOOL sandboxValue = NO;
 }
 + (BOOL)isJailbroken {
     return [[NSFileManager defaultManager] fileExistsAtPath:@"/var/jb"] || access("/var/mobile", R_OK) == 0;
+}
++ (void)increaseLaunchCount {
+    NSInteger currentCount = [[Utils getPrefs] integerForKey:@"LAUNCH_COUNT"];
+    if (!currentCount) currentCount = 1;
+    [[Utils getPrefs] setInteger:(currentCount + 1) forKey:@"LAUNCH_COUNT"];
 }
 
 + (NSString*)getGeodeVersion {
@@ -91,7 +97,7 @@ BOOL sandboxValue = NO;
                                                               error:&error];
 
     if (error) {
-        NSLog(@"[Geode] Error reading directory: %@", error.localizedDescription);
+        AppLog(@"[Geode] Error reading directory: %@", error.localizedDescription);
         return nil;
     }
 
@@ -120,7 +126,7 @@ BOOL sandboxValue = NO;
     NSArray *dirs = [fm contentsOfDirectoryAtPath:@"/var/mobile/Containers/Data/Application" error:&err];
     if (err) {
         // assume we arent on jb or trollstore
-        NSLog(@"[Geode] Couldn't get doc path %@", err);
+        AppLog(@"[Geode] Couldn't get doc path %@", err);
         return nil;
     }
     // probably the most inefficient way of getting a bundle id, i need to figure out another way of doing this because this is just bad...
@@ -147,6 +153,24 @@ BOOL sandboxValue = NO;
         NSString *checkPrefs = [NSString stringWithFormat:@"/var/containers/Bundle/Application/%@/GeometryJump.app", dir];
         if ([fm fileExistsAtPath:checkPrefs isDirectory:nil]) {
             return [NSString stringWithFormat:@"/var/containers/Bundle/Application/%@/GeometryJump.app/GeometryJump", dir];
+        }
+    }
+    
+    return nil;
+}
++ (NSString*)getGDBundlePath {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSError* err;
+    NSArray *dirs = [fm contentsOfDirectoryAtPath:@"/var/containers/Bundle/Application" error:&err];
+    if (err) {
+        // assume we arent on jb or trollstore
+        return nil;
+    }
+    // probably the most inefficient way of getting a bundle id, i need to figure out another way of doing this because this is just bad...
+    for (NSString *dir in dirs) {
+        NSString *checkPrefs = [NSString stringWithFormat:@"/var/containers/Bundle/Application/%@/GeometryJump.app", dir];
+        if ([fm fileExistsAtPath:checkPrefs isDirectory:nil]) {
+            return [NSString stringWithFormat:@"/var/containers/Bundle/Application/%@", dir];
         }
     }
     
@@ -223,16 +247,16 @@ BOOL sandboxValue = NO;
     NSError* err;
     NSArray *dirs = [fm contentsOfDirectoryAtPath:@"/var" error:&err];
     if (err) {
-        NSLog(@"[Geode] we are sandboxed!");
+        AppLog(@"[Geode] Sandboxed");
         sandboxValue = YES;
         return YES;
     }
     if (dirs.count == 0) {
-        NSLog(@"[Geode] we are sandboxed!");
+        AppLog(@"[Geode] Sandboxed");
         sandboxValue = YES;
         return YES;
     }
-    NSLog(@"[Geode] we are not sandboxed!");
+    AppLog(@"[Geode] Not Sandboxed");
     sandboxValue = NO;
     return NO;
 }

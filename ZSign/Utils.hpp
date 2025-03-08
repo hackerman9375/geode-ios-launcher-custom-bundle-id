@@ -16,6 +16,7 @@ extern "C" {
 #endif
 
 const char* getDocumentsDirectory();
+void writeToNSLogFlood(const char* msg);
 void writeToNSLog(const char* msg);
 void refreshFile(const char* path);
 

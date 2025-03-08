@@ -1,5 +1,6 @@
 @import CommonCrypto;
 
+#import "src/Utils.h"
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import "LCAppInfo.h"
@@ -27,7 +28,6 @@
                 @"LCPatchRevision",
                 @"LCOrignalBundleIdentifier",
                 @"LCDataUUID",
-                @"LCTweakFolder",
                 @"LCJITLessSignID",
                 @"LCSelectedLanguage",
                 @"LCExpirationDate",
@@ -35,7 +35,6 @@
                 @"isJITNeeded",
                 @"isLocked",
                 @"isHidden",
-                @"doUseLCBundleId",
                 @"doSymlinkInbox",
                 @"bypassAssertBarrierOnQueue",
                 @"signer",
@@ -50,6 +49,15 @@
             [_infoPlist writeToFile:[NSString stringWithFormat:@"%@/Info.plist", bundlePath] atomically:YES];
             [self save];
         }
+
+        // fix bundle id and execName if crash when signing
+        /*if (_infoPlist[@"LCBundleIdentifier"]) {
+            _infoPlist[@"CFBundleExecutable"] = _infoPlist[@"LCBundleExecutable"];
+            _infoPlist[@"CFBundleIdentifier"] = _infoPlist[@"LCBundleIdentifier"];
+            [_infoPlist removeObjectForKey:@"LCBundleExecutable"];
+            [_infoPlist removeObjectForKey:@"LCBundleIdentifier"];
+            [_infoPlist writeToFile:[NSString stringWithFormat:@"%@/Info.plist", bundlePath] atomically:YES];
+        }*/
         
         _autoSaveDisabled = false;
     }
@@ -108,12 +116,7 @@
 }
 
 - (NSString*)bundleIdentifier {
-    NSString* ans = nil;
-    if([self doUseLCBundleId]) {
-        ans = _info[@"LCOrignalBundleIdentifier"];
-    } else {
-        ans = _infoPlist[@"CFBundleIdentifier"];
-    }
+    NSString* ans = _infoPlist[@"CFBundleIdentifier"];
     if(ans) {
         return ans;
     } else {
@@ -125,31 +128,8 @@
     return _info[@"LCDataUUID"];
 }
 
-- (NSString*)tweakFolder {
-    return _info[@"LCTweakFolder"];
-}
-
 - (void)setDataUUID:(NSString *)uuid {
     _info[@"LCDataUUID"] = uuid;
-    [self save];
-}
-
-- (void)setTweakFolder:(NSString *)tweakFolder {
-    _info[@"LCTweakFolder"] = tweakFolder;
-    [self save];
-}
-
-- (NSString*)selectedLanguage {
-    return _info[@"LCSelectedLanguage"];
-}
-
-- (void)setSelectedLanguage:(NSString *)selectedLanguage {
-    if([selectedLanguage isEqualToString: @""]) {
-        _info[@"LCSelectedLanguage"] = nil;
-    } else {
-        _info[@"LCSelectedLanguage"] = selectedLanguage;
-    }
-    
     [self save];
 }
 
@@ -239,6 +219,7 @@
 }
 
 - (void)patchExecAndSignIfNeedWithCompletionHandler:(void(^)(bool success, NSString* errorInfo))completetionHandler progressHandler:(void(^)(NSProgress* progress))progressHandler forceSign:(BOOL)forceSign {
+    //NSFileManager *fm = [NSFileManager defaultManager];
     NSString *appPath = self.bundlePath;
     NSString *infoPath = [NSString stringWithFormat:@"%@/Info.plist", appPath];
     NSMutableDictionary *info = _info;
@@ -253,6 +234,11 @@
     if ([info[@"LCPatchRevision"] intValue] < currentPatchRev) {
         //[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/GeometryJump"].path;
         NSString *execPath = [NSString stringWithFormat:@"%@/%@", appPath, _infoPlist[@"CFBundleExecutable"]];
+        /*NSString *backupPath = [NSString stringWithFormat:@"%@/%@_GeodePatchBackUp", appPath, _infoPlist[@"CFBundleExecutable"]];
+        NSError *err;
+        [fm copyItemAtPath:execPath toPath:backupPath error:&err];
+        [fm removeItemAtPath:execPath error:&err];
+        [fm moveItemAtPath:backupPath toPath:execPath error:&err];*/
         NSString *error = LCParseMachO(execPath.UTF8String, ^(const char *path, struct mach_header_64 *header) {
             LCPatchExecSlice(path, header);
         });
@@ -261,6 +247,12 @@
             return;
         }
         info[@"LCPatchRevision"] = @(currentPatchRev);
+        /*NSString* cachePath = [appPath stringByAppendingPathComponent:@"zsign_cache.json"];
+        forceSign = YES;
+        if([fm fileExistsAtPath:cachePath]) {
+            NSError* err;
+            [fm removeItemAtPath:cachePath error:&err];
+        }*/
         [self save];
     }
 
@@ -339,14 +331,14 @@
             
             __block NSProgress *progress;
             
-            switch ([self signer]) {
+            Signer currentSigner = [[Utils getPrefs] boolForKey:@"LCCertificateImported"] ? ZSign : [self signer];
+            switch (currentSigner) {
                 case ZSign:
                     progress = [LCUtils signAppBundleWithZSign:appPathURL completionHandler:signCompletionHandler];
                     break;
                 case AltSign:
                     progress = [LCUtils signAppBundle:appPathURL completionHandler:signCompletionHandler];
                     break;
-                    
                 default:
                     completetionHandler(NO, @"Signer Not Found");
                     break;
@@ -389,40 +381,6 @@
     [self save];
 }
 
-- (bool)fixBlackScreen {
-    if(_info[@"fixBlackScreen"] != nil) {
-        return [_info[@"fixBlackScreen"] boolValue];
-    } else {
-        return NO;
-    }
-}
-- (void)setFixBlackScreen:(bool)fixBlackScreen {
-    _info[@"fixBlackScreen"] = [NSNumber numberWithBool:fixBlackScreen];
-    [self save];
-}
-
-
-- (bool)doUseLCBundleId {
-    if(_info[@"doUseLCBundleId"] != nil) {
-        return [_info[@"doUseLCBundleId"] boolValue];
-    } else {
-        return NO;
-    }
-}
-- (void)setDoUseLCBundleId:(bool)doUseLCBundleId {
-    _info[@"doUseLCBundleId"] = [NSNumber numberWithBool:doUseLCBundleId];
-    NSString *infoPath = [NSString stringWithFormat:@"%@/Info.plist", self.bundlePath];
-    if(doUseLCBundleId) {
-        _info[@"LCOrignalBundleIdentifier"] = _infoPlist[@"CFBundleIdentifier"];
-        _infoPlist[@"CFBundleIdentifier"] = NSBundle.mainBundle.bundleIdentifier;
-    } else if (_info[@"LCOrignalBundleIdentifier"]) {
-        _infoPlist[@"CFBundleIdentifier"] = _info[@"LCOrignalBundleIdentifier"];
-        [_info removeObjectForKey:@"LCOrignalBundleIdentifier"];
-    }
-    [_infoPlist writeToFile:infoPath atomically:YES];
-    [self save];
-}
-
 - (bool)bypassAssertBarrierOnQueue {
     if(_info[@"bypassAssertBarrierOnQueue"] != nil) {
         return [_info[@"bypassAssertBarrierOnQueue"] boolValue];
@@ -444,37 +402,6 @@
     _info[@"signer"] = [NSNumber numberWithInt:(int) newSigner];
     [self save];
     
-}
-
-- (UIColor*)cachedColor {
-    if(_info[@"cachedColor"] != nil) {
-        NSData *colorData = _info[@"cachedColor"];
-        NSError* error;
-        UIColor *color = [NSKeyedUnarchiver unarchivedObjectOfClass:UIColor.class fromData:colorData error:&error];
-        if (!error) {
-            return color;
-        } else {
-            NSLog(@"[LC] failed to get color %@", error);
-            return nil;
-        }
-    } else {
-        return nil;
-    }
-}
-
-- (void)setCachedColor:(UIColor*) color {
-    if(color == nil) {
-        _info[@"cachedColor"] = nil;
-    } else {
-        NSError* error;
-        NSData *colorData = [NSKeyedArchiver archivedDataWithRootObject:color requiringSecureCoding:YES error:&error];
-        [_info setObject:colorData forKey:@"cachedColor"];
-        if(error) {
-            NSLog(@"[LC] failed to set color %@", error);
-        }
-
-    }
-    [self save];
 }
 
 - (NSArray<NSDictionary*>* )containerInfo {

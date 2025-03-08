@@ -225,7 +225,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
             usleep(1000*100);
         }
         if (!checkJITEnabled()) {
-            appError = @"JIT was not enabled. If you want to use LiveContainer without JIT, setup JITLess mode in settings.";
+            appError = @"JIT was not enabled. If you want to use Geode without JIT, setup JITLess mode in settings.";
             return appError;
         }
     }
@@ -414,6 +414,10 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
     
     // hook NSUserDefault before running libraries' initializers
     NUDGuestHooksInit();
+
+    if ([lcUserDefaults boolForKey:@"LCCertificateImported"]) {
+        //SecItemGuestHooksInit();
+    }
     
     // Preload executable to bypass RT_NOLOAD
     uint32_t appIndex = _dyld_image_count();

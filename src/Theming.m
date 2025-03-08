@@ -1,3 +1,4 @@
+#import "components/LogUtils.h"
 #import "Theming.h"
 #import "Utils.h"
 
@@ -54,7 +55,7 @@
         if (accentColor) {
             return accentColor;
         } else if (error) {
-            NSLog(@"[Geode] Couldn't unarchive accent color: %@", error);
+            AppLog(@"[Geode] Couldn't unarchive accent color: %@", error);
         }
     }
     if ([Theming darkModeEnabled]) {
@@ -71,7 +72,7 @@
     NSError *error = nil;
     NSData *colorData = [NSKeyedArchiver archivedDataWithRootObject:color requiringSecureCoding:YES error:&error];
     if (error) {
-        NSLog(@"[Geode] Couldn't archive accent color: %@", error);
+        AppLog(@"[Geode] Couldn't archive accent color: %@", error);
         return;
     }
     [userDefaults setObject:colorData forKey:@"accentColor"];

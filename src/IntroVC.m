@@ -27,8 +27,10 @@
                 _currentStep = InstallStepInstallMethod;
                 [self showInstallMethodStep];
             } else {
-                _currentStep = InstallStepLaunchMethod;
-                [self showLaunchMethodStep];
+                /*_currentStep = InstallStepLaunchMethod;
+                [self showLaunchMethodStep];*/
+                _currentStep = InstallStepWarning;
+                [self showWarningStep];
             }
             break;
         case InstallStepInstallMethod:
@@ -152,7 +154,6 @@
         [view addSubview:logoImageView];
     } else {
         //self.logoImageView.backgroundColor = [UIColor redColor];
-        NSLog(@"[Geode] Image is null");
     }
 
     UILabel *titleLabel = [[UILabel alloc] init];

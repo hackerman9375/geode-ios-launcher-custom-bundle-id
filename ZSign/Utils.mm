@@ -5,6 +5,7 @@
 //  Created by samara on 30.09.2024.
 //
 
+//#import "src/components/LogUtils.h"
 #include "Utils.hpp"
 #import <Foundation/Foundation.h>
 
@@ -18,7 +19,11 @@ const char* getDocumentsDirectory() {
 }
 
 void writeToNSLog(const char* msg) {
-    NSLog(@"[LC] singner msg: %s", msg);
+    NSLog(@"[LC] signer msg: %s", msg);
+    //AppLog(@"[LC] signer msg: %s", msg);
+}
+void writeToNSLogFlood(const char* msg) {
+    NSLog(@"[LC] signer msg: %s", msg);
 }
 
 // copy, remove and rename back the file to prevent crash due to kernel signature cache

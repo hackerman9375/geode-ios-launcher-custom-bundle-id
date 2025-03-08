@@ -1,5 +1,6 @@
 #import "Shared.h"
-#include "src/LCUtils/LCUtils.h"
+#import "src/Utils.h"
+#import "LCUtils.h"
 #import <UIKit/UIKit.h>
 
 @implementation LCPath
@@ -9,6 +10,12 @@
 }
 
 + (NSURL *)bundlePath {
+    if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+        NSString *bundlePath = [Utils getGDBundlePath];
+        if (bundlePath) {
+            return [NSURL URLWithString:bundlePath];
+        }
+    }
     return [[self docPath] URLByAppendingPathComponent:@"Applications"];
 }
 

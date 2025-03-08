@@ -1,3 +1,4 @@
+#import "components/LogUtils.h"
 #import "VerifyInstall.h"
 #import "GeodeInstaller.h"
 #import "Utils.h"
@@ -71,6 +72,7 @@ BOOL hasDoneUpdate = NO;
 // after the user installed the patched ipa
 + (BOOL)verifyGDInstalled {
     BOOL res = NO;
+    if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) return YES;
     if ([
         [NSFileManager defaultManager] fileExistsAtPath:[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName] isDirectory:YES].path isDirectory:&res
     ]) {
@@ -84,7 +86,7 @@ BOOL hasDoneUpdate = NO;
 + (void)decompress:(NSString*) fileToExtract
     extractionPath:(NSString*)extractionPath
     completion:(DecompressCompletion)completion {
-    NSLog(@"Starting decomp of %@ to %@", fileToExtract, extractionPath);
+    AppLog(@"Starting decomp of %@ to %@", fileToExtract, extractionPath);
     [[NSFileManager defaultManager] createDirectoryAtPath:extractionPath withIntermediateDirectories:YES attributes:nil error:nil];
     int res = extract(fileToExtract, extractionPath, nil);
     if (res != 0) return completion([NSError errorWithDomain:@"DecompressError" code:res userInfo:nil]);
@@ -106,12 +108,12 @@ BOOL hasDoneUpdate = NO;
             if (error) {
                 [root updateState];
                 // do i .localizedDescription
-                return NSLog(@"Error removing item from payload: %@", error);
+                return AppLog(@"Error removing item from payload: %@", error);
             }
         }
         /*[fm removeItemAtURL:payloadPath error:&error];
         if (error) {
-            return NSLog(@"Error removing item from url: %@", error);
+            return AppLog(@"Error removing item from url: %@", error);
         }*/
 
 
@@ -133,7 +135,7 @@ BOOL hasDoneUpdate = NO;
             if (decompError) {
                 [Utils showError:root title:@"Decompressing IPA failed" error:decompError];
                 [root updateState];
-                return NSLog(@"Error trying to decompress IPA: %@", decompError);
+                return AppLog(@"Error trying to decompress IPA: %@", decompError);
             }
             NSError *error = nil;
             
@@ -141,7 +143,7 @@ BOOL hasDoneUpdate = NO;
             if (error) {
                 [Utils showError:root title:@"Retrieving contents failed" error:error];
                 [root updateState];
-                return NSLog(@"Error retrieving contents of directory: %@", error);
+                return AppLog(@"Error retrieving contents of directory: %@", error);
             }
             NSString *appBundleName = nil;
             for (NSString *fileName in payloadContents) {
@@ -185,7 +187,7 @@ BOOL hasDoneUpdate = NO;
 
                 outputFolder = [LCPath.bundlePath URLByAppendingPathComponent:appRelativePath];
                 if (![fm removeItemAtURL:outputFolder error:&error]) {
-                    NSLog(@"Error removing item: %@", error);
+                    AppLog(@"Error removing item: %@", error);
                 }
             }
             // Move it!
@@ -193,24 +195,27 @@ BOOL hasDoneUpdate = NO;
             if (error) {
                 [Utils showError:root title:@"Moving items failed" error:error];
                 [root updateState];
-                return NSLog(@"Error moving item from url: %@", error);
+                return AppLog(@"Error moving item from url: %@", error);
             }
             LCAppInfo *finalNewApp = [[LCAppInfo alloc] initWithBundlePath:outputFolder.path];
             if (finalNewApp == nil) {
                 [root updateState];
-                return NSLog(@"Error getting new app from LCAppInfo");
+                return AppLog(@"Error getting new app from LCAppInfo");
             }
             finalNewApp.relativeBundlePath = appRelativePath;
 
             finalNewApp.signer = [[Utils getPrefs] boolForKey:@"USE_ZSIGN"] ? 1 : 0;
             [finalNewApp patchExecAndSignIfNeedWithCompletionHandler:^(BOOL success, NSString *errorInfo) {
-                if (![VerifyInstall verifyGeodeInstalled]) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (![VerifyInstall verifyGeodeInstalled]) {
                         //[root updateState];
                         root.optionalTextLabel.text = @"Downloading Geode...";
                         [[[GeodeInstaller alloc] init] startInstall:root ignoreRoot:NO];
-                    });
-                }
+                    } else {
+                        [root progressVisibility:YES];
+                        [root updateState];
+                    }
+                });
                 if (success) {
                     LCAppModel *newAppModel = [[LCAppModel alloc] initWithAppInfo:finalNewApp delegate:nil];
                     if (appToReplace != nil) {
@@ -219,11 +224,8 @@ BOOL hasDoneUpdate = NO;
                         finalNewApp.bypassAssertBarrierOnQueue = appToReplace.appInfo.bypassAssertBarrierOnQueue;
                         finalNewApp.doSymlinkInbox = appToReplace.appInfo.doSymlinkInbox;
                         finalNewApp.containerInfo = appToReplace.appInfo.containerInfo;
-                        [finalNewApp setTweakFolder:appToReplace.appInfo.tweakFolder];
                         finalNewApp.signer = appToReplace.appInfo.signer;
-                        finalNewApp.selectedLanguage = appToReplace.appInfo.selectedLanguage;
                         finalNewApp.dataUUID = appToReplace.appInfo.dataUUID;
-                        finalNewApp.ignoreDlopenError = appToReplace.appInfo.ignoreDlopenError;
                         finalNewApp.autoSaveDisabled = false;
 
                         [sharedModel.apps removeObject:appToReplace];
@@ -232,7 +234,7 @@ BOOL hasDoneUpdate = NO;
                         [sharedModel.apps addObject:newAppModel];
                     }
                 } else {
-                    NSLog(@"error with signing? not sure if its really a bad thing: %@", errorInfo);
+                    AppLog(@"error with signing? not sure if its really a bad thing: %@", errorInfo);
                     // error, or not? idk, its very vague whether unsigned apps work
                 }
             } progressHandler:^(NSProgress *signProgress) {

@@ -2,6 +2,7 @@
 @import MachO;
 @import UIKit;
 
+#import "src/components/LogUtils.h"
 #import "AltStoreCore/ALTSigner.h"
 #import "LCUtils.h"
 #import "LCVersionInfo.h"
@@ -142,7 +143,7 @@ Class LCSharedUtilsClass = nil;
     NSDirectoryEnumerator *countEnumerator = [[NSFileManager defaultManager] enumeratorAtURL:appURL includingPropertiesForKeys:@[NSURLIsRegularFileKey, NSURLFileSizeKey]
     options:0 errorHandler:^BOOL(NSURL * _Nonnull url, NSError * _Nonnull error) {
         if (error) {
-            NSLog(@"[Error] %@ (%@)", error, url);
+            AppLog(@"[Error] %@ (%@)", error, url);
             return NO;
         }
         return YES;
@@ -169,7 +170,7 @@ Class LCSharedUtilsClass = nil;
                     struct linkedit_data_command *csCommand = (struct linkedit_data_command *)command;
                     void *csData = (void *)((uint8_t *)header + csCommand->dataoff);
                     // Nuke it.
-                    NSLog(@"[Geode] Removing code signature of %@", fileURL);
+                    AppLog(@"[Geode] Removing code signature of %@", fileURL);
                     bzero(csData, csCommand->datasize);
                     break;
                 }
@@ -177,7 +178,7 @@ Class LCSharedUtilsClass = nil;
             }
         });
         if (error) {
-            NSLog(@"[Error] %@ (%@)", error, fileURL);
+            AppLog(@"[Error] %@ (%@)", error, fileURL);
         }
     }
 }
@@ -224,6 +225,17 @@ Class LCSharedUtilsClass = nil;
     // use zsign as our signer~
     NSURL *profilePath = [lcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
     NSData *profileData = [NSData dataWithContentsOfURL:profilePath];
+    if (profileData == nil) {
+        AppLog(@"[Geode] Couldn't read from mobile provisioning profile! Will assume to use embedded mobile provisioning file in documents.");
+        profilePath = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
+        profileData = [NSData dataWithContentsOfURL:profilePath];
+    }
+
+    if (profileData == nil) {
+        completionHandler(NO, nil, nil, error);
+        return nil;
+    }
+
     // Load libraries from Documents, yeah
     [self loadStoreFrameworksWithError2:&error];
 
@@ -231,8 +243,28 @@ Class LCSharedUtilsClass = nil;
         completionHandler(NO, nil, nil, error);
         return nil;
     }
+    
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSURL *bundleProvision = [[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/embedded.mobileprovision"];
+    NSURL *provisionURL = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:provisionURL.path]) {
+        AppLog(@"[Geode] Found provision in documents, copying to GD bundle...");
+        if ([[NSFileManager defaultManager] fileExistsAtPath:bundleProvision.path]) {
+            [[NSFileManager defaultManager] removeItemAtURL:bundleProvision error:&error];
+            if (error) {
+                completionHandler(NO, nil, nil, error);
+                return nil;
+            }
+        }
+        [fm copyItemAtURL:provisionURL toURL:bundleProvision error:&error];
+        if (error) {
+            completionHandler(NO, nil, nil, error);
+            return nil;
+        }
+        AppLog(@"[Geode] Copied provision to GD bundle.");
+    }
 
-    NSLog(@"[LC] starting signing...");
+    AppLog(@"[LC] starting signing...");
     
     NSProgress* ans = [NSClassFromString(@"ZSigner") signWithAppPath:[path path] prov:profileData key: self.certificateData pass:self.certificatePassword completionHandler:completionHandler];
     
@@ -241,10 +273,25 @@ Class LCSharedUtilsClass = nil;
 
 + (NSString*)getCertTeamIdWithKeyData:(NSData*)keyData password:(NSString*)password {
     NSError *error;
+
     NSURL *profilePath = [lcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
     NSData *profileData = [NSData dataWithContentsOfURL:profilePath];
+    if (profileData == nil) {
+        AppLog(@"[Geode] Couldn't read from mobile provisioning profile! Will assume to use embedded mobile provisioning file in documents.");
+        profilePath = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
+        profileData = [NSData dataWithContentsOfURL:profilePath];
+    }
+
+    if (profileData == nil) {
+        AppLog(@"[Geode] Profile still couldn't be read. Assuming we don't have it...");
+        return nil;
+    }
+
+    AppLog(@"[Geode] Got Mobile Provisioning Profile data! %lu bytes", [profileData length]);
+
     [self loadStoreFrameworksWithError2:&error];
     if (error) {
+        AppLog(@"[Geode] Couldn't ZSign load framework: %@", error);
         return nil;
     }
     NSString* ans = [NSClassFromString(@"ZSigner") getTeamIdWithProv:profileData key:keyData pass:password];
@@ -257,6 +304,7 @@ Class LCSharedUtilsClass = nil;
     static Store ans;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
+        AppLog(@"[Geode] Store: %@", [self appGroupID]);
         if([[self appGroupID] containsString:@"AltStore"]) {
             ans = AltStore;
         } else {
@@ -322,7 +370,7 @@ Class LCSharedUtilsClass = nil;
     [info writeToFile:tmpInfoPath atomically:YES];
 
     // Sign the test app bundle
-    if(signer == AltSign && ![NSUserDefaults.standardUserDefaults boolForKey:@"LCCertificateImported"]) {
+    if(signer == AltSign && ![[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
         [LCUtils signAppBundle:[NSURL fileURLWithPath:path]
         completionHandler:^(BOOL success, NSDate* expirationDate, NSString* teamId, NSError *_Nullable error) {
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -380,7 +428,7 @@ Class LCSharedUtilsClass = nil;
     
     [manager moveItemAtURL:execFromPath toURL:execToPath error:error];
     if (*error) {
-        NSLog(@"[LC] %@", *error);
+        AppLog(@"[LC] %@", *error);
         return nil;
     }
     
@@ -393,7 +441,7 @@ Class LCSharedUtilsClass = nil;
         [details setValue:errorChangeUUID forKey:NSLocalizedDescriptionKey];
         // populate the error object with the details
         *error = [NSError errorWithDomain:@"world" code:200 userInfo:details];
-        NSLog(@"[LC] %@", errorChangeUUID);
+        AppLog(@"[LC] %@", errorChangeUUID);
         return nil;
     }
     
@@ -467,7 +515,7 @@ Class LCSharedUtilsClass = nil;
         [details setValue:errorPatchAltStore forKey:NSLocalizedDescriptionKey];
         // populate the error object with the details
         *error = [NSError errorWithDomain:@"world" code:200 userInfo:details];
-        NSLog(@"[LC] %@", errorPatchAltStore);
+        AppLog(@"[LC] %@", errorPatchAltStore);
         return nil;
     }
     
@@ -533,7 +581,6 @@ Class LCSharedUtilsClass = nil;
     NSURL *provisionPath = [url URLByAppendingPathComponent:@"embedded.mobileprovision"];
     NSURL *tmpExecPath = [url URLByAppendingPathComponent:@"Geode.tmp"];
     NSURL *tmpInfoPath = [url URLByAppendingPathComponent:@"Info.plist"];
-    
     NSMutableDictionary *info = [lcMainBundle.infoDictionary mutableCopy];
     [info setObject:@"Geode.tmp" forKey:@"CFBundleExecutable"];
     [info writeToURL:tmpInfoPath atomically:YES];
@@ -543,24 +590,43 @@ Class LCSharedUtilsClass = nil;
         completion(copyError.localizedDescription, nil);
         return;
     }
-    
-    [self signAppBundle:url completionHandler:^(BOOL success, NSDate *expirationDate, NSString *teamId, NSError *error) {
-        NSString *ans = nil;
-        NSDate *ansDate = nil;
-        if (error) {
-            ans = error.localizedDescription;
-        }
-        if ([fm fileExistsAtPath:codesignPath.path]) {
-            [fm removeItemAtURL:codesignPath error:nil];
-        }
-        if ([fm fileExistsAtPath:provisionPath.path]) {
-            [fm removeItemAtURL:provisionPath error:nil];
-        }
-        [fm removeItemAtURL:tmpExecPath error:nil];
-        [fm removeItemAtURL:tmpInfoPath error:nil];
-        ansDate = expirationDate;
-        completion(ans, ansDate);
-    }];
+    if (signer == AltSign) {
+        [self signAppBundle:url completionHandler:^(BOOL success, NSDate *expirationDate, NSString *teamId, NSError *error) {
+            NSString *ans = nil;
+            NSDate *ansDate = nil;
+            if (error) {
+                ans = error.localizedDescription;
+            }
+            if ([fm fileExistsAtPath:codesignPath.path]) {
+                [fm removeItemAtURL:codesignPath error:nil];
+            }
+            if ([fm fileExistsAtPath:provisionPath.path]) {
+                [fm removeItemAtURL:provisionPath error:nil];
+            }
+            [fm removeItemAtURL:tmpExecPath error:nil];
+            [fm removeItemAtURL:tmpInfoPath error:nil];
+            ansDate = expirationDate;
+            completion(ans, ansDate);
+        }];
+    } else {
+        [self signAppBundleWithZSign:url completionHandler:^(BOOL success, NSDate *expirationDate, NSString *teamId, NSError *error) {
+            NSString *ans = nil;
+            NSDate *ansDate = nil;
+            if (error) {
+                ans = error.localizedDescription;
+            }
+            if ([fm fileExistsAtPath:codesignPath.path]) {
+                [fm removeItemAtURL:codesignPath error:nil];
+            }
+            if ([fm fileExistsAtPath:provisionPath.path]) {
+                [fm removeItemAtURL:provisionPath error:nil];
+            }
+            [fm removeItemAtURL:tmpExecPath error:nil];
+            [fm removeItemAtURL:tmpInfoPath error:nil];
+            ansDate = expirationDate;
+            completion(ans, ansDate);
+        }];
+    }
 }
 + (void)signTweaks:(NSURL *)tweakFolderUrl force:(BOOL)force signer:(Signer)signer progressHandler:(void (^)(NSProgress *progress))progressHandler completion:(void (^)(NSError *error))completion {
     if (![self certificatePassword]) {
@@ -602,7 +668,7 @@ Class LCSharedUtilsClass = nil;
                 break;
             }
 
-            NSLog(@"%@", [fileURL lastPathComponent]);
+            AppLog(@"%@", [fileURL lastPathComponent]);
         }
     } else {
         signNeeded = YES;
@@ -675,7 +741,7 @@ Class LCSharedUtilsClass = nil;
     if ([currentHash isEqualToString:modifiedHash]) {
         return YES;
     }
-    NSLog(@"[Geode] Different hash detected, assuming to need signing: %@ / %@", currentHash, modifiedHash);
+    AppLog(@"[Geode] Different hash detected, assuming to need signing: %@ / %@", currentHash, modifiedHash);
     return NO;
 }
 
@@ -687,7 +753,8 @@ Class LCSharedUtilsClass = nil;
     NSFileManager *fm = [NSFileManager defaultManager];
     BOOL isDir = NO;
     if (![fm fileExistsAtPath:tweakFolderUrl.path isDirectory:&isDir] || !isDir) {
-        completion([NSError errorWithDomain:@"InvalidModFolder" code:0 userInfo:nil]);
+        completion(nil); // assume we haven't installed geode yet
+        //completion([NSError errorWithDomain:@"InvalidModFolder" code:0 userInfo:nil]);
         return;
     }
     
@@ -729,7 +796,7 @@ Class LCSharedUtilsClass = nil;
                     break;
                 }
 
-                NSLog(@"%@", [fileURL lastPathComponent]);
+                AppLog(@"%@", [fileURL lastPathComponent]);
             }
         }
     } else {

@@ -1,3 +1,4 @@
+#import "components/LogUtils.h"
 #import "SettingsVC.h"
 #import "src/LCUtils/LCUtils.h"
 #include <spawn.h>
@@ -72,11 +73,12 @@
         case 2:
             return 2;
         case 3:
-            return 5;
+            //return 6;
+            return 0;
         case 6:
             return [self.creditsArray count];
         case 7:
-            return 4;
+            return 5;
         default:
             return 0;
     }
@@ -202,6 +204,14 @@
                 cell.textLabel.text = @"Test JIT-Less Mode";
                 cell.textLabel.textColor = [Theming getAccentColor];
                 cell.accessoryType = UITableViewCellAccessoryNone;
+            } else if (indexPath.row == 5) {
+                cell.textLabel.text = @"Force Resign";
+                if (![[Utils getPrefs] boolForKey:@"JITLESS"]) {
+                    cell.textLabel.textColor = [UIColor systemGrayColor];
+                } else {
+                    cell.textLabel.textColor = [Theming getAccentColor];
+                }
+                cell.accessoryType = UITableViewCellAccessoryNone;
             }
             break;
         }
@@ -266,6 +276,9 @@
         }
         case 7: {
             if (indexPath.row == 0) {
+                cell.textLabel.text = @"View Recent App Logs";
+                cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+            } else if (indexPath.row == 1) {
                 UITextField *textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
                 textField.textAlignment = NSTextAlignmentRight;
                 textField.delegate = self;
@@ -277,16 +290,16 @@
                 cell.textLabel.text = @"Reinstall Addr";
                 textField.placeholder = @"http://x.x.x.x:3000";
                 textField.text = [[Utils getPrefs] stringForKey:@"DEV_REINSTALL_ADDR"];
-            } else if (indexPath.row == 1) {
+            } else if (indexPath.row == 2) {
                 cell.textLabel.text = @"TrollStore App Reinstall";
                 cell.textLabel.textColor = [Theming getAccentColor];
                 cell.accessoryType = UITableViewCellAccessoryNone;
-            } else if (indexPath.row == 2) {
+            } else if (indexPath.row == 3) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"Completed Setup";
                 cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"CompletedSetup"] tag:6 disable:NO];
                 return cellval1;
-            } else if (indexPath.row == 3) {
+            } else if (indexPath.row == 4) {
                 cell.textLabel.text = @"Test GD Bundle Access";
                 cell.textLabel.textColor = [Theming getAccentColor];
                 cell.accessoryType = UITableViewCellAccessoryNone;
@@ -315,7 +328,7 @@
         case 2:
             return @"JIT";
         case 3:
-            return @"JIT-Less";
+            return @"JIT-Less (Disabled)";
         case 4:
             return @"Advanced";
         case 5:
@@ -337,8 +350,8 @@
             return @"Only enable the screen rotation fix or black screen fix if you are having problems.";
         case 2:
             return @"Set up your JITStreamer server. Local Network permission is required. This is not necessary to set up if you use TrollStore, or if you're jailbroken.";
-        case 3:
-            return @"JIT-less allows you to use Geode without enabling JIT! You will need to patch AltStore or SideStore to enable, or use ZSign. If you signed Geode with a Developer / Enterprise Certificate, you may need to import the certificate.";
+        //case 3:
+            //return @"JIT-less allows you to use Geode without enabling JIT! You will need to patch AltStore or SideStore to enable, or use ZSign. If you signed Geode with a Developer / Enterprise Certificate, you may need to import the certificate.";
         case 6:
             return @"Thanks to these contributors who helped contribute towards making Geode on iOS a possibility!";
         default:
@@ -424,12 +437,25 @@
     } else if (indexPath.section == 1) {
         switch (indexPath.row) {
             case 0: { // Safe Mode
-                NSString *openURL = @"geode://safe-mode";
-                NSURL* url = [NSURL URLWithString:openURL];
-                if([[UIApplication sharedApplication] canOpenURL:url]){
-                    [_root.launchButton setEnabled:NO];
-                    [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-                    [self dismissViewControllerAnimated:YES completion:nil];
+                if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"]) {
+                    [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
+                    [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+                    [[Utils getPrefs] setBool:YES forKey:@"safemode"];
+                    NSFileManager *fm = [NSFileManager defaultManager];
+                    [fm createFileAtPath:
+                        [[LCPath docPath] URLByAppendingPathComponent:@"jitflag"].path 
+                        contents:[[NSData alloc] init]
+                        attributes:@{}
+                    ];
+                    [Utils showNotice:self title:@"Relaunch the app with JIT to start Geode!"];
+                } else {
+                    NSString *openURL = @"geode://safe-mode";
+                    NSURL* url = [NSURL URLWithString:openURL];
+                    if([[UIApplication sharedApplication] canOpenURL:url]){
+                        [_root.launchButton setEnabled:NO];
+                        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+                        [self dismissViewControllerAnimated:YES completion:nil];
+                    }
                 }
                 break;
             }
@@ -467,7 +493,7 @@
                 break;
             }
             case 2: { // Import Cert
-                if ([LCUtils isAppGroupAltStoreLike]) break;
+                //if ([LCUtils isAppGroupAltStoreLike]) break;
                 if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
                     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Warning"
                         message:@"Are you sure you want to remove your certificate?"
@@ -478,6 +504,7 @@
                         [NSUD setObject:nil forKey:@"LCCertificateData"];
                         [NSUD setObject:nil forKey:@"LCCertificateTeamId"];
                         [NSUD setBool:NO forKey:@"LCCertificateImported"];
+                        [fm removeItemAtURL:[[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"] error:nil];
                         [self.tableView reloadData];
                         [Utils showNotice:self title:@"Certificate removed."];
                     }];
@@ -490,16 +517,17 @@
                 // https://developer.apple.com/documentation/uniformtypeidentifiers/uttype-swift.struct/pkcs12
                 //public.x509-certificate
                 UTType* type = [UTType typeWithIdentifier:@"com.rsa.pkcs-12"];
+                UTType* type2 = [UTType typeWithIdentifier:@"com.apple.mobileprovision"];
                 UIDocumentPickerViewController *picker = [
-                    [UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[type] asCopy:YES];
+                    [UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[type, type2] asCopy:YES];
                 picker.delegate = self;
-                picker.allowsMultipleSelection = NO;
+                picker.allowsMultipleSelection = YES;
                 [self presentViewController:picker animated:YES completion:nil];
                 break;
             }
             case 4: { // Test JIT-Less
-                if (![LCUtils isAppGroupAltStoreLike]) {
-                    [Utils showError:self title:@"You did not sideload this app with AltStore or SideStore! You can ignore this option if you imported a certificate." error:nil];
+                if (![LCUtils isAppGroupAltStoreLike] && ![[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
+                    [Utils showError:self title:@"You did not sideload this app with AltStore or SideStore! Or you didn't import a certificate." error:nil];
                     break;
                 }
                 NSURL *appGroupURL = [LCUtils appGroupPath];
@@ -510,19 +538,32 @@
                 } else {
                     patchPath = [appGroupURL URLByAppendingPathComponent:@"Apps/com.SideStore.SideStore/App.app/Frameworks/AltStoreTweak.dylib"];
                 }
-                if (![fm fileExistsAtPath:patchPath.path]) {
+                if (![fm fileExistsAtPath:patchPath.path] && ![[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
                     [Utils showError:self title:@"You must patch before testing JIT-Less mode." error:nil];
                     break;
                 }
                 [LCUtils validateJITLessSetupWithSigner:([[Utils getPrefs] boolForKey:@"USE_ZSIGN"] ? 1 : 0) completionHandler:^(BOOL success, NSError *error) {
                     if (success) {
-                        return [Utils showNotice:self title:@"JIT-Less Mode Test Passed!"];
+                        return [Utils showNotice:self title:[NSString stringWithFormat:@"JIT-Less Mode Test Passed!\nApp Group ID: %@\nStore: %@", [LCUtils appGroupID], [LCUtils getStoreName]]];
                     } else {
-                        NSLog(@"[Geode] JIT-Less test failed: %@", error);
-                        return [Utils showError:self title:[NSString stringWithFormat:@"The test library has failed to load. This means your certificate may be having issue. Please try to: 1. Reopen %@; 2. Refresh all apps in %@; 3. Re-patch %@ and try again.", [LCUtils getStoreName], [LCUtils getStoreName], [LCUtils getStoreName]] error:nil];
+                        AppLog(@"[Geode] JIT-Less test failed: %@", error);
+                        return [Utils showError:self title:[NSString stringWithFormat:@"The test library has failed to load. This means your certificate may be having issue. Please try to: 1. Reopen %@; 2. Refresh all apps in %@; 3. Re-patch %@ and try again.\n\nIf you imported certificate, please ensure the certificate is valid, and it is NOT an enterprise certificate.", [LCUtils getStoreName], [LCUtils getStoreName], [LCUtils getStoreName]] error:nil];
                     }
                 }];
                 break;
+            }
+            case 5: { // Force Resign
+                if (![[Utils getPrefs] boolForKey:@"JITLESS"]) break;
+                return [_root signApp:YES completionHandler:^(BOOL success, NSString *error){
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        if (!success) {
+                            [Utils showError:self title:error error:nil];
+                        } else {
+                            [Utils showNotice:self title:@"Resign successful!"];
+                        }
+                        [tableView deselectRowAtIndexPath:indexPath animated:YES];
+                    });
+                }];
             }
         }
     } else if (indexPath.section == 4) {
@@ -547,7 +588,14 @@
         }
     } else if (indexPath.section == 7) {
         switch (indexPath.row) {
-            case 1: { // TS App Reinstall 
+            case 0: { // View Recent App Logs
+                [[self navigationController] pushViewController:
+                    [[LogsViewController alloc] initWithFile:[[LCPath docPath] URLByAppendingPathComponent:@"app.log"]]
+                    animated:YES
+                ];
+                break;
+            }
+            case 2: { // TS App Reinstall 
                 NSURL* url = [
                     NSURL URLWithString:[
                         NSString stringWithFormat:@"apple-magnifier://install?url=%@", [[Utils getPrefs] stringForKey:@"DEV_REINSTALL_ADDR"]
@@ -558,7 +606,7 @@
                 }
                 break;
             }
-            case 3: { // Bundle Path 
+            case 4: { // Bundle Path 
                 [Utils showNotice:self title:[Utils getGDDocPath]];
                 /*NSString *executablePath = [Utils getGDBinaryPath];
                 char *const argv[] = {(char *)[executablePath UTF8String], NULL};
@@ -582,16 +630,16 @@
 
                 int spawnError = posix_spawn(&pid, [executablePath UTF8String], NULL, &attr, argv, NULL);
                 posix_spawnattr_destroy(&attr);
-                NSLog(@"launching %@", executablePath);
+                AppLog(@"launching %@", executablePath);
                 if (spawnError != 0) {
-                    NSLog(@"posix_spawn failed: %s", strerror(spawnError));
+                    AppLog(@"posix_spawn failed: %s", strerror(spawnError));
                     return;
                 }
                 kill(pid, SIGCONT);
                 if (waitpid(pid, &status, 0) != -1) {
-                    NSLog(@"Failed to find process");
+                    AppLog(@"Failed to find process");
                 } else {
-                    NSLog(@"waitpid failed: %s", strerror(errno));
+                    AppLog(@"waitpid failed: %s", strerror(errno));
                 }*/
                 break;
             }
@@ -636,6 +684,7 @@
             break;
         case 9:
             [Utils toggleKey:@"JITLESS"];
+            [self.tableView reloadData];
             break;
         case 10:
             [Utils toggleKey:@"USE_ZSIGN"];
@@ -679,8 +728,12 @@
 }
 
 #pragma mark - Document Delegate Funcs (for importing cert mainly)
-- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url {
-    NSLog(@"Selected URL: %@", url);
+- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(nonnull NSArray<NSURL *> *)urls {
+    if (urls.count != 2) return [Utils showError:self title:@"2 files must be selected! (p12 & mobileprovision)" error:nil];
+    NSString *extension1 = urls.firstObject.pathExtension;
+    NSString *extension2 = urls.lastObject.pathExtension;
+    if ([extension1 isEqualToString:extension2]) return [Utils showError:self title:@"You must only select 2 different files! Both the certificate (.p12) and the mobile provision profile! (.mobileprovision)" error:nil];
+    AppLog(@"[Geode] Selected URLs: %@", urls);
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Input the password of the Certificate."
         message:@"This will be used for signing."
         preferredStyle:UIAlertControllerStyleAlert];
@@ -689,9 +742,28 @@
         textField.secureTextEntry = YES;
     }];
     UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSError *err;
+        NSURL *provisionURL;
+        if (![extension1 isEqualToString:@"p12"]) {
+            provisionURL = urls.firstObject;
+        } else {
+            provisionURL = urls.lastObject;
+        }
+        NSURL *newURL = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:newURL.path]) {
+            [[NSFileManager defaultManager] removeItemAtURL:newURL error:&err];
+            if (err) return [Utils showError:self title:@"Couldn't remove mobile provision from documents" error:err];
+        }
+        [[NSFileManager defaultManager] moveItemAtURL:provisionURL toURL:newURL error:&err];
+        if (err) return [Utils showError:self title:@"Couldn't move mobile provision to documents" error:err]; // when would this error realistically happen
         UITextField *field = alert.textFields.firstObject;
-        [self certPass:field.text url:url];
+        if ([extension1 isEqualToString:@"p12"]) {
+            [self certPass:field.text url:urls.firstObject];
+        } else {
+            [self certPass:field.text url:urls.lastObject];
+        }
     }];
+
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
     [alert addAction:okAction];
     [alert addAction:cancelAction];
@@ -712,11 +784,13 @@
         [Utils showError:self title:@"Couldn't get Team ID from certificate." error:nil];
         return;
     }
+    AppLog(@"[Geode] Import complete!");
     NSUserDefaults *NSUD = [Utils getPrefs];
     [NSUD setObject:certPass forKey:@"LCCertificatePassword"];
     [NSUD setObject:certData forKey:@"LCCertificateData"];
     [NSUD setObject:teamId forKey:@"LCCertificateTeamId"];
     [NSUD setBool:YES forKey:@"LCCertificateImported"];
+    [NSUD setBool:YES forKey:@"USE_ZSIGN"];
     //UserDefaults.standard.set(teamId, forKey: "LCCertificateTeamId")
     // Add your password handling logic here.
     [Utils showNotice:self title:@"Certificate Imported!"];

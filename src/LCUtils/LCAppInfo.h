@@ -12,12 +12,8 @@
 @property bool isShared;
 @property bool doSymlinkInbox;
 @property bool ignoreDlopenError;
-@property bool fixBlackScreen;
 @property bool bypassAssertBarrierOnQueue;
-@property UIColor* cachedColor;
 @property Signer signer;
-@property bool doUseLCBundleId;
-@property NSString* selectedLanguage;
 @property NSString* dataUUID;
 @property NSArray<NSDictionary*>* containerInfo;
 @property bool autoSaveDisabled;
@@ -29,9 +25,7 @@
 - (NSString*)bundlePath;
 - (NSString*)bundleIdentifier;
 - (NSString*)version;
-- (NSString*)tweakFolder;
 - (NSMutableArray*) urlSchemes;
-- (void)setTweakFolder:(NSString *)tweakFolder;
 - (instancetype)initWithBundlePath:(NSString*)bundlePath;
 - (NSDictionary *)generateWebClipConfigWithContainerId:(NSString*)containerId;
 - (void)save;

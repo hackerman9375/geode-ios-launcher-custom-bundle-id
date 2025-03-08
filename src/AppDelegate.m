@@ -1,3 +1,4 @@
+#import "components/LogUtils.h"
 #import "AppDelegate.h"
 #import "LCUtils/Shared.h"
 #import "IntroVC.h"
@@ -99,6 +100,7 @@
     } else if ([url.host isEqualToString:@"geode-launch"] || [url.host isEqualToString:@"launch"] || [url.host isEqualToString:@"relaunch"]) {
         [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
         [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+        [[Utils getPrefs] setBool:NO forKey:@"safemode"];
         if ([url.host isEqualToString:@"relaunch"] && [[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
             pid_t pid;
             int status;
@@ -119,14 +121,16 @@
             app.signer = [[Utils getPrefs] boolForKey:@"USE_ZSIGN"] ? 1 : 0;
             [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:NO signer:app.signer progressHandler:^(NSProgress *progress) {} completion:^(NSError *error) {
                 if (error != nil) {
-                    NSLog(@"[Geode] Detailed error for signing mods: %@", error);
+                    AppLog(@"[Geode] Detailed error for signing mods: %@", error);
                 }
                 [LCUtils launchToGuestApp];
             }];
         } else {
+            AppLog(@"[Geode] Launching Geometry Dash");
             [LCUtils launchToGuestApp];
         }
     } else if ([url.host isEqualToString:@"safe-mode"]) {
+        AppLog(@"[Geode] Launching in Safe Mode");
         [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
         [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
         [[Utils getPrefs] setBool:YES forKey:@"safemode"];

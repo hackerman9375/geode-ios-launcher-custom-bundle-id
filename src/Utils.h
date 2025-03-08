@@ -20,7 +20,9 @@
 + (NSString*)getGDBinaryHash;
 + (NSString*)getGDDocPath;
 + (NSString*)getGDBinaryPath;
++ (NSString*)getGDBundlePath;
 + (NSUserDefaults*)getPrefs;
 + (BOOL)isSandboxed;
 + (const char*)getKillAllPath;
++ (void)increaseLaunchCount;
 @end

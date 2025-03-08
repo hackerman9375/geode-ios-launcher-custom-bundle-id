@@ -14,4 +14,5 @@
 - (BOOL)progressVisible;
 - (void)progressVisibility:(BOOL)hidden;
 - (void)barProgress:(CGFloat)value;
+- (void)signApp:(BOOL)force completionHandler:(void (^)(BOOL success, NSString *error))completionHandler;
 @end

@@ -1,3 +1,4 @@
+#import "components/LogUtils.h"
 #import "RootViewController.h"
 #import "src/LCUtils/LCAppInfo.h"
 #import "GeodeInstaller.h"
@@ -67,6 +68,14 @@
     self.optionalTextLabel.frame = CGRectMake(0, CGRectGetMaxY(self.titleLabel.frame) + 10, self.view.bounds.size.width, 40);
     self.launchButton.frame = CGRectMake(self.view.center.x - 95, CGRectGetMaxY(self.titleLabel.frame) + 15, 140, 45);
     self.settingsButton.frame = CGRectMake(self.view.center.x + 50, CGRectGetMaxY(self.titleLabel.frame) + 15, 45, 45);
+
+    NSString *errStr = [[Utils getPrefs] stringForKey:@"error"];
+    if (errStr != nil) {
+        AppLog(@"[Geode] Found error: %@", errStr);
+        [Utils showError:self title:[NSString stringWithFormat:@"Geode couldn't load Geometry Dash: %@", errStr] error:nil];
+        [[Utils getPrefs] setObject:nil forKey:@"error"];
+    }
+
     self.launchButton.backgroundColor = [Theming getAccentColor];
     [self.launchButton setTitleColor:[Theming getTextColor:[Theming getAccentColor]] forState:UIControlStateNormal];
     [self.launchButton setTintColor:[Theming getTextColor:[Theming getAccentColor]]];
@@ -75,7 +84,8 @@
     [self.launchButton setEnabled:YES];
     [self.launchButton removeTarget:nil action:nil forControlEvents:UIControlEventTouchUpInside];
     if ([VerifyInstall verifyAll]) {
-[self.launchButton setTitle:@"Launch" forState:UIControlStateNormal];
+        [UIApplication sharedApplication].idleTimerDisabled = NO;
+        [self.launchButton setTitle:@"Launch" forState:UIControlStateNormal];
         [self.launchButton setImage:[[UIImage systemImageNamed:@"play.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
         if ([[Utils getPrefs] boolForKey:@"LOAD_AUTOMATICALLY"]) {
             [self.optionalTextLabel setHidden:NO];
@@ -118,11 +128,13 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [Utils increaseLaunchCount];
+    [LogUtils clearLogs];
 
     NSError* err;
     [LCPath ensureAppGroupPaths:&err];
     if (err) {
-        NSLog(@"[Geode] error while making app paths: %@", err);
+        AppLog(@"[Geode] error while making app paths: %@", err);
     }
     self.logoImageView = [Utils imageViewFromPDF:@"geode_logo"];
     if (self.logoImageView) {
@@ -131,7 +143,7 @@
         [self.view addSubview:self.logoImageView];
     } else {
         //self.logoImageView.backgroundColor = [UIColor redColor];
-        NSLog(@"[Geode] Image is null");
+        AppLog(@"[Geode] Image is null");
     }
 
     self.titleLabel = [[UILabel alloc] init];
@@ -196,7 +208,7 @@
         controller.UTI = @"i.have.no.idea"; // there is no documentation... 
         [controller presentOptionsMenuFromRect:self.view.bounds inView:self.view animated:YES];
     } else {
-        NSLog(@"[Geode] File does not exist at path: %@", debFilePath);
+        AppLog(@"[Geode] File does not exist at path: %@", debFilePath);
     }
 }
 
@@ -233,6 +245,7 @@
     [alert addAction:okAction];
     [self presentViewController:alert animated:YES completion:nil];*/
     [self.launchButton setEnabled:NO];
+    [UIApplication sharedApplication].idleTimerDisabled = YES;
     if ([VerifyInstall verifyGDInstalled] && ![VerifyInstall verifyGeodeInstalled]) {
         [[[GeodeInstaller alloc] init] startInstall:self ignoreRoot:NO];
     } else {
@@ -251,12 +264,12 @@
         if (signError) return completionHandler(NO, signError);
         [LCUtils signTweaks:[LCPath tweakPath] force:force signer:app.signer progressHandler:^(NSProgress *progress) {} completion:^(NSError *error) {
             if (error != nil) {
-                NSLog(@"[Geode] Detailed error for signing tweaks: %@", error);
+                AppLog(@"[Geode] Detailed error for signing tweaks: %@", error);
                 return completionHandler(NO, [NSString stringWithFormat:@"Couldn't sign tweaks. Please make sure that you have either patched %@, or imported a certificate in settings.", [LCUtils getStoreName]]);
             }
             [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:force signer:app.signer progressHandler:^(NSProgress *progress) {} completion:^(NSError *error) {
                 if (error != nil) {
-                    NSLog(@"[Geode] Detailed error for signing mods: %@", error);
+                    AppLog(@"[Geode] Detailed error for signing mods: %@", error);
                     return completionHandler(NO, [NSString stringWithFormat:@"Couldn't sign mods. Please make sure that you have either patched %@, or imported a certificate in settings.", [LCUtils getStoreName]]);
                 }
                 completionHandler(YES, nil);
@@ -267,38 +280,58 @@
 
 - (void)launchGame {
     [self.launchButton setEnabled:NO];
-    /*NSString *openURL = [NSString stringWithFormat:@"geode://geode-launch?bundle-name=%@", [Utils gdBundleName]];
+    if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"]) {
+        [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
+        [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+        [[Utils getPrefs] setBool:NO forKey:@"safemode"];
+        NSFileManager *fm = [NSFileManager defaultManager];
+        [fm createFileAtPath:
+            [[LCPath docPath] URLByAppendingPathComponent:@"jitflag"].path 
+            contents:[[NSData alloc] init]
+            attributes:@{}
+        ];
+         // get around NSUserDefaults because sometimes it works and doesnt work when relaunching...
+        [Utils showNotice:self title:@"Relaunch the app with JIT to start Geode!"];
+        return;
+    }
+    NSString *openURL = [NSString stringWithFormat:@"geode://launch"];
     NSURL* url = [NSURL URLWithString:openURL];
     if([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]){
         [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
         return;
-    }*/
+    }
     //try await signApp(force: false)
-
+/*
     [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
     [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+    [[Utils getPrefs] setBool:NO forKey:@"safemode"];
     [self signApp:NO completionHandler:^(BOOL success, NSString *error){
         if (!success) {
-            [Utils showError:self title:error error:nil];
-            [self updateState];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [Utils showError:self title:error error:nil];
+                [self updateState];
+            });
             return;
         }
         if (![LCUtils launchToGuestApp]) {
-            NSFileManager *fm = [NSFileManager defaultManager];
-            [fm createFileAtPath:
-                [[LCPath docPath] URLByAppendingPathComponent:@"jitflag"].path 
-                contents:[[NSData alloc] init]
-                attributes:@{}
-            ];
-             // get around NSUserDefaults because sometimes it works and doesnt work when relaunching...
-            [Utils showNotice:self title:@"Relaunch the app with JIT to start Geode!"];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSFileManager *fm = [NSFileManager defaultManager];
+                [fm createFileAtPath:
+                    [[LCPath docPath] URLByAppendingPathComponent:@"jitflag"].path 
+                    contents:[[NSData alloc] init]
+                    attributes:@{}
+                ];
+                 // get around NSUserDefaults because sometimes it works and doesnt work when relaunching...
+                [Utils showNotice:self title:@"Relaunch the app with JIT to start Geode!"];
+            });
         }
     }];
+    */
 }
 
 /*
 - (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url {
-    NSLog(@"Selected URL: %@", url);
+    AppLog(@"Selected URL: %@", url);
     [VerifyInstall startGDInstall:url];
     // Use the selected URL as needed
 }
@@ -311,7 +344,7 @@
     UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"WHY" style:UIAlertActionStyleDefault handler:nil];
     [alert addAction:okAction];
     [self presentViewController:alert animated:YES completion:nil];
-    NSLog(@"Document picker was cancelled");
+    AppLog(@"Document picker was cancelled");
 }
 */
 
@@ -328,7 +361,7 @@
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location {
     dispatch_async(dispatch_get_main_queue(), ^{
         // so apparently i have to run this asynchronously or else it wont work... WHY
-        NSLog(@"[Geode] start installing ipa!");
+        AppLog(@"[Geode] start installing ipa!");
         self.optionalTextLabel.text = @"Extracting...";
         [self.progressBar setHidden:NO];
         [self.progressBar setCancelHidden:YES];

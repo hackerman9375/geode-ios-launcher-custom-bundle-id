@@ -1,3 +1,4 @@
+#import "src/components/LogUtils.h"
 #import "LCSharedUtils.h"
 #import "src/LCUtils/Shared.h"
 #import "src/LCUtils/LCAppInfo.h"
@@ -83,7 +84,7 @@ extern NSBundle *lcMainBundle;
         }
         [LCUtils signMods:[[LCPath docPath] URLByAppendingPathComponent:@"game/geode"] force:NO signer:app.signer progressHandler:^(NSProgress *progress) {} completion:^(NSError *error) {
             if (error != nil) {
-                NSLog(@"[Geode] Detailed error for signing mods: %@", error);
+                AppLog(@"[Geode] Detailed error for signing mods: %@", error);
             }
             [LCUtils launchToGuestApp];
         }];
@@ -101,6 +102,9 @@ extern NSBundle *lcMainBundle;
     int tries = 1;
     if (!access(tsPath.UTF8String, F_OK)) {
         urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
+    } else if (self.certificatePassword) {
+        tries = 2;
+        urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", lcAppUrlScheme];
     } else if ([application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) {
         urlScheme = @"sidestore://sidejit-enable?bid=%@";
     } else {
@@ -138,7 +142,7 @@ extern NSBundle *lcMainBundle;
         if(error) {
             return dispatch_async(dispatch_get_main_queue(), ^{
                 [Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer", sideJITServerAddress, lcMainBundle.bundleIdentifier] error:error];
-                NSLog(@"[Geode] Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
+                AppLog(@"[Geode] Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
             });
         }
     }];
