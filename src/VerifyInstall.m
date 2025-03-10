@@ -233,7 +233,16 @@ BOOL hasDoneUpdate = NO;
 
 // after the user installed geode itself
 + (BOOL)verifyGeodeInstalled {
-    return [[NSFileManager defaultManager] fileExistsAtPath:[[LCPath tweakPath] URLByAppendingPathComponent:@"Geode.ios.dylib"].path];
+    if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+        NSString *applicationSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
+        if (applicationSupportDirectory != nil) {
+            return [[NSFileManager defaultManager] fileExistsAtPath:[applicationSupportDirectory stringByAppendingString:@"/GeometryDash/game/geode/Geode.ios.dylib"]];
+        } else {
+            return NO;
+        }
+    } else {
+        return [[NSFileManager defaultManager] fileExistsAtPath:[[LCPath tweakPath] URLByAppendingPathComponent:@"Geode.ios.dylib"].path];
+    }
 }
 + (BOOL)verifyAll {
     if (!hasDoneUpdate && [[Utils getPrefs] boolForKey:@"UPDATE_AUTOMATICALLY"]) {

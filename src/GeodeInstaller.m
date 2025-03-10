@@ -248,31 +248,8 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
         if (data) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 NSDictionary* gdPlist;
-
                 if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-                    NSFileManager *fm = [NSFileManager defaultManager];
-                    NSError* error;
-
-                    NSURL *infoPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"GDInfo.plist"];
-                    if ([fm fileExistsAtPath:[infoPath path]]) {
-                        [fm removeItemAtURL:infoPath error:&error];
-                        if (error) {
-                            [self.root updateState];
-                            return;
-                        }
-                    }
-                    [fm copyItemAtURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@/GeometryJump.app/Info.plist", [Utils getGDBundlePath]]] toURL:infoPath error:&error];
-                    if (error) {
-                        [self.root updateState];
-                    }
-                    gdPlist = [NSDictionary dictionaryWithContentsOfURL:
-                        infoPath
-                        error:&error
-                    ];
-                    if (error) {
-                        [self.root updateState];
-                        return;
-                    }
+                    gdPlist = [NSDictionary dictionaryWithContentsOfFile:[[Utils getGDBundlePath] stringByAppendingPathComponent:@"GeometryJump.app/Info.plist"]];
                 } else {
                     gdPlist = [NSDictionary dictionaryWithContentsOfURL:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/Info.plist"]];
                 }
@@ -315,7 +292,6 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
     if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
         NSString *applicationSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
         if (applicationSupportDirectory != nil) {
-
             // https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m
             NSString *geode_dir = [applicationSupportDirectory stringByAppendingString:@"/GeometryDash/game/geode"];
             NSString *geode_lib = [geode_dir stringByAppendingString:@"/Geode.ios.dylib"];

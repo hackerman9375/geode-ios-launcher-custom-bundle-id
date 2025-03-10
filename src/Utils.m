@@ -8,6 +8,8 @@
 
 BOOL checkedSandboxed = NO;
 BOOL sandboxValue = NO;
+NSString *gdBundlePath = nil;
+NSString *gdDocPath = nil;
 
 @implementation Utils
 + (NSString*)launcherBundleName {
@@ -96,7 +98,7 @@ BOOL sandboxValue = NO;
                                                               error:&error];
 
     if (error) {
-        AppLog(@"[Geode] Error reading directory: %@", error.localizedDescription);
+        AppLog(@"[Geode] Couldn't read %@, Error reading directory: %@", directoryPath, error.localizedDescription);
         return nil;
     }
 
@@ -120,6 +122,8 @@ BOOL sandboxValue = NO;
     return [fileManager fileExistsAtPath:path isDirectory:nil];
 }
 + (NSString*)getGDDocPath {
+    // me when performance
+    if (gdDocPath != nil) return gdDocPath;
     NSFileManager *fm = [NSFileManager defaultManager];
     NSError* err;
     NSArray *dirs = [fm contentsOfDirectoryAtPath:@"/var/mobile/Containers/Data/Application" error:&err];
@@ -132,7 +136,8 @@ BOOL sandboxValue = NO;
     for (NSString *dir in dirs) {
         NSString *checkPrefs = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/Library/HTTPStorages/com.robtop.geometryjump", dir];
         if ([fm fileExistsAtPath:checkPrefs isDirectory:nil]) {
-            return [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@", dir];
+            gdDocPath = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/", dir];
+            return gdDocPath;
         }
     }
     
@@ -158,6 +163,8 @@ BOOL sandboxValue = NO;
     return nil;
 }
 + (NSString*)getGDBundlePath {
+    // me when performance
+    if (gdBundlePath != nil) return gdBundlePath;
     NSFileManager *fm = [NSFileManager defaultManager];
     NSError* err;
     NSArray *dirs = [fm contentsOfDirectoryAtPath:@"/var/containers/Bundle/Application" error:&err];
@@ -169,10 +176,10 @@ BOOL sandboxValue = NO;
     for (NSString *dir in dirs) {
         NSString *checkPrefs = [NSString stringWithFormat:@"/var/containers/Bundle/Application/%@/GeometryJump.app", dir];
         if ([fm fileExistsAtPath:checkPrefs isDirectory:nil]) {
-            return [NSString stringWithFormat:@"/var/containers/Bundle/Application/%@", dir];
+            gdBundlePath = [NSString stringWithFormat:@"/var/containers/Bundle/Application/%@/", dir];
+            return gdBundlePath;
         }
     }
-    
     return nil;
 }
 

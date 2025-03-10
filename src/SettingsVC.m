@@ -137,12 +137,18 @@
             } else if (indexPath.row == 2) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"gameplay.fix-rotation".loc;
-                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_ROTATION"] tag:5 disable:NO];
+                if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+                    cellval1.textLabel.textColor = [UIColor systemGrayColor];
+                }
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_ROTATION"] tag:5 disable:[[Utils getPrefs] boolForKey:@"USE_TWEAK"]];
                 return cellval1;
             } if (indexPath.row == 3) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.textLabel.text = @"gameplay.fix-black-screen".loc;
-                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_BLACKSCREEN"] tag:8 disable:NO];
+                if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+                    cellval1.textLabel.textColor = [UIColor systemGrayColor];
+                }
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_BLACKSCREEN"] tag:8 disable:[[Utils getPrefs] boolForKey:@"USE_TWEAK"]];
                 return cellval1;
             }
             break;
@@ -231,8 +237,11 @@
                 return cellval1;
             } else if (indexPath.row == 2) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:NO];
+                cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:[[Utils getPrefs] boolForKey:@"USE_TWEAK"]];
                 cellval1.textLabel.text = @"advanced.manual-reopen-jit".loc;
+                if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+                    cellval1.textLabel.textColor = [UIColor systemGrayColor];
+                }
                 return cellval1;
             } else if (indexPath.row == 3) {
                 cell.textLabel.text = @"advanced.view-recent-logs".loc;
@@ -251,7 +260,12 @@
                 cellval1.textLabel.text = @"about.geode".loc;
                 cellval1.detailTextLabel.text = [Utils getGeodeVersion];
             } else if (indexPath.row == 2) {
-                NSString *infoPlistPath = [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"Info.plist"].path;
+                NSString *infoPlistPath;
+                if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+                    infoPlistPath = [[Utils getGDBundlePath] stringByAppendingPathComponent:@"GeometryJump.app/Info.plist"];
+                } else {
+                    infoPlistPath = [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"Info.plist"].path;
+                }
                 NSDictionary *infoDictionary = [NSDictionary dictionaryWithContentsOfFile:infoPlistPath];
                 cellval1.textLabel.text = @"about.geometry-dash".loc;
                 cellval1.detailTextLabel.text = [infoDictionary objectForKey:@"CFBundleShortVersionString"];
@@ -412,10 +426,18 @@
                 break;
             }
             case 2: { // Open file manager
-                NSString *openURL = [
-                    NSString stringWithFormat:@"shareddocuments://%@",
-                    [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents"].path
-                ];
+                NSString *openURL;
+                if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+                    openURL = [
+                        NSString stringWithFormat:@"filza://%@",
+                        [[Utils getGDDocPath] stringByAppendingPathComponent:@"Documents"]
+                    ];
+                } else {
+                    openURL = [
+                        NSString stringWithFormat:@"shareddocuments://%@",
+                        [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents"].path
+                    ];
+                }
                 NSURL* url = [NSURL URLWithString:openURL];
                 if([[UIApplication sharedApplication] canOpenURL:url]){
                     [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
@@ -437,6 +459,10 @@
     } else if (indexPath.section == 1) {
         switch (indexPath.row) {
             case 0: { // Safe Mode
+                if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+                    [Utils showError:self title:@"gameplay.safe-mode.error".loc error:nil];
+                    break;
+                }
                 if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"]) {
                     [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
                     [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
@@ -568,18 +594,28 @@
         }
     } else if (indexPath.section == 4) {
         switch (indexPath.row) {
-            case 3: // View app logs
+            case 3: { // View app logs
+                NSURL *file = [Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/logs/"].path];
+                if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+                    file = [Utils pathToMostRecentLogInDirectory:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/logs/"]];
+                }
                 [[self navigationController] pushViewController:
-                    [[LogsViewController alloc] initWithFile:[Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/logs/"].path]]
+                    [[LogsViewController alloc] initWithFile:file]
                     animated:YES
                 ];
                 break;
-            case 4: // View recent crash
+            }
+            case 4: { // View recent crash
+                NSURL *file = [Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/crashlogs/"].path];
+                if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+                    file = [Utils pathToMostRecentLogInDirectory:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/crashlogs/"]];
+                }
                 [[self navigationController] pushViewController:
-                    [[LogsViewController alloc] initWithFile:[Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/crashlogs/"].path]]
+                    [[LogsViewController alloc] initWithFile:file]
                     animated:YES
                 ];
                 break;
+            }
         }
     } else if (indexPath.section == 6) {
         NSURL* url = [NSURL URLWithString:self.creditsArray[indexPath.row][@"url"]];
@@ -665,6 +701,7 @@
             if ([sender isOn]) {
                 [Utils showNotice:self title:@"advanced.use-tweak.warning".loc];
             }
+            [self.tableView reloadData];
             [Utils toggleKey:@"USE_TWEAK"];
             break;
         case 4: // Auto JIT

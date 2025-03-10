@@ -260,7 +260,7 @@
 
 - (void)launchGame {
     [self.launchButton setEnabled:NO];
-    if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"]) {
+    if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] && ![[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
         [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
         [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
         [[Utils getPrefs] setBool:NO forKey:@"safemode"];
@@ -272,6 +272,11 @@
         ];
          // get around NSUserDefaults because sometimes it works and doesnt work when relaunching...
         [Utils showNotice:self title:@"launcher.relaunch-notice".loc];
+        return;
+    }
+    if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+        NSString *appBundleIdentifier = @"com.robtop.geometryjump";
+        [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
         return;
     }
     NSString *openURL = [NSString stringWithFormat:@"geode://launch"];

@@ -94,6 +94,7 @@
 
 "gameplay" = "Gameplay";
 "gameplay.safe-mode" = "Launch in Safe Mode";
+"gameplay.safe-mode.error" = "Safe Mode does not work while jailbroken!";
 "gameplay.auto-launch" = "Automatically Launch";
 "gameplay.fix-rotation" = "Fix Screen Rotation";
 "gameplay.fix-black-screen" = "Fix Black Screen";
