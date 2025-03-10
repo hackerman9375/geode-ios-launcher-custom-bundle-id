@@ -48,7 +48,6 @@ void LCPatchAltStore(const char *path, struct mach_header_64 *header);
 + (NSString *)appUrlScheme;
 + (NSURL *)appGroupPath;
 + (NSString *)storeInstallURLScheme;
-+ (NSString *)getVersionInfo;
 
 // ext 
 + (NSUserDefaults *)appGroupUserDefault;

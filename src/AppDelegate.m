@@ -13,9 +13,6 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.backgroundColor = [Theming getBackgroundColor];
-//18, 19, 24
-
-    //self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
     if ([[Utils getPrefs] boolForKey:@"CompletedSetup"]) {
         RootViewController *rootViewController = [[RootViewController alloc] init];
         self.window.rootViewController = rootViewController;

@@ -28,6 +28,7 @@
 #import "MSColorComponentView.h"
 #import "MSSliderView.h"
 #import "MSColorUtils.h"
+#import "src/Localization.h"
 
 extern CGFloat const MSRGBColorComponentMaxValue;
 
@@ -105,7 +106,7 @@ static NSUInteger const MSRGBColorComponentsSize = 3;
     [self addSubview:_colorSample];
 
     NSMutableArray *tmp = [NSMutableArray array];
-    NSArray *titles = @[NSLocalizedString(@"Red", ), NSLocalizedString(@"Green", ), NSLocalizedString(@"Blue", )];
+    NSArray *titles = @[NSLocalizedString(@"color.red".loc, ), NSLocalizedString(@"color.green".loc, ), NSLocalizedString(@"color.blue".loc, )];
     NSArray *maxValues = @[@(MSRGBColorComponentMaxValue), @(MSRGBColorComponentMaxValue), @(MSRGBColorComponentMaxValue)];
 
     for (NSUInteger i = 0; i < MSRGBColorComponentsSize; ++i) {

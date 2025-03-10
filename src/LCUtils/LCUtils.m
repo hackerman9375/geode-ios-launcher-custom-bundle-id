@@ -5,7 +5,6 @@
 #import "src/components/LogUtils.h"
 #import "AltStoreCore/ALTSigner.h"
 #import "LCUtils.h"
-#import "LCVersionInfo.h"
 #import "ZSign/zsigner.h"
 #import "src/Utils.h"
 #import <MobileCoreServices/MobileCoreServices.h>
@@ -532,12 +531,6 @@ Class LCSharedUtilsClass = nil;
 
     return tmpIPAPath;
 }
-
-+ (NSString *)getVersionInfo {
-    return [NSClassFromString(@"LCVersionInfo") getVersionStr];
-}
-
-
 
 #pragma mark - Extensions of LCUtils
 // ext 

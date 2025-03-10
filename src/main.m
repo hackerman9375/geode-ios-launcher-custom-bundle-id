@@ -581,17 +581,10 @@ int GeodeMain(int argc, char *argv[]) {
         NSString *appError = invokeAppMain(selectedApp, selectedContainer, safeMode, argc, argv);
         if (appError) {
             [lcUserDefaults setObject:appError forKey:@"error"];
-            //[LCSharedUtils setAppRunningByThisLC:nil];
-            //[LCSharedUtils setContainerUsingByThisLC:nil];
             // potentially unrecovable state, exit now
             return 1;
         }
     }
-
-    // this crashes for SOME REASON
-    //[LCSharedUtils setAppRunningByThisLC:nil];
-    //[LCSharedUtils setContainerUsingByThisLC:nil];
-    //
     @autoreleasepool {
         void *uikitHandle = dlopen("/System/Library/Frameworks/UIKit.framework/UIKit", RTLD_GLOBAL);
         int (*UIApplicationMain)(int, char**, NSString *, NSString *) = dlsym(uikitHandle, "UIApplicationMain");

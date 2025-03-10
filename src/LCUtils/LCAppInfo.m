@@ -29,18 +29,13 @@
                 @"LCOrignalBundleIdentifier",
                 @"LCDataUUID",
                 @"LCJITLessSignID",
-                @"LCSelectedLanguage",
                 @"LCExpirationDate",
                 @"LCTeamId",
                 @"isJITNeeded",
                 @"isLocked",
-                @"isHidden",
                 @"doSymlinkInbox",
                 @"bypassAssertBarrierOnQueue",
-                @"signer",
-                @"cachedColor",
-                @"LCContainers",
-                @"ignoreDlopenError"
+                @"signer"
             ];
             for(NSString* key in lcAppInfoKeys) {
                 _info[key] = _infoPlist[key];
@@ -91,18 +86,6 @@
     return urlSchemes;
 }
 
-- (NSString*)displayName {
-    if (_infoPlist[@"CFBundleDisplayName"]) {
-        return _infoPlist[@"CFBundleDisplayName"];
-    } else if (_infoPlist[@"CFBundleName"]) {
-        return _infoPlist[@"CFBundleName"];
-    } else if (_infoPlist[@"CFBundleExecutable"]) {
-        return _infoPlist[@"CFBundleExecutable"];
-    } else {
-        return @"App Corrupted, Please Reinstall This App";
-    }
-}
-
 - (NSString*)version {
     NSString* version = _infoPlist[@"CFBundleShortVersionString"];
     if (!version) {
@@ -141,66 +124,10 @@
     return _info;
 }
 
-- (UIImage*)icon {
-    UIImage* icon = [UIImage imageNamed:[_infoPlist valueForKeyPath:@"CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconFiles"][0] inBundle:[[NSBundle alloc] initWithPath: _bundlePath] compatibleWithTraitCollection:nil];
-    if(!icon) {
-        icon = [UIImage imageNamed:[_infoPlist valueForKeyPath:@"CFBundleIconFiles"][0] inBundle:[[NSBundle alloc] initWithPath: _bundlePath] compatibleWithTraitCollection:nil];
-    }
-    
-    if(!icon) {
-        icon = [UIImage imageNamed:[_infoPlist valueForKeyPath:@"CFBundleIcons~ipad"][@"CFBundlePrimaryIcon"][@"CFBundleIconName"] inBundle:[[NSBundle alloc] initWithPath: _bundlePath] compatibleWithTraitCollection:nil];
-    }
-    
-    if(!icon) {
-        icon = [UIImage imageNamed:@"DefaultIcon"];
-    }
-    return icon;
-}
-
-- (NSDictionary *)generateWebClipConfigWithContainerId:(NSString*)containerId {
-    NSString* appClipUrl;
-    if(containerId) {
-        appClipUrl = [NSString stringWithFormat:@"geode://geode-launch?bundle-name=%@&container-folder-name=%@", self.bundlePath.lastPathComponent, containerId];
-    } else {
-        appClipUrl = [NSString stringWithFormat:@"geode://geode-launch?bundle-name=%@", self.bundlePath.lastPathComponent];
-    }
-    
-    NSDictionary *payload = @{
-        @"FullScreen": @YES,
-        @"IgnoreManifestScope": @YES,
-        @"IsRemovable": @YES,
-        @"Label": self.displayName,
-        @"PayloadDescription": [NSString stringWithFormat:@"Web Clip for launching %@ (%@) in LiveContainer", self.displayName, self.bundlePath.lastPathComponent],
-        @"PayloadDisplayName": self.displayName,
-        @"PayloadIdentifier": self.bundleIdentifier,
-        @"PayloadType": @"com.apple.webClip.managed",
-        @"PayloadUUID": NSUUID.UUID.UUIDString,
-        @"PayloadVersion": @(1),
-        @"Precomposed": @NO,
-        @"toPayloadOrganization": @"Geode",
-        @"URL": appClipUrl
-    };
-    return @{
-        @"ConsentText": @{
-            @"default": [NSString stringWithFormat:@"This profile installs a web clip which opens %@ (%@) in LiveContainer", self.displayName, self.bundlePath.lastPathComponent]
-        },
-        @"PayloadContent": @[payload],
-        @"PayloadDescription": payload[@"PayloadDescription"],
-        @"PayloadDisplayName": self.displayName,
-        @"PayloadIdentifier": self.bundleIdentifier,
-        @"PayloadOrganization": @"Geode",
-        @"PayloadRemovalDisallowed": @(NO),
-        @"PayloadType": @"Configuration",
-        @"PayloadUUID": @"345097fb-d4f7-4a34-ab90-2e3f1ad62eed",
-        @"PayloadVersion": @(1),
-    };
-}
-
 - (void)save {
     if(!_autoSaveDisabled) {
         [_info writeToFile:[NSString stringWithFormat:@"%@/LCAppInfo.plist", _bundlePath] atomically:YES];
     }
-
 }
 
 - (void)preprocessBundleBeforeSiging:(NSURL *)bundleURL completion:(dispatch_block_t)completion {

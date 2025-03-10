@@ -15,12 +15,6 @@
 #import <dlfcn.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 
-/*
-@interface RootViewController () <UIDocumentPickerDelegate>
-
-@end
-*/
-
 @interface RootViewController ()
 
 @property (nonatomic, strong) ProgressBar *progressBar;
@@ -52,10 +46,10 @@
 - (void)countdownUpdate {
     self.countdown--;
     if (self.countdown < 0) self.countdown = 0;
-    self.optionalTextLabel.text = [NSString stringWithFormat:@"Automatically launching in %li...", (long)self.countdown];
+    self.optionalTextLabel.text = [@"launcher.status.automatic-launch" localizeWithFormat:[NSString stringWithFormat:@"%ld", (long)self.countdown]];
 
     if (self.countdown <= 0) {
-        self.optionalTextLabel.text = @"Launching...";
+        self.optionalTextLabel.text = @"launcher.status.automatic-launch.end".loc;
         [self.launchTimer invalidate];
         self.launchTimer = nil;
         [self launchGame];
@@ -72,7 +66,7 @@
     NSString *errStr = [[Utils getPrefs] stringForKey:@"error"];
     if (errStr != nil) {
         AppLog(@"[Geode] Found error: %@", errStr);
-        [Utils showError:self title:[NSString stringWithFormat:@"Geode couldn't load Geometry Dash: %@", errStr] error:nil];
+        [Utils showError:self title:[@"launcher.error.gd" localizeWithFormat:errStr] error:nil];
         [[Utils getPrefs] setObject:nil forKey:@"error"];
     }
 
@@ -85,7 +79,7 @@
     [self.launchButton removeTarget:nil action:nil forControlEvents:UIControlEventTouchUpInside];
     if ([VerifyInstall verifyAll]) {
         [UIApplication sharedApplication].idleTimerDisabled = NO;
-        [self.launchButton setTitle:@"Launch" forState:UIControlStateNormal];
+        [self.launchButton setTitle:@"launcher.launch".loc forState:UIControlStateNormal];
         [self.launchButton setImage:[[UIImage systemImageNamed:@"play.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
         if ([[Utils getPrefs] boolForKey:@"LOAD_AUTOMATICALLY"]) {
             [self.optionalTextLabel setHidden:NO];
@@ -102,23 +96,23 @@
         if (![VerifyInstall verifyGDAuthenticity]) {
             self.launchButton.frame = CGRectMake(self.view.center.x - 85, CGRectGetMaxY(self.optionalTextLabel.frame) + 15, 110, 45);
             self.settingsButton.frame = CGRectMake(self.view.center.x + 30, CGRectGetMaxY(self.optionalTextLabel.frame) + 15, 45, 45);
-            self.optionalTextLabel.text = @"Geometry Dash is not verified.\nYou need to verify that you installed the app.";
-            [self.launchButton setTitle:@"Verify" forState:UIControlStateNormal];
+            self.optionalTextLabel.text = @"launcher.status.not-verified".loc;
+            [self.launchButton setTitle:@"launcher.verify-gd".loc forState:UIControlStateNormal];
             [self.launchButton setImage:[[UIImage systemImageNamed:@"checkmark.circle"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
             [self.launchButton addTarget:self action:@selector(verifyGame) forControlEvents:UIControlEventTouchUpInside];
         } else if (![VerifyInstall verifyGDInstalled] || ![VerifyInstall verifyGeodeInstalled]) {
             self.launchButton.frame = CGRectMake(self.launchButton.frame.origin.x, CGRectGetMaxY(self.optionalTextLabel.frame) + 10, 140, 45);
             self.settingsButton.frame = CGRectMake(self.settingsButton.frame.origin.x, CGRectGetMaxY(self.optionalTextLabel.frame) + 10, 45, 45);
-            self.optionalTextLabel.text = @"Geode is not installed.";
-            [self.launchButton setTitle:@"Download" forState:UIControlStateNormal];
+            self.optionalTextLabel.text = @"launcher.status.not-installed".loc;
+            [self.launchButton setTitle:@"launcher.download".loc forState:UIControlStateNormal];
             [self.launchButton setImage:[[UIImage systemImageNamed:@"tray.and.arrow.down"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
             [self.launchButton addTarget:self action:@selector(downloadGame) forControlEvents:UIControlEventTouchUpInside];
         } else if ([VerifyInstall verifyAll]) {
             self.launchButton.frame = CGRectMake(self.launchButton.frame.origin.x, CGRectGetMaxY(self.optionalTextLabel.frame) + 10, 140, 45);
             self.settingsButton.frame = CGRectMake(self.settingsButton.frame.origin.x, CGRectGetMaxY(self.optionalTextLabel.frame) + 10, 45, 45);
             [self.launchButton setEnabled:NO];
-            self.optionalTextLabel.text = @"Checking for updates...";
-            [self.launchButton setTitle:@"Update" forState:UIControlStateNormal];
+            self.optionalTextLabel.text = @"launcher.status.check-updates".loc;
+            [self.launchButton setTitle:@"launcher.update".loc forState:UIControlStateNormal];
             [self.launchButton setImage:[[UIImage systemImageNamed:@"tray.and.arrow.down"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
             [self.launchButton addTarget:self action:@selector(updateGeode) forControlEvents:UIControlEventTouchUpInside];
             [[GeodeInstaller alloc] checkUpdates:self download:YES];
@@ -156,7 +150,7 @@
     // for things like if it errored or needs installing...
     self.optionalTextLabel = [[UILabel alloc] init];
     self.optionalTextLabel.numberOfLines = 2;
-    self.optionalTextLabel.text = @"Geode is not installed.";
+    self.optionalTextLabel.text = @"launcher.status.not-installed".loc;
     self.optionalTextLabel.textColor = [Theming getFooterColor];
     self.optionalTextLabel.textAlignment = NSTextAlignmentCenter;
     self.optionalTextLabel.font = [UIFont systemFontOfSize:16];
@@ -184,7 +178,7 @@
     // progress bar for downloading!
     self.progressBar = [[ProgressBar alloc]
         initWithFrame:CGRectMake(self.view.center.x - 140, self.view.center.y + 200, 280, 68)
-        progressText:@"Downloading... {percent}%" // note for me, nil for no string
+        progressText:@"launcher.progress.text".loc // note for me, nil for no string
         showCancelButton:YES
         root:self
     ];
@@ -230,20 +224,6 @@
     [[GeodeInstaller alloc] checkUpdates:self download:YES];
 }
 - (void)downloadGame {
-    /*UIDocumentPickerViewController *documentPickerController = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.item"] inMode:UIDocumentPickerModeImport];
-    documentPickerController.delegate = self;
-    documentPickerController.modalPresentationStyle = UIModalPresentationFullScreen;
-
-    [self presentViewController:documentPickerController animated:YES completion:nil];*/
-
-    /*
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"notice"
-        message:@"currently unimplemented"
-        preferredStyle:UIAlertControllerStyleAlert];
-
-    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"WHY" style:UIAlertActionStyleDefault handler:nil];
-    [alert addAction:okAction];
-    [self presentViewController:alert animated:YES completion:nil];*/
     [self.launchButton setEnabled:NO];
     [UIApplication sharedApplication].idleTimerDisabled = YES;
     if ([VerifyInstall verifyGDInstalled] && ![VerifyInstall verifyGeodeInstalled]) {
@@ -291,7 +271,7 @@
             attributes:@{}
         ];
          // get around NSUserDefaults because sometimes it works and doesnt work when relaunching...
-        [Utils showNotice:self title:@"Relaunch the app with JIT to start Geode!"];
+        [Utils showNotice:self title:@"launcher.relaunch-notice".loc];
         return;
     }
     NSString *openURL = [NSString stringWithFormat:@"geode://launch"];
@@ -300,7 +280,6 @@
         [[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
         return;
     }
-    //try await signApp(force: false)
 /*
     [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
     [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
@@ -329,25 +308,6 @@
     */
 }
 
-/*
-- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url {
-    AppLog(@"Selected URL: %@", url);
-    [VerifyInstall startGDInstall:url];
-    // Use the selected URL as needed
-}
-
-- (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"cancelled"
-        message:@"twas cancel"
-        preferredStyle:UIAlertControllerStyleAlert];
-
-    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"WHY" style:UIAlertActionStyleDefault handler:nil];
-    [alert addAction:okAction];
-    [self presentViewController:alert animated:YES completion:nil];
-    AppLog(@"Document picker was cancelled");
-}
-*/
-
 // download part because im too lazy to impl delegates in the other class
 // updating
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
@@ -362,7 +322,7 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         // so apparently i have to run this asynchronously or else it wont work... WHY
         AppLog(@"[Geode] start installing ipa!");
-        self.optionalTextLabel.text = @"Extracting...";
+        self.optionalTextLabel.text = @"launcher.status.extracting".loc;
         [self.progressBar setHidden:NO];
         [self.progressBar setCancelHidden:YES];
     });
@@ -374,7 +334,7 @@
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (error) {
-            [Utils showError:self title:@"Download failed" error:error];
+            [Utils showError:self title:@"launcher.error.download-fail".loc error:error];
             [self.progressBar setHidden:YES];
         }
     });

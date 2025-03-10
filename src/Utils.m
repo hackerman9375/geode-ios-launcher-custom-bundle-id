@@ -31,10 +31,6 @@ BOOL sandboxValue = NO;
     return (verTag) ? verTag : @"Geode not installed";
 }
 
-+ (NSString*)getGeodeDebURL {
-    return @"";
-}
-
 + (void)updateGeodeVersion:(NSString *)newVer {
     NSUserDefaults *userDefaults = [Utils getPrefs];
     [userDefaults setObject:newVer forKey:@"CURRENT_VERSION_TAG"];
@@ -44,6 +40,9 @@ BOOL sandboxValue = NO;
 + (NSString*)getGeodeReleaseURL {
     //return @"http://192.168.200.1:38000";
     return @"https://api.github.com/repos/geode-sdk/geode/releases/latest";
+}
++ (NSString*)getGeodeLauncherURL {
+    return @"https://api.github.com/repos/geode-sdk/ios-launcher/releases/latest";
 }
 
 // ai generated because i cant figure this out
@@ -178,27 +177,27 @@ BOOL sandboxValue = NO;
 }
 
 + (void)showNotice:(UIViewController*)root title:(NSString *)title {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Notice"
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc
         message:title
         preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
     [alert addAction:okAction];
     [root presentViewController:alert animated:YES completion:nil];
 }
 + (void)showError:(UIViewController*)root title:(NSString *)title error:(NSError *)error  {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error"
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"common.error".loc
         message:(error == nil) ? title : [NSString stringWithFormat:@"%@: %@", title, error.localizedDescription]
         preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
     [alert addAction:okAction];
     [root presentViewController:alert animated:YES completion:nil];
 }
 
 + (void)showErrorGlobal:(NSString *)title error:(NSError *)error {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error"
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"common.error".loc
         message:(error == nil) ? title : [NSString stringWithFormat:@"%@: %@", title, error.localizedDescription]
         preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
     [alert addAction:okAction];
 
 

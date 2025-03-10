@@ -20,14 +20,11 @@
 
 - (void)setBundlePath:(NSString*)newBundlePath;
 - (NSMutableDictionary*)info;
-- (UIImage*)icon;
-- (NSString*)displayName;
 - (NSString*)bundlePath;
 - (NSString*)bundleIdentifier;
 - (NSString*)version;
 - (NSMutableArray*) urlSchemes;
 - (instancetype)initWithBundlePath:(NSString*)bundlePath;
-- (NSDictionary *)generateWebClipConfigWithContainerId:(NSString*)containerId;
 - (void)save;
 - (void)patchExecAndSignIfNeedWithCompletionHandler:(void(^)(bool success, NSString* errorInfo))completetionHandler progressHandler:(void(^)(NSProgress* progress))progressHandler  forceSign:(BOOL)forceSign;
 @end

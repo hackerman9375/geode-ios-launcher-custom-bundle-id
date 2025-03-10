@@ -29,6 +29,7 @@
 #import "MSColorComponentView.h"
 #import "MSSliderView.h"
 #import "MSColorUtils.h"
+#import "src/Localization.h"
 
 extern CGFloat const MSAlphaComponentMaxValue;
 extern CGFloat const MSHSBColorComponentMaxValue;
@@ -119,7 +120,7 @@ static CGFloat const MSColorWheelDimension = 200.0f;
     [self addSubview:_colorWheel];
 
     _brightnessView = [[MSColorComponentView alloc] init];
-    _brightnessView.title = NSLocalizedString(@"Brightness", );
+    _brightnessView.title = NSLocalizedString(@"color.brightness".loc, );
     _brightnessView.maximumValue = MSHSBColorComponentMaxValue;
     _brightnessView.format = @"%.2f";
     _brightnessView.translatesAutoresizingMaskIntoConstraints = NO;

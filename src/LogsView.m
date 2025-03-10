@@ -56,13 +56,13 @@
     }
     if (error) {
         AppLog(@"[Geode] Error reading log file: %@", error);
-        self.textView.text = [NSString stringWithFormat:@"%@ could not be read.", self.fileURL.lastPathComponent];
+        self.textView.text = [@"logs.error" localizeWithFormat:self.fileURL.lastPathComponent];
     }
 }
 
 - (void)shareLogs {
     if (self.textView.text.length == 0) {
-        [Utils showError:self title:@"There is no file you can share!" error:nil];
+        [Utils showError:self title:@"logs.share-error".loc error:nil];
         return;
     }
     UIActivityViewController *activityViewController = [

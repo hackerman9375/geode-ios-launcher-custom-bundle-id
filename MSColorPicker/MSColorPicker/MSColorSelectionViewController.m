@@ -29,6 +29,8 @@
 
 #import "MSColorPicker.h"
 
+#import "src/Localization.h"
+
 @interface MSColorSelectionViewController () <MSColorViewDelegate>
 
 @end
@@ -46,7 +48,7 @@
 {
     [super viewDidLoad];
 
-    UISegmentedControl *segmentControl = [[UISegmentedControl alloc] initWithItems:@[NSLocalizedString(@"RGB", ), NSLocalizedString(@"HSB", )]];
+    UISegmentedControl *segmentControl = [[UISegmentedControl alloc] initWithItems:@[NSLocalizedString(@"color.rgb".loc, ), NSLocalizedString(@"color.hsb".loc, )]];
     [segmentControl addTarget:self action:@selector(segmentControlDidChangeValue:) forControlEvents:UIControlEventValueChanged];
     segmentControl.selectedSegmentIndex = 0;
     self.navigationItem.titleView = segmentControl;

@@ -49,7 +49,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
     if (!ignoreRoot) {
         _root = root;
     }
-    _root.optionalTextLabel.text = @"Getting current version...";
+    _root.optionalTextLabel.text = @"launcher.status.getting-ver".loc;
     [self setVersion];
     
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeReleaseURL]]];
@@ -57,7 +57,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
     NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             return dispatch_async(dispatch_get_main_queue(), ^{
-                [Utils showError:_root title:@"Request failed" error:error];
+                [Utils showError:_root title:@"launcher.error.req-failed".loc error:error];
                 [self.root updateState];
                 AppLog(@"[Geode] Error during request: %@", error);
             });
@@ -67,7 +67,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
             id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
             if (jsonError) {
                 return dispatch_async(dispatch_get_main_queue(), ^{
-                    [Utils showError:_root title:@"JSON parsing failed" error:jsonError];
+                    [Utils showError:_root title:@"launcher.error.json-failed".loc error:jsonError];
                     [self.root updateState];
                     AppLog(@"[Geode] Error during JSON: %@", error);
                 });
@@ -86,7 +86,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
                                     if ([downloadURL isKindOfClass:[NSString class]]) {
                                         dispatch_async(dispatch_get_main_queue(), ^{
                                             [_root progressVisibility:NO];
-                                            _root.optionalTextLabel.text = @"Downloading Geode...";
+                                            _root.optionalTextLabel.text = @"launcher.status.download-geode".loc;
                                             NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
                                             downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/geode-v4.2.0-ios.zip"]];
                                             //downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:downloadURL]];
@@ -140,7 +140,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
     NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             return dispatch_async(dispatch_get_main_queue(), ^{
-                [Utils showError:_root title:@"Request failed" error:error];
+                [Utils showError:_root title:@"launcher.error.req-failed".loc error:error];
                 [self.root updateState];
                 AppLog(@"[Geode] Error during request: %@", error);
             });
@@ -150,7 +150,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
             id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
             if (jsonError) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    [Utils showError:_root title:@"JSON parsing failed" error:jsonError];
+                    [Utils showError:_root title:@"launcher.error.json-failed".loc error:jsonError];
                     if (!download) dispatch_async(dispatch_get_main_queue(), ^{
                         [self.root updateState];
                     });
@@ -178,7 +178,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
                                     AppLog(@"[Geode] Geode is out of date, updating...");
                                     [self startInstall:nil ignoreRoot:YES];
                                 } else {
-                                    root.optionalTextLabel.text = @"Update is available!";
+                                    root.optionalTextLabel.text = @"launcher.status.update-available".loc;
                                     [root.launchButton setEnabled:YES];
                                 }
                             });
@@ -190,6 +190,49 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
     }];
     [dataTask resume];
 }
+
+- (void)checkLauncherUpdates:(RootViewController *)root {
+    if (_root == nil) {
+        _root = root;
+    }
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeLauncherURL]]];
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
+    NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) {
+            return dispatch_async(dispatch_get_main_queue(), ^{
+                [Utils showError:_root title:@"launcher.error.req-failed".loc error:error];
+                AppLog(@"[Geode] Error during request: %@", error);
+            });
+        }
+        if (data) {
+            NSError *jsonError;
+            id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+            if (jsonError) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [Utils showError:_root title:@"launcher.error.json-failed".loc error:jsonError];
+                    AppLog(@"[Geode] Error parsing JSON: %@", jsonError);
+                });
+            } else {
+                if ([jsonObject isKindOfClass:[NSDictionary class]]) {
+                    NSDictionary *jsonDict = (NSDictionary *)jsonObject;
+                    NSString *tagName = jsonDict[@"tag_name"];
+                    if (tagName && [tagName isKindOfClass:[NSString class]]) {
+                        BOOL greaterThanVer = [CompareSemVer isVersion:tagName greaterThanVersion:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
+                        if (!greaterThanVer) {
+                            // assume out of date 
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                [Utils showNotice:_root title:@"launcher.notice.launcher-update".loc];
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }];
+    [dataTask resume];
+}
+
+
 - (void)verifyChecksum {
     if (_root == nil || ![VerifyInstall verifyGDInstalled]) return;
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/version.txt"]];
@@ -197,7 +240,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
     NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             return dispatch_async(dispatch_get_main_queue(), ^{
-                [Utils showError:_root title:@"Request failed" error:error];
+                [Utils showError:_root title:@"launcher.error.req-failed".loc error:error];
                 [self.root updateState];
                 AppLog(@"[Geode] Error during request: %@", error);
             });
@@ -241,9 +284,9 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
                 if (![hash isEqualToString:str]) {
                     AppLog(@"[Geode] Versions don't match. Assume GD needs an update!");
                     if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-                        [Utils showNotice:_root title:@"Your Geometry Dash is outdated!"];
+                        [Utils showNotice:_root title:@"launcher.notice.gd-outdated".loc];
                     } else {
-                        [Utils showNotice:_root title:@"Geode requires an update! Relaunch the app to update it!"];
+                        [Utils showNotice:_root title:@"launcher.notice.gd-update".loc];
                     }
                     [[Utils getPrefs] setBool:YES forKey:@"GDNeedsUpdate"];
                 }
@@ -322,7 +365,7 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (error) {
-            [Utils showError:_root title:@"Download failed, please restart the app" error:error];
+            [Utils showError:_root title:@"launcher.error.download-fail-restart".loc error:error];
         }
     });
 }

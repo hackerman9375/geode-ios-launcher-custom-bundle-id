@@ -100,48 +100,48 @@
     switch (indexPath.section) {
         case 0:
             if (indexPath.row == 0) {
-                cell.textLabel.text = @"Accent Color";
+                cell.textLabel.text = @"general.accent-color".loc;
                 UIView* colView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 16, 16)];
                 colView.backgroundColor = [Theming getAccentColor];
                 colView.layer.cornerRadius = colView.frame.size.width / 2;
                 cell.accessoryView = colView;
             } else if (indexPath.row == 1) {
-                cell.textLabel.text = @"Reset Accent Color";
+                cell.textLabel.text = @"general.reset-accent-color".loc;
                 cell.textLabel.textColor = [Theming getAccentColor];
                 cell.accessoryType = UITableViewCellAccessoryNone;
             } else if (indexPath.row == 2) {
-                cell.textLabel.text = @"Open File Manager";
+                cell.textLabel.text = @"general.open-fm".loc;
                 cell.textLabel.textColor = [Theming getAccentColor];
                 cell.accessoryType = UITableViewCellAccessoryNone;
             } else if (indexPath.row == 3) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-                cellval1.textLabel.text = @"Enable Automatic Updates";
+                cellval1.textLabel.text = @"general.enable-updates".loc;
                 cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"UPDATE_AUTOMATICALLY"] tag:0 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 4) {
-                cell.textLabel.text = @"Check for Updates";
+                cell.textLabel.text = @"general.check-updates".loc;
                 cell.textLabel.textColor = [Theming getAccentColor];
                 cell.accessoryType = UITableViewCellAccessoryNone;
             }
             break;
         case 1:
             if (indexPath.row == 0) {
-                cell.textLabel.text = @"Launch in Safe Mode";
+                cell.textLabel.text = @"gameplay.safe-mode".loc;
                 cell.textLabel.textColor = [Theming getAccentColor];
                 cell.accessoryType = UITableViewCellAccessoryNone;
             } else if (indexPath.row == 1) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-                cellval1.textLabel.text = @"Automatically Launch";
+                cellval1.textLabel.text = @"gameplay.auto-launch".loc;
                 cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"LOAD_AUTOMATICALLY"] tag:1 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 2) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-                cellval1.textLabel.text = @"Fix Screen Rotation";
+                cellval1.textLabel.text = @"gameplay.fix-rotation".loc;
                 cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_ROTATION"] tag:5 disable:NO];
                 return cellval1;
             } if (indexPath.row == 3) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-                cellval1.textLabel.text = @"Fix Black Screen";
+                cellval1.textLabel.text = @"gameplay.fix-black-screen".loc;
                 cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_BLACKSCREEN"] tag:8 disable:NO];
                 return cellval1;
             }
@@ -149,7 +149,7 @@
         case 2: {
             if (indexPath.row == 0) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-                cellval1.textLabel.text = @"Enable Auto JIT";
+                cellval1.textLabel.text = @"jit.enable-auto-jit".loc;
                 cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"AUTO_JIT"] tag:4 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 1) {
@@ -161,7 +161,7 @@
                 textField.keyboardType = UIKeyboardTypeURL;
                 textField.tag = 0;
                 cell.accessoryView = textField;
-                cell.textLabel.text = @"Address";
+                cell.textLabel.text = @"jit.auto-jit-server".loc;
                 textField.placeholder = @"http://x.x.x.x:9172";
                 textField.text = [[Utils getPrefs] stringForKey:@"SideJITServerAddr"];
             }
@@ -218,7 +218,7 @@
         case 4: 
             if (indexPath.row == 0) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-                cellval1.textLabel.text = @"Developer Mode";
+                cellval1.textLabel.text = @"advanced.dev-mode".loc;
                 cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:NO];
                 return cellval1;
             } else if (indexPath.row == 1) {
@@ -227,36 +227,36 @@
                     cellval1.textLabel.textColor = [UIColor systemGrayColor];
                 }
                 cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_TWEAK"] tag:3 disable:![Utils isJailbroken]];
-                cellval1.textLabel.text = @"Use Tweak instead of JIT";
+                cellval1.textLabel.text = @"advanced.use-tweak".loc;
                 return cellval1;
             } else if (indexPath.row == 2) {
                 cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
                 cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:NO];
-                cellval1.textLabel.text = @"Manual reopen with JIT";
+                cellval1.textLabel.text = @"advanced.manual-reopen-jit".loc;
                 return cellval1;
             } else if (indexPath.row == 3) {
-                cell.textLabel.text = @"View Recent Logs";
+                cell.textLabel.text = @"advanced.view-recent-logs".loc;
                 cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             } else if (indexPath.row == 4) {
-                cell.textLabel.text = @"View Recent Crash";
+                cell.textLabel.text = @"advanced.view-recent-crash".loc;
                 cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             }
             break;
         case 5: {
             cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
             if (indexPath.row == 0) {
-                cellval1.textLabel.text = @"iOS Launcher";
+                cellval1.textLabel.text = @"about.launcher".loc;
                 cellval1.detailTextLabel.text = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
             } else if (indexPath.row == 1) {
-                cellval1.textLabel.text = @"Geode";
+                cellval1.textLabel.text = @"about.geode".loc;
                 cellval1.detailTextLabel.text = [Utils getGeodeVersion];
             } else if (indexPath.row == 2) {
                 NSString *infoPlistPath = [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"Info.plist"].path;
                 NSDictionary *infoDictionary = [NSDictionary dictionaryWithContentsOfFile:infoPlistPath];
-                cellval1.textLabel.text = @"Geometry Dash";
+                cellval1.textLabel.text = @"about.geometry-dash".loc;
                 cellval1.detailTextLabel.text = [infoDictionary objectForKey:@"CFBundleShortVersionString"];
             } else if (indexPath.row == 3) {
-                cellval1.textLabel.text = @"Device";
+                cellval1.textLabel.text = @"about.device".loc;
                 NSString *model = [[UIDevice currentDevice] localizedModel];
                 NSString *systemName = [[UIDevice currentDevice] systemName];
                 NSString *systemVersion = [[UIDevice currentDevice] systemVersion];
@@ -276,7 +276,7 @@
         }
         case 7: {
             if (indexPath.row == 0) {
-                cell.textLabel.text = @"View Recent App Logs";
+                cell.textLabel.text = @"advanced.view-app-logs".loc;
                 cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             } else if (indexPath.row == 1) {
                 UITextField *textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
@@ -322,21 +322,21 @@
 - (NSString*)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     switch (section) {
         case 0:
-            return @"General";
+            return @"general".loc;
         case 1:
-            return @"Gameplay";
+            return @"gameplay".loc;
         case 2:
-            return @"JIT";
+            return @"jit".loc;
         case 3:
             return @"JIT-Less (Disabled)";
         case 4:
-            return @"Advanced";
+            return @"advanced".loc;
         case 5:
-            return @"About";
+            return @"about".loc;
         case 6:
-            return @"Credits";
+            return @"credits".loc;
         case 7:
-            return @"Developer";
+            return @"developer".loc;
         default:
             return @"Unknown";
     }
@@ -345,15 +345,15 @@
 - (NSString*)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
     switch (section) {
         case 0:
-            return [NSString stringWithFormat:@"Current loader version: %@", [Utils getGeodeVersion]];
+            return [@"general.footer" localizeWithFormat:[Utils getGeodeVersion]];
         case 1:
-            return @"Only enable the screen rotation fix or black screen fix if you are having problems.";
+            return @"gameplay.footer".loc;
         case 2:
-            return @"Set up your JITStreamer server. Local Network permission is required. This is not necessary to set up if you use TrollStore, or if you're jailbroken.";
+            return @"jit.footer".loc;
         //case 3:
-            //return @"JIT-less allows you to use Geode without enabling JIT! You will need to patch AltStore or SideStore to enable, or use ZSign. If you signed Geode with a Developer / Enterprise Certificate, you may need to import the certificate.";
+            //return @"jitless.footer".loc;
         case 6:
-            return @"Thanks to these contributors who helped contribute towards making Geode on iOS a possibility!";
+            return @"credits.footer".loc;
         default:
             return nil;
     }
@@ -398,7 +398,7 @@
                 colorSelectionController.color = [Theming getAccentColor];
 
                 if (self.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact) {
-                    UIBarButtonItem *doneBtn = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Done", ) style:UIBarButtonItemStyleDone target:self action:@selector(ms_dismissViewController:)];
+                    UIBarButtonItem *doneBtn = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"color.done".loc, ) style:UIBarButtonItemStyleDone target:self action:@selector(ms_dismissViewController:)];
                     colorSelectionController.navigationItem.rightBarButtonItem = doneBtn;
                 }
                 //[[self navigationController] pushViewController:colorSelectionController animated:YES];
@@ -427,7 +427,7 @@
                     [[GeodeInstaller alloc] checkUpdates:_root download:YES];
                     [self dismissViewControllerAnimated:YES completion:nil];
                 } else {
-                    [Utils showError:_root title:@"You do not have Geode installed!" error:nil];
+                    [Utils showError:_root title:@"general.check-updates.error".loc error:nil];
                 }
                 break;
             }
@@ -447,7 +447,7 @@
                         contents:[[NSData alloc] init]
                         attributes:@{}
                     ];
-                    [Utils showNotice:self title:@"Relaunch the app with JIT to start Geode!"];
+                    [Utils showNotice:self title:@"launcher.relaunch-notice".loc];
                 } else {
                     NSString *openURL = @"geode://safe-mode";
                     NSURL* url = [NSURL URLWithString:openURL];
@@ -663,7 +663,7 @@
             break;
         case 3: // Use Tweak instead of JIT
             if ([sender isOn]) {
-                [Utils showNotice:self title:@"Functionality such as safe mode may not be available when this setting is enabled.\nYou also will need to use the TrollStore (.tipa) in order to install & update Geode automatically, otherwise you will need to manually download Geode each time using Filza."];
+                [Utils showNotice:self title:@"advanced.use-tweak.warning".loc];
             }
             [Utils toggleKey:@"USE_TWEAK"];
             break;
@@ -778,7 +778,6 @@
         [Utils showError:self title:@"Couldn't read certificate" error:err];
         return;
     }
-    //[LCUtils teamid]
     NSString *teamId = [LCUtils getCertTeamIdWithKeyData:certData password:certPass];
     if (!teamId) {
         [Utils showError:self title:@"Couldn't get Team ID from certificate." error:nil];
@@ -791,8 +790,6 @@
     [NSUD setObject:teamId forKey:@"LCCertificateTeamId"];
     [NSUD setBool:YES forKey:@"LCCertificateImported"];
     [NSUD setBool:YES forKey:@"USE_ZSIGN"];
-    //UserDefaults.standard.set(teamId, forKey: "LCCertificateTeamId")
-    // Add your password handling logic here.
     [Utils showNotice:self title:@"Certificate Imported!"];
     [self.tableView reloadData];
 }

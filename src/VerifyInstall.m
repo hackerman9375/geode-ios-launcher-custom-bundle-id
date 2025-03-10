@@ -42,17 +42,17 @@ BOOL hasDoneUpdate = NO;
 }
 
 + (void)startVerifyGDAuth:(RootViewController*)root {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Launch Geometry Dash"
-        message:@"This will attempt to open the app. After launching the app to test if you have it installed.\n\nYou will need to manually return to this app to verify that Geometry Dash has been launched."
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"launcher.verify-gd.title".loc
+        message:@"launcher.verify-gd.msg".loc
         preferredStyle:UIAlertControllerStyleAlert];
 
-    UIAlertAction *launchAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertAction *launchAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         BOOL canLaunch = [VerifyInstall canLaunchAppWithBundleID:@"com.robtop.geometryjump"];
         if (!canLaunch) {
             UIAlertController *resultAlert = [UIAlertController alertControllerWithTitle:@"Error"
-                message:@"Geometry Dash couldn't be launched.\nPlease verify that you have installed the correct Geometry Dash app."
+                message:@"launcher.verify-gd.error".loc
                 preferredStyle:UIAlertControllerStyleAlert];
-            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
+            UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
             [resultAlert addAction:okAction];
             [root presentViewController:resultAlert animated:YES completion:nil];
             return;
@@ -64,7 +64,7 @@ BOOL hasDoneUpdate = NO;
         [root updateState];
     }];
 
-    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"common.cancel".loc style:UIAlertActionStyleCancel handler:nil];
     [alert addAction:launchAction];
     [alert addAction:cancelAction];
     [root presentViewController:alert animated:YES completion:nil];
@@ -115,7 +115,6 @@ BOOL hasDoneUpdate = NO;
         if (error) {
             return AppLog(@"Error removing item from url: %@", error);
         }*/
-
 
         // async bad, i cant even update ui without it.. and it sometimes is unstable too!
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -168,17 +167,6 @@ BOOL hasDoneUpdate = NO;
                 sameBundleIdApp = [sharedModel.hiddenApps filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(LCAppModel *app, NSDictionary *bindings) {
                     return [app.appInfo.bundleIdentifier isEqualToString:newAppInfo.bundleIdentifier];
                 }]];
-                
-                // we found a hidden app, we need to authenticate before proceeding
-                if (sameBundleIdApp.count > 0 && !sharedModel.isHiddenAppUnlocked) {
-                    // im sorry, i know i can do @try but it looks absolutely cursed
-                    // also i have no idea how to do this
-                    /*BOOL authenticated = [LCUtils authenticateUser:&error];
-                    if (!authenticated) {
-                        //self.installprogressVisible = NO;
-                        return;
-                    }*/
-                }
             }
 
             if ([fm fileExistsAtPath:outputFolder.path] || sameBundleIdApp.count > 0) {
@@ -209,7 +197,7 @@ BOOL hasDoneUpdate = NO;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if (![VerifyInstall verifyGeodeInstalled]) {
                         //[root updateState];
-                        root.optionalTextLabel.text = @"Downloading Geode...";
+                        root.optionalTextLabel.text = @"launcher.status.download-geode".loc;
                         [[[GeodeInstaller alloc] init] startInstall:root ignoreRoot:NO];
                     } else {
                         [root progressVisibility:YES];
@@ -234,8 +222,7 @@ BOOL hasDoneUpdate = NO;
                         [sharedModel.apps addObject:newAppModel];
                     }
                 } else {
-                    AppLog(@"error with signing? not sure if its really a bad thing: %@", errorInfo);
-                    // error, or not? idk, its very vague whether unsigned apps work
+                    AppLog(@"error with signing: %@", errorInfo);
                 }
             } progressHandler:^(NSProgress *signProgress) {
                 //[installProgress addChild:signProgress withPendingUnitCount:20];

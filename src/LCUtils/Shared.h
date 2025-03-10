@@ -22,7 +22,6 @@
 @property BOOL developerMode;
 // 0= not installed, 1= is installed, 2=current liveContainer is the second one
 
-// since apparently we modify this?
 @property NSMutableArray<LCAppModel*>* apps;
 @property NSMutableArray<LCAppModel*>* hiddenApps;
 
