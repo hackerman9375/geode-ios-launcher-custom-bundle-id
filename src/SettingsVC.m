@@ -449,7 +449,7 @@
 		switch (indexPath.row) {
 		case 0: { // Safe Mode
 			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-				[Utils showError:self title:@"gameplay.safe-mode.error".loc error:nil];
+				[Utils tweakLaunch_withSafeMode:true];
 				break;
 			}
 			if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"]) {

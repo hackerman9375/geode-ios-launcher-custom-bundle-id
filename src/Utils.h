@@ -26,4 +26,5 @@
 + (BOOL)isSandboxed;
 + (const char*)getKillAllPath;
 + (void)increaseLaunchCount;
++ (void)tweakLaunch_withSafeMode:(BOOL)safemode;
 @end

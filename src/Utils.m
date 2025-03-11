@@ -1,6 +1,7 @@
 #import "LCUtils/Shared.h"
 #import "Utils.h"
 #import "components/LogUtils.h"
+#import "src/LCUtils/UIKitPrivate.h"
 #import <CommonCrypto/CommonCrypto.h>
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
@@ -292,4 +293,18 @@ NSString* gdDocPath = nil;
 	return paths[0];
 }
 
++ (void)tweakLaunch_withSafeMode:(BOOL)safemode {
+	if (safemode) {
+		// https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m
+		NSString* appSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
+		NSString* geode_dir = [appSupportDirectory stringByAppendingString:@"/GeometryDash/game/geode"];
+		NSString* geode_env = [geode_dir stringByAppendingString:@"/geode.env"];
+
+		NSString* safeModeEnv = @"LAUNCHARGS=--geode:safe-mode";
+		NSFileManager* fm = [NSFileManager defaultManager];
+		[fm createFileAtPath:geode_env contents:[safeModeEnv dataUsingEncoding:NSUTF8StringEncoding] attributes:@{}];
+	}
+
+	[[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:@"com.robtop.geometryjump"];
+}
 @end

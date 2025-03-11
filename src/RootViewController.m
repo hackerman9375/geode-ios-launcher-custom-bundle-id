@@ -265,8 +265,7 @@
 		return;
 	}
 	if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-		NSString* appBundleIdentifier = @"com.robtop.geometryjump";
-		[[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
+		[Utils tweakLaunch_withSafeMode:false];
 		return;
 	}
 	NSString* openURL = [NSString stringWithFormat:@"geode://launch"];
