@@ -308,15 +308,20 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
     }
     [self decompress:url.path extractionPath:[[fm temporaryDirectory] path] completion:^(NSError * _Nullable decompError) {
         if (decompError) {
-            [Utils showError:_root title:@"Decompressing ZIP failed" error:decompError];
-            [_root updateState];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [Utils showError:_root title:@"Decompressing ZIP failed" error:decompError];
+                [_root updateState];
+            });
             return AppLog(@"[Geode] Error trying to decompress ZIP: %@", decompError);
         }
         NSError* error;
         NSURL *dylibPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Geode.ios.dylib"];
         [fm moveItemAtPath:dylibPath.path toPath:tweakPath error:&error];
         if (error) {
-            [Utils showError:_root title:@"Failed to move Geode lib" error:error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [Utils showError:_root title:@"Failed to move Geode lib" error:error];
+                [_root updateState];
+            });
         }
         dispatch_async(dispatch_get_main_queue(), ^{
             [_root progressVisibility:YES];
