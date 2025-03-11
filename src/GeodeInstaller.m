@@ -316,6 +316,18 @@ typedef void (^DecompressCompletion)(NSError * _Nullable error);
         }
         NSError* error;
         NSURL *dylibPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Geode.ios.dylib"];
+        if([fm fileExistsAtPath:tweakPath isDirectory: false]) {
+            AppLog(@"[Geode] deleting existing Geode library");
+            NSError* removeError;
+            [fm removeItemAtPath:tweakPath error:&removeError];
+            if(removeError) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [Utils showError:_root title:@"Failed to delete old Geode library" error:removeError];
+                    [_root updateState];
+                });
+                return AppLog(@"[Geode] Error trying to delete existing Geode library: %@", removeError);
+            }
+        }
         [fm moveItemAtPath:dylibPath.path toPath:tweakPath error:&error];
         if (error) {
             dispatch_async(dispatch_get_main_queue(), ^{
