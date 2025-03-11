@@ -1,14 +1,14 @@
 @import Foundation;
 
 @interface LCSharedUtils : NSObject
-+ (NSString*) teamIdentifier;
-+ (NSString *)appGroupID;
-+ (NSURL*) appGroupPath;
-+ (NSString *)certificatePassword;
++ (NSString*)teamIdentifier;
++ (NSString*)appGroupID;
++ (NSURL*)appGroupPath;
++ (NSString*)certificatePassword;
 + (BOOL)askForJIT;
 + (void)relaunchApp;
 + (BOOL)launchToGuestApp;
-+ (BOOL)launchToGuestAppWithURL:(NSURL *)url;
++ (BOOL)launchToGuestAppWithURL:(NSURL*)url;
 + (void)setWebPageUrlForNextLaunch:(NSString*)urlString;
 + (NSString*)getAppRunningLCSchemeWithBundleId:(NSString*)bundleId;
 + (NSString*)getContainerUsingLCSchemeWithFolderName:(NSString*)folderName;

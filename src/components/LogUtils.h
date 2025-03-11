@@ -2,7 +2,7 @@
 
 @interface LogUtils : NSObject
 
-+ (void)log:(NSString *)format, ...;
++ (void)log:(NSString*)format, ...;
 + (void)clearLogs;
 
 @end

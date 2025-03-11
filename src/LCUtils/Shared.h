@@ -3,17 +3,17 @@
 
 @interface LCPath : NSObject
 
-+ (NSURL *)docPath;
-+ (NSURL *)bundlePath;
-+ (NSURL *)dataPath;
-+ (NSURL *)appGroupPath;
-+ (NSURL *)tweakPath;
-+ (NSURL *)lcGroupDocPath;
-+ (NSURL *)lcGroupBundlePath;
-+ (NSURL *)lcGroupDataPath;
-+ (NSURL *)lcGroupAppGroupPath;
-+ (NSURL *)lcGroupTweakPath;
-+ (void)ensureAppGroupPaths:(NSError **)error;
++ (NSURL*)docPath;
++ (NSURL*)bundlePath;
++ (NSURL*)dataPath;
++ (NSURL*)appGroupPath;
++ (NSURL*)tweakPath;
++ (NSURL*)lcGroupDocPath;
++ (NSURL*)lcGroupBundlePath;
++ (NSURL*)lcGroupDataPath;
++ (NSURL*)lcGroupAppGroupPath;
++ (NSURL*)lcGroupTweakPath;
++ (void)ensureAppGroupPaths:(NSError**)error;
 
 @end
 

@@ -1,5 +1,5 @@
 #include <UIKit/UIKit.h>
 
 @interface LogsViewController : UIViewController
-- (instancetype)initWithFile:(NSURL *)fileURL;
+- (instancetype)initWithFile:(NSURL*)fileURL;
 @end

@@ -1,11 +1,10 @@
 #include <Foundation/Foundation.h>
 
-@interface NSBundle(private)
+@interface NSBundle (private)
 - (id)_cfBundle;
 @end
 
-@interface NSUserDefaults(private)
+@interface NSUserDefaults (private)
 + (void)setStandardUserDefaults:(id)defaults;
 - (NSString*)_identifier;
 @end
-

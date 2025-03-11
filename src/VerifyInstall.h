@@ -5,7 +5,7 @@
 @interface VerifyInstall : NSObject
 + (BOOL)verifyGDAuthenticity;
 + (void)startVerifyGDAuth:(RootViewController*)root;
-+ (BOOL)canLaunchAppWithBundleID:(NSString *)bundleID;
++ (BOOL)canLaunchAppWithBundleID:(NSString*)bundleID;
 + (BOOL)verifyGDInstalled;
 + (void)startGDInstall:(RootViewController*)root url:(NSURL*)url;
 + (BOOL)verifyGeodeInstalled;

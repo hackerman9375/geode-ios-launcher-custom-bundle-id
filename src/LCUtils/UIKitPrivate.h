@@ -1,10 +1,10 @@
 #import <UIKit/UIKit.h>
 
-@interface UIImage(private)
-- (UIImage *)_imageWithSize:(CGSize)size;
+@interface UIImage (private)
+- (UIImage*)_imageWithSize:(CGSize)size;
 @end
 
-@interface UIAlertAction(private)
+@interface UIAlertAction (private)
 @property(nonatomic, copy) id shouldDismissHandler;
 @end
 
@@ -12,12 +12,12 @@
 - (NSDictionary*)handleActivityContinuation:(NSDictionary*)activityDict isSuspended:(id)isSuspended;
 @end
 
-@interface UIApplication(private)
+@interface UIApplication (private)
 - (void)suspend;
 - (UIActivityContinuationManager*)_getActivityContinuationManager;
 @end
 
-@interface UIContextMenuInteraction(private)
+@interface UIContextMenuInteraction (private)
 - (void)_presentMenuAtLocation:(CGPoint)location;
 @end
 
@@ -27,21 +27,21 @@
 @end
 
 @interface UIOpenURLAction : NSObject
-- (NSURL *)url;
-- (instancetype)initWithURL:(NSURL *)arg1;
+- (NSURL*)url;
+- (instancetype)initWithURL:(NSURL*)arg1;
 @end
 
 @interface FBSSceneTransitionContext : NSObject
-@property (nonatomic,copy) NSSet * actions;
+@property(nonatomic, copy) NSSet* actions;
 @end
 
 @interface UIApplicationSceneTransitionContext : FBSSceneTransitionContext
-@property (nonatomic,retain) NSDictionary * payload;
+@property(nonatomic, retain) NSDictionary* payload;
 @end
 
-@interface UITableViewHeaderFooterView(private)
-- (void)setText:(NSString *)text;
-- (NSString *)text;
+@interface UITableViewHeaderFooterView (private)
+- (void)setText:(NSString*)text;
+- (NSString*)text;
 @end
 
 @interface UIApplicationSceneSettings : NSObject
@@ -51,28 +51,23 @@
 @end
 
 @interface UIMutableApplicationSceneSettings : UIApplicationSceneSettings
-@property (assign,nonatomic) UIDeviceOrientation deviceOrientation;
+@property(assign, nonatomic) UIDeviceOrientation deviceOrientation;
 - (void)setInterfaceOrientation:(NSInteger)o;
 @end
 
-
-
 @interface UIMutableApplicationSceneClientSettings : UIApplicationSceneClientSettings
-@property (assign,nonatomic) UIDeviceOrientation deviceOrientation;
+@property(assign, nonatomic) UIDeviceOrientation deviceOrientation;
 @property(nonatomic, assign) NSInteger interfaceOrientation;
 @property(nonatomic, assign) NSInteger statusBarStyle;
 @end
 
-
-
 @interface FBSMutableSceneParameters : NSObject
-@property(nonatomic, copy) UIMutableApplicationSceneSettings *settings;
+@property(nonatomic, copy) UIMutableApplicationSceneSettings* settings;
 @end
 
-
 @interface FBSSceneParameters : NSObject
-@property(nonatomic, copy) UIApplicationSceneSettings *settings;
-@property(nonatomic, copy) UIApplicationSceneClientSettings *clientSettings;
+@property(nonatomic, copy) UIApplicationSceneSettings* settings;
+@property(nonatomic, copy) UIApplicationSceneClientSettings* clientSettings;
 - (instancetype)initWithXPCDictionary:(NSDictionary*)dict;
 @end
 
@@ -82,6 +77,5 @@
 
 @interface LSApplicationWorkspace : NSObject
 + (instancetype)defaultWorkspace;
-- (BOOL)openApplicationWithBundleID:(NSString *)arg1 ;
+- (BOOL)openApplicationWithBundleID:(NSString*)arg1;
 @end
-

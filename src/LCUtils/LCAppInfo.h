@@ -1,12 +1,11 @@
+#import "LCUtils.h"
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
-#import "LCUtils.h"
-
 
 @interface LCAppInfo : NSObject {
-    NSMutableDictionary* _info;
-    NSMutableDictionary* _infoPlist;
-    NSString* _bundlePath;
+	NSMutableDictionary* _info;
+	NSMutableDictionary* _infoPlist;
+	NSString* _bundlePath;
 }
 @property NSString* relativeBundlePath;
 @property bool isShared;
@@ -23,8 +22,10 @@
 - (NSString*)bundlePath;
 - (NSString*)bundleIdentifier;
 - (NSString*)version;
-- (NSMutableArray*) urlSchemes;
+- (NSMutableArray*)urlSchemes;
 - (instancetype)initWithBundlePath:(NSString*)bundlePath;
 - (void)save;
-- (void)patchExecAndSignIfNeedWithCompletionHandler:(void(^)(bool success, NSString* errorInfo))completetionHandler progressHandler:(void(^)(NSProgress* progress))progressHandler  forceSign:(BOOL)forceSign;
+- (void)patchExecAndSignIfNeedWithCompletionHandler:(void (^)(bool success, NSString* errorInfo))completetionHandler
+									progressHandler:(void (^)(NSProgress* progress))progressHandler
+										  forceSign:(BOOL)forceSign;
 @end
