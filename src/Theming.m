@@ -54,8 +54,6 @@
 		UIColor* accentColor = [NSKeyedUnarchiver unarchivedObjectOfClass:[UIColor class] fromData:colorData error:&error];
 		if (accentColor) {
 			return accentColor;
-		} else if (error) {
-			AppLog(@"[Geode] Couldn't unarchive accent color: %@", error);
 		}
 	}
 	if ([Theming darkModeEnabled]) {
