@@ -134,8 +134,9 @@ NSString *gdDocPath = nil;
     }
     // probably the most inefficient way of getting a bundle id, i need to figure out another way of doing this because this is just bad...
     for (NSString *dir in dirs) {
-        NSString *checkPrefs = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/Library/HTTPStorages/com.robtop.geometryjump", dir];
-        if ([fm fileExistsAtPath:checkPrefs isDirectory:nil]) {
+        NSString *checkPrefsA = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/Library/HTTPStorages/com.robtop.geometryjump", dir];
+        NSString *checkPrefsB = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/tmp/com.robtop.geometryjump-Inbox", dir];
+        if ([fm fileExistsAtPath:checkPrefsA isDirectory:nil] || [fm fileExistsAtPath:checkPrefsB isDirectory:nil]) {
             gdDocPath = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/", dir];
             return gdDocPath;
         }
