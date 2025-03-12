@@ -17,6 +17,17 @@ static dispatch_queue_t loggingQueue;
 }
 
 + (void)log:(NSString*)format, ... {
+	NSString* callSource = [[NSThread callStackSymbols] objectAtIndex:1];
+	if (!callSource)
+		callSource = @"[Unknown]";
+
+	NSString* srcFunc = [[callSource componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"[]"]] objectAtIndex:1];
+	if (!srcFunc)
+		srcFunc = @"Unknown";
+
+	NSString* prefix = [NSString stringWithFormat:@"[GeodeLauncher/%@] ", [srcFunc substringToIndex:MIN([srcFunc rangeOfString:@" "].location, srcFunc.length)]];
+	format = [prefix stringByAppendingString:format];
+
 	va_list args;
 	va_start(args, format);
 	NSString* message = [[NSString alloc] initWithFormat:format arguments:args];

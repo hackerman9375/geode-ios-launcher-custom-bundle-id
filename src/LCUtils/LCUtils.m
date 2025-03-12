@@ -146,7 +146,7 @@ Class LCSharedUtilsClass = nil;
 	NSDirectoryEnumerator* countEnumerator = [[NSFileManager defaultManager] enumeratorAtURL:appURL includingPropertiesForKeys:@[ NSURLIsRegularFileKey, NSURLFileSizeKey ]
 																					 options:0 errorHandler:^BOOL(NSURL* _Nonnull url, NSError* _Nonnull error) {
 																						 if (error) {
-																							 AppLog(@"[Error] %@ (%@)", error, url);
+																							 AppLog(@"Error: %@ (%@)", error, url);
 																							 return NO;
 																						 }
 																						 return YES;
@@ -173,7 +173,7 @@ Class LCSharedUtilsClass = nil;
 					struct linkedit_data_command* csCommand = (struct linkedit_data_command*)command;
 					void* csData = (void*)((uint8_t*)header + csCommand->dataoff);
 					// Nuke it.
-					AppLog(@"[Geode] Removing code signature of %@", fileURL);
+					AppLog(@"Removing code signature of %@", fileURL);
 					bzero(csData, csCommand->datasize);
 					break;
 				}
@@ -181,7 +181,7 @@ Class LCSharedUtilsClass = nil;
 			}
 		});
 		if (error) {
-			AppLog(@"[Error] %@ (%@)", error, fileURL);
+			AppLog(@"Error: %@ (%@)", error, fileURL);
 		}
 	}
 }
@@ -232,7 +232,7 @@ Class LCSharedUtilsClass = nil;
 	NSURL* profilePath = [lcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
 	NSData* profileData = [NSData dataWithContentsOfURL:profilePath];
 	if (profileData == nil) {
-		AppLog(@"[Geode] Couldn't read from mobile provisioning profile! Will assume to use embedded mobile provisioning file in documents.");
+		AppLog(@"Couldn't read from mobile provisioning profile! Will assume to use embedded mobile provisioning file in documents.");
 		profilePath = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
 		profileData = [NSData dataWithContentsOfURL:profilePath];
 	}
@@ -254,7 +254,7 @@ Class LCSharedUtilsClass = nil;
 	NSURL* bundleProvision = [[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/embedded.mobileprovision"];
 	NSURL* provisionURL = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
 	if ([[NSFileManager defaultManager] fileExistsAtPath:provisionURL.path]) {
-		AppLog(@"[Geode] Found provision in documents, copying to GD bundle...");
+		AppLog(@"Found provision in documents, copying to GD bundle...");
 		if ([[NSFileManager defaultManager] fileExistsAtPath:bundleProvision.path]) {
 			[[NSFileManager defaultManager] removeItemAtURL:bundleProvision error:&error];
 			if (error) {
@@ -267,10 +267,10 @@ Class LCSharedUtilsClass = nil;
 			completionHandler(NO, nil, nil, error);
 			return nil;
 		}
-		AppLog(@"[Geode] Copied provision to GD bundle.");
+		AppLog(@"Copied provision to GD bundle.");
 	}
 
-	AppLog(@"[LC] starting signing...");
+	AppLog(@"starting signing...");
 
 	NSProgress* ans = [NSClassFromString(@"ZSigner") signWithAppPath:[path path] prov:profileData key:self.certificateData pass:self.certificatePassword
 												   completionHandler:completionHandler];
@@ -284,21 +284,21 @@ Class LCSharedUtilsClass = nil;
 	NSURL* profilePath = [lcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
 	NSData* profileData = [NSData dataWithContentsOfURL:profilePath];
 	if (profileData == nil) {
-		AppLog(@"[Geode] Couldn't read from mobile provisioning profile! Will assume to use embedded mobile provisioning file in documents.");
+		AppLog(@"Couldn't read from mobile provisioning profile! Will assume to use embedded mobile provisioning file in documents.");
 		profilePath = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
 		profileData = [NSData dataWithContentsOfURL:profilePath];
 	}
 
 	if (profileData == nil) {
-		AppLog(@"[Geode] Profile still couldn't be read. Assuming we don't have it...");
+		AppLog(@"Profile still couldn't be read. Assuming we don't have it...");
 		return nil;
 	}
 
-	AppLog(@"[Geode] Got Mobile Provisioning Profile data! %lu bytes", [profileData length]);
+	AppLog(@"Got Mobile Provisioning Profile data! %lu bytes", [profileData length]);
 
 	[self loadStoreFrameworksWithError2:&error];
 	if (error) {
-		AppLog(@"[Geode] Couldn't ZSign load framework: %@", error);
+		AppLog(@"Couldn't ZSign load framework: %@", error);
 		return nil;
 	}
 	NSString* ans = [NSClassFromString(@"ZSigner") getTeamIdWithProv:profileData key:keyData pass:password];
@@ -311,7 +311,7 @@ Class LCSharedUtilsClass = nil;
 	static Store ans;
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
-		AppLog(@"[Geode] Store: %@", [self appGroupID]);
+		AppLog(@"Store: %@", [self appGroupID]);
 		if ([[self appGroupID] containsString:@"AltStore"]) {
 			ans = AltStore;
 		} else {
@@ -435,7 +435,7 @@ Class LCSharedUtilsClass = nil;
 
 	[manager moveItemAtURL:execFromPath toURL:execToPath error:error];
 	if (*error) {
-		AppLog(@"[LC] %@", *error);
+		AppLog(@"%@", *error);
 		return nil;
 	}
 
@@ -446,7 +446,7 @@ Class LCSharedUtilsClass = nil;
 		[details setValue:errorChangeUUID forKey:NSLocalizedDescriptionKey];
 		// populate the error object with the details
 		*error = [NSError errorWithDomain:@"world" code:200 userInfo:details];
-		AppLog(@"[LC] %@", errorChangeUUID);
+		AppLog(@"%@", errorChangeUUID);
 		return nil;
 	}
 
@@ -524,7 +524,7 @@ Class LCSharedUtilsClass = nil;
 		[details setValue:errorPatchAltStore forKey:NSLocalizedDescriptionKey];
 		// populate the error object with the details
 		*error = [NSError errorWithDomain:@"world" code:200 userInfo:details];
-		AppLog(@"[LC] %@", errorPatchAltStore);
+		AppLog(@"%@", errorPatchAltStore);
 		return nil;
 	}
 
@@ -759,7 +759,7 @@ Class LCSharedUtilsClass = nil;
 	if ([currentHash isEqualToString:modifiedHash]) {
 		return YES;
 	}
-	AppLog(@"[Geode] Different hash detected, assuming to need signing: %@ / %@", currentHash, modifiedHash);
+	AppLog(@"Different hash detected, assuming to need signing: %@ / %@", currentHash, modifiedHash);
 	return NO;
 }
 

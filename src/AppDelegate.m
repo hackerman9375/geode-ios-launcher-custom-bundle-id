@@ -114,16 +114,16 @@
 			[LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:NO signer:app.signer
 				progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
 					if (error != nil) {
-						AppLog(@"[Geode] Detailed error for signing mods: %@", error);
+						AppLog(@"Detailed error for signing mods: %@", error);
 					}
 					[LCUtils launchToGuestApp];
 				}];
 		} else {
-			AppLog(@"[Geode] Launching Geometry Dash");
+			AppLog(@"Launching Geometry Dash");
 			[LCUtils launchToGuestApp];
 		}
 	} else if ([url.host isEqualToString:@"safe-mode"]) {
-		AppLog(@"[Geode] Launching in Safe Mode");
+		AppLog(@"Launching in Safe Mode");
 		[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 		[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 		[[Utils getPrefs] setBool:YES forKey:@"safemode"];

@@ -99,7 +99,7 @@ NSString* gdDocPath = nil;
 															 error:&error];
 
 	if (error) {
-		AppLog(@"[Geode] Couldn't read %@, Error reading directory: %@", directoryPath, error.localizedDescription);
+		AppLog(@"Couldn't read %@, Error reading directory: %@", directoryPath, error.localizedDescription);
 		return nil;
 	}
 
@@ -131,7 +131,7 @@ NSString* gdDocPath = nil;
 	NSArray* dirs = [fm contentsOfDirectoryAtPath:@"/var/mobile/Containers/Data/Application" error:&err];
 	if (err) {
 		// assume we arent on jb or trollstore
-		AppLog(@"[Geode] Couldn't get doc path %@", err);
+		AppLog(@"Couldn't get doc path %@", err);
 		return nil;
 	}
 	// probably the most inefficient way of getting a bundle id, i need to figure out another way of doing this because this is just bad...
@@ -255,16 +255,16 @@ NSString* gdDocPath = nil;
 	NSError* err;
 	NSArray* dirs = [fm contentsOfDirectoryAtPath:@"/var" error:&err];
 	if (err) {
-		AppLog(@"[Geode] Sandboxed");
+		AppLog(@"Sandboxed");
 		sandboxValue = YES;
 		return YES;
 	}
 	if (dirs.count == 0) {
-		AppLog(@"[Geode] Sandboxed");
+		AppLog(@"Sandboxed");
 		sandboxValue = YES;
 		return YES;
 	}
-	AppLog(@"[Geode] Not Sandboxed");
+	AppLog(@"Not Sandboxed");
 	sandboxValue = NO;
 	return NO;
 }
@@ -294,6 +294,7 @@ NSString* gdDocPath = nil;
 }
 
 + (void)tweakLaunch_withSafeMode:(BOOL)safemode {
+	AppLog(@"tweakLaunching GD %@", safemode ? @"in safe mode" : @"normally");
 	if (safemode) {
 		// https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m
 		NSString* appSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];

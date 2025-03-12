@@ -43,7 +43,7 @@ ASM(.global _builtin_vm_protect \n _builtin_vm_protect :     \n mov x16, # - 0xe
 static bool redirectFunction(char* name, void* patchAddr, void* target) {
 	kern_return_t kret = builtin_vm_protect(mach_task_self(), (vm_address_t)patchAddr, sizeof(patch), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
 	if (kret != KERN_SUCCESS) {
-		AppLog(@"[DyldLVBypass] vm_protect(RW) fails at line %d", __LINE__);
+		AppLog(@"vm_protect(RW) fails at line %d", __LINE__);
 		return FALSE;
 	}
 
@@ -52,11 +52,11 @@ static bool redirectFunction(char* name, void* patchAddr, void* target) {
 
 	kret = builtin_vm_protect(mach_task_self(), (vm_address_t)patchAddr, sizeof(patch), false, PROT_READ | PROT_EXEC);
 	if (kret != KERN_SUCCESS) {
-		AppLog(@"[DyldLVBypass] vm_protect(RX) fails at line %d", __LINE__);
+		AppLog(@"vm_protect(RX) fails at line %d", __LINE__);
 		return FALSE;
 	}
 
-	AppLog(@"[DyldLVBypass] hook %s succeed!", name);
+	AppLog(@"hook %s succeed!", name);
 	return TRUE;
 }
 
@@ -74,11 +74,11 @@ static bool searchAndPatch(char* name, char* base, char* signature, int length, 
 	}
 
 	if (patchAddr == NULL) {
-		AppLog(@"[DyldLVBypass] hook fails line %d", __LINE__);
+		AppLog(@"hook fails line %d", __LINE__);
 		return FALSE;
 	}
 
-	AppLog(@"[DyldLVBypass] found %s at %p", name, patchAddr);
+	AppLog(@"found %s at %p", name, patchAddr);
 	return redirectFunction(name, patchAddr, target);
 }
 
@@ -154,7 +154,7 @@ void init_bypassDyldLibValidation() {
 		return;
 	bypassed = YES;
 
-	AppLog(@"[DyldLVBypass] init");
+	AppLog(@"init");
 
 	// Modifying exec page during execution may cause SIGBUS, so ignore it now
 	// Only comment this out if only one thread (main) is running
@@ -182,11 +182,11 @@ void init_bypassDyldLibValidation() {
 		if (fcntlAddr) {
 			uint32_t* inst = (uint32_t*)fcntlAddr;
 			int32_t offset = ((int32_t)((*inst) << 6)) >> 4;
-			AppLog(@"[DyldLVBypass] Dopamine hook offset = %x", offset);
+			AppLog(@"Dopamine hook offset = %x", offset);
 			dopamineFcntlHookAddr = (void*)((char*)fcntlAddr + offset);
 			redirectFunction("dyld_fcntl (Dopamine)", fcntlAddr, hooked___fcntl);
 		} else {
-			AppLog(@"[DyldLVBypass] Dopamine hook not found");
+			AppLog(@"Dopamine hook not found");
 		}
 	}
 }

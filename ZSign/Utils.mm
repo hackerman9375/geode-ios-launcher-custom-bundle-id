@@ -20,7 +20,7 @@ const char* getDocumentsDirectory() {
 
 void writeToNSLog(const char* msg) {
     NSLog(@"[LC] signer msg: %s", msg);
-    //AppLog(@"[LC] signer msg: %s", msg);
+    //AppLog(@"signer msg: %s", msg);
 }
 void writeToNSLogFlood(const char* msg) {
     NSLog(@"[LC] signer msg: %s", msg);

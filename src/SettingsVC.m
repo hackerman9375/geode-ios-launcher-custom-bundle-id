@@ -560,7 +560,7 @@
 					return [Utils showNotice:self
 									   title:[NSString stringWithFormat:@"JIT-Less Mode Test Passed!\nApp Group ID: %@\nStore: %@", [LCUtils appGroupID], [LCUtils getStoreName]]];
 				} else {
-					AppLog(@"[Geode] JIT-Less test failed: %@", error);
+					AppLog(@"JIT-Less test failed: %@", error);
 					return [Utils showError:self
 									  title:[NSString stringWithFormat:@"The test library has failed to load. This means your certificate may be having issue. Please try to: 1. "
 																	   @"Reopen %@; 2. Refresh all apps in %@; 3. Re-patch %@ and try again.\n\nIf you imported certificate, "
@@ -751,7 +751,7 @@
 	NSString* extension2 = urls.lastObject.pathExtension;
 	if ([extension1 isEqualToString:extension2])
 		return [Utils showError:self title:@"You must only select 2 different files! Both the certificate (.p12) and the mobile provision profile! (.mobileprovision)" error:nil];
-	AppLog(@"[Geode] Selected URLs: %@", urls);
+	AppLog(@"Selected URLs: %@", urls);
 	UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Input the password of the Certificate." message:@"This will be used for signing."
 															preferredStyle:UIAlertControllerStyleAlert];
 	[alert addTextFieldWithConfigurationHandler:^(UITextField* _Nonnull textField) {
@@ -801,7 +801,7 @@
 		[Utils showError:self title:@"Couldn't get Team ID from certificate." error:nil];
 		return;
 	}
-	AppLog(@"[Geode] Import complete!");
+	AppLog(@"Import complete!");
 	NSUserDefaults* NSUD = [Utils getPrefs];
 	[NSUD setObject:certPass forKey:@"LCCertificatePassword"];
 	[NSUD setObject:certData forKey:@"LCCertificateData"];

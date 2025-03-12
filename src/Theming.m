@@ -70,7 +70,7 @@
 	NSError* error = nil;
 	NSData* colorData = [NSKeyedArchiver archivedDataWithRootObject:color requiringSecureCoding:YES error:&error];
 	if (error) {
-		AppLog(@"[Geode] Couldn't archive accent color: %@", error);
+		AppLog(@"Couldn't archive accent color: %@", error);
 		return;
 	}
 	[userDefaults setObject:colorData forKey:@"accentColor"];

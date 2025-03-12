@@ -59,18 +59,18 @@ int extract(NSString* fileToExtract, NSString* extractionPath, NSProgress* progr
 	archive_read_support_filter_all(a);
 	if ((r = archive_read_open_filename(a, fileToExtract.fileSystemRepresentation, 10240))) {
 		archive_read_free(a);
-		AppLog(@"[Geode] Failed to open archive: %@", fileToExtract);
+		AppLog(@"Failed to open archive: %@", fileToExtract);
 		return 1;
 	}
 	while ((r = archive_read_next_header(a, &entry)) != ARCHIVE_EOF) {
 		if (r < ARCHIVE_OK) {
 			fprintf(stderr, "%s\n", archive_error_string(a));
-			AppLog(@"[Geode] Error reading archive header: %s", archive_error_string(a));
+			AppLog(@"Error reading archive header: %s", archive_error_string(a));
 		}
 		if (r < ARCHIVE_WARN) {
 			archive_read_close(a);
 			archive_read_free(a);
-			AppLog(@"[Geode] Archive warning: %s", archive_error_string(a));
+			AppLog(@"Archive warning: %s", archive_error_string(a));
 			return 1;
 		}
 		totalUnitCount += archive_entry_size(entry);
@@ -85,7 +85,7 @@ int extract(NSString* fileToExtract, NSString* extractionPath, NSProgress* progr
 	archive_read_support_filter_all(a);
 	if ((r = archive_read_open_filename(a, fileToExtract.fileSystemRepresentation, 10240))) {
 		archive_read_free(a);
-		AppLog(@"[Geode] Failed to reopen archive for extraction: %@", fileToExtract);
+		AppLog(@"Failed to reopen archive for extraction: %@", fileToExtract);
 		return 1;
 	}
 	ext = archive_write_disk_new();
@@ -97,7 +97,7 @@ int extract(NSString* fileToExtract, NSString* extractionPath, NSProgress* progr
 			break;
 		if (r < ARCHIVE_OK) {
 			fprintf(stderr, "%s\n", archive_error_string(a));
-			AppLog(@"[Geode] Error reading header: %s", archive_error_string(a));
+			AppLog(@"Error reading header: %s", archive_error_string(a));
 		}
 		if (r < ARCHIVE_WARN)
 			break;
@@ -110,12 +110,12 @@ int extract(NSString* fileToExtract, NSString* extractionPath, NSProgress* progr
 		r = archive_write_header(ext, entry);
 		if (r < ARCHIVE_OK) {
 			fprintf(stderr, "%s\n", archive_error_string(ext));
-			AppLog(@"[Geode] Error writing header: %s", archive_error_string(ext));
+			AppLog(@"Error writing header: %s", archive_error_string(ext));
 		} else if (archive_entry_size(entry) > 0) {
 			r = copy_data(a, ext, progress);
 			if (r < ARCHIVE_OK) {
 				fprintf(stderr, "%s\n", archive_error_string(ext));
-				AppLog(@"[Geode] Error copying data: %s", archive_error_string(ext));
+				AppLog(@"Error copying data: %s", archive_error_string(ext));
 			}
 			if (r < ARCHIVE_WARN)
 				break;
@@ -123,7 +123,7 @@ int extract(NSString* fileToExtract, NSString* extractionPath, NSProgress* progr
 		r = archive_write_finish_entry(ext);
 		if (r < ARCHIVE_OK) {
 			fprintf(stderr, "%s\n", archive_error_string(ext));
-			AppLog(@"[Geode] Error finishing entry: %s", archive_error_string(ext));
+			AppLog(@"Error finishing entry: %s", archive_error_string(ext));
 		}
 		if (r < ARCHIVE_WARN)
 			break;

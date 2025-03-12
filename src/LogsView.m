@@ -57,7 +57,7 @@
 														[NSString stringWithContentsOfURL:self.fileURL encoding:NSUTF8StringEncoding error:&error]];
 	}
 	if (error) {
-		AppLog(@"[Geode] Error reading log file: %@", error);
+		AppLog(@"Error reading log file: %@", error);
 		self.textView.text = [@"logs.error" localizeWithFormat:self.fileURL.lastPathComponent];
 	}
 }

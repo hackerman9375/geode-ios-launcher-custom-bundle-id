@@ -66,7 +66,7 @@
 
 	NSString* errStr = [[Utils getPrefs] stringForKey:@"error"];
 	if (errStr != nil) {
-		AppLog(@"[Geode] Found error: %@", errStr);
+		AppLog(@"Found error: %@", errStr);
 		[Utils showError:self title:[@"launcher.error.gd" localizeWithFormat:errStr] error:nil];
 		[[Utils getPrefs] setObject:nil forKey:@"error"];
 	}
@@ -131,7 +131,7 @@
 	NSError* err;
 	[LCPath ensureAppGroupPaths:&err];
 	if (err) {
-		AppLog(@"[Geode] error while making app paths: %@", err);
+		AppLog(@"error while making app paths: %@", err);
 	}
 	self.logoImageView = [Utils imageViewFromPDF:@"geode_logo"];
 	if (self.logoImageView) {
@@ -140,7 +140,7 @@
 		[self.view addSubview:self.logoImageView];
 	} else {
 		// self.logoImageView.backgroundColor = [UIColor redColor];
-		AppLog(@"[Geode] Image is null");
+		AppLog(@"Image is null");
 	}
 
 	self.titleLabel = [[UILabel alloc] init];
@@ -233,7 +233,7 @@
 			return completionHandler(NO, signError);
 		[LCUtils signTweaks:[LCPath tweakPath] force:force signer:app.signer progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
 			if (error != nil) {
-				AppLog(@"[Geode] Detailed error for signing tweaks: %@", error);
+				AppLog(@"Detailed error for signing tweaks: %@", error);
 				return completionHandler(
 					NO, [NSString stringWithFormat:@"Couldn't sign tweaks. Please make sure that you have either patched %@, or imported a certificate in settings.",
 												   [LCUtils getStoreName]]);
@@ -241,7 +241,7 @@
 			[LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:force signer:app.signer
 				progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
 					if (error != nil) {
-						AppLog(@"[Geode] Detailed error for signing mods: %@", error);
+						AppLog(@"Detailed error for signing mods: %@", error);
 						return completionHandler(
 							NO, [NSString stringWithFormat:@"Couldn't sign mods. Please make sure that you have either patched %@, or imported a certificate in settings.",
 														   [LCUtils getStoreName]]);
@@ -319,7 +319,7 @@
 - (void)URLSession:(NSURLSession*)session downloadTask:(NSURLSessionDownloadTask*)downloadTask didFinishDownloadingToURL:(NSURL*)location {
 	dispatch_async(dispatch_get_main_queue(), ^{
 		// so apparently i have to run this asynchronously or else it wont work... WHY
-		AppLog(@"[Geode] start installing ipa!");
+		AppLog(@"start installing ipa!");
 		self.optionalTextLabel.text = @"launcher.status.extracting".loc;
 		[self.progressBar setHidden:NO];
 		[self.progressBar setCancelHidden:YES];

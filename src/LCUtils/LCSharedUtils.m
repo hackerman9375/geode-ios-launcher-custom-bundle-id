@@ -80,7 +80,7 @@ extern NSBundle* lcMainBundle;
 		[LCUtils signMods:[[LCPath docPath] URLByAppendingPathComponent:@"game/geode"] force:NO signer:app.signer progressHandler:^(NSProgress* progress) {}
 			completion:^(NSError* error) {
 				if (error != nil) {
-					AppLog(@"[Geode] Detailed error for signing mods: %@", error);
+					AppLog(@"Detailed error for signing mods: %@", error);
 				}
 				[LCUtils launchToGuestApp];
 			}];
@@ -138,7 +138,7 @@ extern NSBundle* lcMainBundle;
 			return dispatch_async(dispatch_get_main_queue(), ^{
 				[Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer", sideJITServerAddress, lcMainBundle.bundleIdentifier]
 								 error:error];
-				AppLog(@"[Geode] Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
+				AppLog(@"Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
 			});
 		}
 	}];
