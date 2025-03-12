@@ -21,9 +21,11 @@ static dispatch_queue_t loggingQueue;
 	if (!callSource)
 		callSource = @"[Unknown]";
 
-	NSString* srcFunc = [[callSource componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"[]"]] objectAtIndex:1];
-	if (!srcFunc)
-		srcFunc = @"Unknown";
+	NSArray* parts = [callSource componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"[]"]];
+	NSString* srcFunc = @"Unknown";
+
+	if (parts.count > 1)
+		srcFunc = [parts objectAtIndex:1];
 
 	NSString* prefix = [NSString stringWithFormat:@"[GeodeLauncher/%@] ", [srcFunc substringToIndex:MIN([srcFunc rangeOfString:@" "].location, srcFunc.length)]];
 	format = [prefix stringByAppendingString:format];
