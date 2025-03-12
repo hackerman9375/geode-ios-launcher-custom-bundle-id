@@ -33,13 +33,11 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 	for (NSUInteger i = 0; i < maxCount; i++) {
 		NSInteger valueA = (i < componentsA.count) ? [componentsA[i] integerValue] : 0;
 		NSInteger valueB = (i < componentsB.count) ? [componentsB[i] integerValue] : 0;
-		if (valueA >= valueB) {
-			return YES;
-		} else if (valueA < valueB) {
+		if (valueA > valueB) {
 			return NO;
 		}
 	}
-	return NO;
+	return YES;
 }
 
 @end
@@ -162,6 +160,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 					NSString* tagName = jsonDict[@"tag_name"];
 					if (tagName && [tagName isKindOfClass:[NSString class]]) {
 						BOOL greaterThanVer = [CompareSemVer isVersion:tagName greaterThanVersion:[Utils getGeodeVersion]];
+						AppLog(@"Latest Geode version is %@ (Currently on %@)", tagName, [Utils getGeodeVersion]);
 						if (greaterThanVer) {
 							if ([Utils getGeodeVersion] == nil || [[Utils getGeodeVersion] isEqual:@""]) {
 								AppLog(@"Updated launcher ver!");
@@ -251,10 +250,8 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 				}
 				NSString* str = [[[NSString alloc] initWithData:data
 													   encoding:NSUTF8StringEncoding] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-				// NSString* hash = [Utils getGDBinaryHash];
 				NSString* hash = gdPlist[@"CFBundleShortVersionString"];
 				AppLog(@"Versions: %@ & %@", hash, str);
-				AppLog(@"str length: %lu, str length: %lu", (unsigned long)[hash length], (unsigned long)[str length]);
 				if (![hash isEqualToString:str]) {
 					AppLog(@"Versions don't match. Assume GD needs an update!");
 					if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
