@@ -160,7 +160,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-    <key>CFBundleURLTypes</key>
+	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
@@ -171,7 +171,7 @@
 			</array>
 		</dict>
 	</array>
-    <key>LSApplicationCategoryType</key>
+	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.games</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
@@ -179,6 +179,8 @@
 		<string>geode</string>
 	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>GCSupportsGameMode</key>
 	<true/>
 	<key>UIPrerenderedIcon</key>
 	<true/>
