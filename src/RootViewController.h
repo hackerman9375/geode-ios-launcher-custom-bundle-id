@@ -12,6 +12,7 @@
 // sorry i dont want to deal with dumb link errors
 - (BOOL)progressVisible;
 - (void)progressVisibility:(BOOL)hidden;
+- (void)progressCancelVisibility:(BOOL)hidden;
 - (void)barProgress:(CGFloat)value;
 - (void)signApp:(BOOL)force completionHandler:(void (^)(BOOL success, NSString* error))completionHandler;
 @end

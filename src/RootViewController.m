@@ -37,6 +37,14 @@
 		[self.progressBar setCancelHidden:NO];
 	}
 }
+
+- (void)progressCancelVisibility:(BOOL)hidden {
+	if (self.progressBar != nil) {
+		[self.progressBar setHidden:hidden];
+		[self.progressBar setCancelHidden:YES];
+	}
+}
+
 - (void)barProgress:(CGFloat)value {
 	if (self.progressBar != nil) {
 		[self.progressBar setProgress:value];

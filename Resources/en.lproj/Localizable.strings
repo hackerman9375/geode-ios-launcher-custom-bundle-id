@@ -1,4 +1,6 @@
 // Common
+"common.yes" = "Yes";
+"common.no" = "No";
 "common.ok" = "OK";
 "common.cancel" = "Cancel";
 "common.notice" = "Notice";
@@ -113,9 +115,9 @@
 "advanced.use-tweak.warning" = "You will need to use the TrollStore (.tipa) version of the Geode Launcher to install & update Geode automatically, otherwise you will need to manually download Geode each time using Filza.";
 "advanced.manual-reopen-jit" = "Manual reopen with JIT";
 "advanced.use-nightly" = "Use Nightly Release";
-"advanced.view-recent-logs" = "View Recent Logs";
-"advanced.view-app-logs" = "View App Logs";
-"advanced.view-recent-crash" = "View Recent Crash";
+"advanced.view-recent-logs" = "View Last Game Logs";
+"advanced.view-app-logs" = "View Last App Logs";
+"advanced.view-recent-crash" = "View Last Game Crash";
 
 "about" = "About";
 "about.launcher" = "iOS Launcher";
@@ -127,6 +129,8 @@
 "credits.footer" = "These people made Geode on iOS possible!";
 
 "developer" = "Developer";
+"developer.warning.title" = "Are you sure you want to enable Developer Mode?";
+"developer.warning.msg" = "Developer Mode exposes options that might be unstable, corrupt your game files, and break your install, and are meant for development purposes only.";
 
 // Logs 
 "logs.error" = "%@ could not be read.";

@@ -64,21 +64,23 @@
 
 - (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
 	switch (section) {
-	case 4:
-		return 6;
-	case 1:
-	case 5:
+	case 0: // General
+		return 5;
+	case 1: // Gameplay
 		return 4;
-	case 2:
+	case 2: // JIT
 		return 2;
-	case 3:
+	case 3: // JIT-Less
 		// return 6;
 		return 0;
-	case 6:
+	case 4: // Advanced
+		return 6;
+	case 5: // About
+		return 4;
+	case 6: // Credits
 		return [self.creditsArray count];
-	case 0:
-	case 7:
-		return 5;
+	case 7: // Developer
+		return 4;
 	default:
 		return 0;
 	}
@@ -91,6 +93,21 @@
 	[uiSwitch setEnabled:!disable];
 	[uiSwitch addTarget:self action:@selector(switchValueChanged:) forControlEvents:UIControlEventValueChanged];
 	return uiSwitch;
+}
+
+- (void)showDevMode:(UILongPressGestureRecognizer*)gestureRecognizer {
+	if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
+		UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"developer.warning.title".loc message:@"developer.warning.msg".loc
+																preferredStyle:UIAlertControllerStyleAlert];
+		UIAlertAction* yesAction = [UIAlertAction actionWithTitle:@"common.yes".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+			[[Utils getPrefs] setBool:YES forKey:@"DEVELOPER_MODE"];
+			[self.tableView reloadData];
+		}];
+		UIAlertAction* noAction = [UIAlertAction actionWithTitle:@"common.no".loc style:UIAlertActionStyleCancel handler:nil];
+		[alert addAction:yesAction];
+		[alert addAction:noAction];
+		[self presentViewController:alert animated:YES completion:nil];
+	}
 }
 
 - (UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath*)indexPath {
@@ -223,12 +240,16 @@
 		break;
 	}
 	case 4:
-		if (indexPath.row == 0) {
+		/*if (indexPath.row == 0) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"advanced.dev-mode".loc;
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:NO];
+			if (![[Utils getPrefs] boolForKey:@"NOT_AN_NPC"]) {
+				cellval1.textLabel.textColor = [UIColor systemGrayColor];
+			}
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:![[Utils getPrefs] boolForKey:@"NOT_AN_NPC"]];
 			return cellval1;
-		} else if (indexPath.row == 1) {
+		} else*/
+		if (indexPath.row == 0) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			if (![Utils isJailbroken]) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
@@ -236,7 +257,7 @@
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_TWEAK"] tag:3 disable:![Utils isJailbroken]];
 			cellval1.textLabel.text = @"advanced.use-tweak".loc;
 			return cellval1;
-		} else if (indexPath.row == 2) {
+		} else if (indexPath.row == 1) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:[[Utils getPrefs] boolForKey:@"USE_TWEAK"]];
 			cellval1.textLabel.text = @"advanced.manual-reopen-jit".loc;
@@ -244,11 +265,14 @@
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
 			}
 			return cellval1;
-		} else if (indexPath.row == 3) {
+		} else if (indexPath.row == 2) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_NIGHTLY"] tag:11 disable:NO];
 			cellval1.textLabel.text = @"advanced.use-nightly".loc;
 			return cellval1;
+		} else if (indexPath.row == 3) {
+			cell.textLabel.text = @"advanced.view-app-logs".loc;
+			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		} else if (indexPath.row == 4) {
 			cell.textLabel.text = @"advanced.view-recent-logs".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
@@ -262,6 +286,10 @@
 		if (indexPath.row == 0) {
 			cellval1.textLabel.text = @"about.launcher".loc;
 			cellval1.detailTextLabel.text = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+			cellval1.textLabel.userInteractionEnabled = YES;
+			UILongPressGestureRecognizer* longPressGR = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(showDevMode:)];
+			[cellval1.textLabel addGestureRecognizer:longPressGR];
+
 		} else if (indexPath.row == 1) {
 			cellval1.textLabel.text = @"about.geode".loc;
 			cellval1.detailTextLabel.text = [Utils getGeodeVersion];
@@ -292,31 +320,21 @@
 	}
 	case 7: {
 		if (indexPath.row == 0) {
-			cell.textLabel.text = @"advanced.view-app-logs".loc;
-			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.textLabel.text = @"advanced.dev-mode".loc;
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:NO];
+			return cellval1;
 		} else if (indexPath.row == 1) {
-			UITextField* textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
-			textField.textAlignment = NSTextAlignmentRight;
-			textField.delegate = self;
-			textField.returnKeyType = UIReturnKeyDone;
-			textField.autocorrectionType = UITextAutocorrectionTypeNo;
-			textField.keyboardType = UIKeyboardTypeURL;
-			textField.tag = 2;
-			cell.accessoryView = textField;
-			cell.textLabel.text = @"Reinstall Addr";
-			textField.placeholder = @"http://x.x.x.x:3000";
-			textField.text = [[Utils getPrefs] stringForKey:@"DEV_REINSTALL_ADDR"];
-		} else if (indexPath.row == 2) {
-			cell.textLabel.text = @"TrollStore App Reinstall";
-			cell.textLabel.textColor = [Theming getAccentColor];
-			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 3) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"Completed Setup";
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"CompletedSetup"] tag:6 disable:NO];
 			return cellval1;
-		} else if (indexPath.row == 4) {
+		} else if (indexPath.row == 2) {
 			cell.textLabel.text = @"Test GD Bundle Access";
+			cell.textLabel.textColor = [Theming getAccentColor];
+			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (indexPath.row == 3) {
+			cell.textLabel.text = @"Import IPA";
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
 		}
@@ -344,7 +362,7 @@
 	case 2:
 		return @"jit".loc;
 	case 3:
-		return @"JIT-Less (Disabled)";
+		return @""; //@"jitless".loc;
 	case 4:
 		return @"advanced".loc;
 	case 5:
@@ -593,7 +611,11 @@
 		}
 	} else if (indexPath.section == 4) {
 		switch (indexPath.row) {
-		case 4: { // View app logs
+		case 3: { // View app logs
+			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:[[LCPath docPath] URLByAppendingPathComponent:@"app.log"]] animated:YES];
+			break;
+		}
+		case 4: { // View geode logs
 			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/logs/"].path];
 			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
 				file = [Utils pathToMostRecentLogInDirectory:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/logs/"]];
@@ -617,52 +639,16 @@
 		}
 	} else if (indexPath.section == 7) {
 		switch (indexPath.row) {
-		case 0: { // View Recent App Logs
-			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:[[LCPath docPath] URLByAppendingPathComponent:@"app.log"]] animated:YES];
-			break;
-		}
-		case 2: { // TS App Reinstall
-			NSURL* url = [NSURL URLWithString:[NSString stringWithFormat:@"apple-magnifier://install?url=%@", [[Utils getPrefs] stringForKey:@"DEV_REINSTALL_ADDR"]]];
-			if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
-				[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
-			}
-			break;
-		}
-		case 4: { // Bundle Path
+		case 2: { // Bundle Path
 			[Utils showNotice:self title:[Utils getGDDocPath]];
-			/*NSString *executablePath = [Utils getGDBinaryPath];
-			char *const argv[] = {(char *)[executablePath UTF8String], NULL};
-			char *const envp[] = {
-				"LAUNCHARGS=--geode:safe-mode",
-				NULL
-			};
-
-			pid_t pid;
-			int status = posix_spawn(&pid, [executablePath UTF8String], NULL, NULL, argv, envp);
-			if (status == 0) {
-				waitpid(pid, NULL, 0);
-			}*/
-			/*pid_t pid;
-			int status;
-
-			posix_spawnattr_t attr;
-			posix_spawnattr_init(&attr);
-
-			posix_spawnattr_setflags(&attr, POSIX_SPAWN_START_SUSPENDED);
-
-			int spawnError = posix_spawn(&pid, [executablePath UTF8String], NULL, &attr, argv, NULL);
-			posix_spawnattr_destroy(&attr);
-			AppLog(@"launching %@", executablePath);
-			if (spawnError != 0) {
-				AppLog(@"posix_spawn failed: %s", strerror(spawnError));
-				return;
-			}
-			kill(pid, SIGCONT);
-			if (waitpid(pid, &status, 0) != -1) {
-				AppLog(@"Failed to find process");
-			} else {
-				AppLog(@"waitpid failed: %s", strerror(errno));
-			}*/
+			break;
+		}
+		case 3: { // Import IPA
+			UTType* type = [UTType typeWithIdentifier:@"com.apple.itunes.ipa"];
+			UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ type ] asCopy:YES];
+			picker.delegate = self;
+			picker.allowsMultipleSelection = NO;
+			[self presentViewController:picker animated:YES completion:nil];
 			break;
 		}
 		}
@@ -682,13 +668,14 @@
 		break;
 	case 2: // Dev Mode
 		[Utils toggleKey:@"DEVELOPER_MODE"];
+		[self.tableView reloadData];
 		break;
 	case 3: // Use Tweak instead of JIT
 		if ([sender isOn]) {
 			[Utils showNotice:self title:@"advanced.use-tweak.warning".loc];
 		}
-		[self.tableView reloadData];
 		[Utils toggleKey:@"USE_TWEAK"];
+		[self.tableView reloadData];
 		break;
 	case 4: // Auto JIT
 		[Utils toggleKey:@"AUTO_JIT"];
@@ -754,6 +741,18 @@
 }
 
 #pragma mark - Document Delegate Funcs (for importing cert mainly)
+- (void)documentPicker:(UIDocumentPickerViewController*)controller didPickDocumentAtURL:(NSURL*)url {
+	if (url) {
+		[self dismissViewControllerAnimated:YES completion:nil];
+		dispatch_async(dispatch_get_main_queue(), ^{
+			AppLog(@"start installing ipa!");
+			_root.optionalTextLabel.text = @"launcher.status.extracting".loc;
+			[_root progressCancelVisibility:NO];
+		});
+		[VerifyInstall startGDInstall:_root url:url];
+	}
+}
+/*
 - (void)documentPicker:(UIDocumentPickerViewController*)controller didPickDocumentsAtURLs:(nonnull NSArray<NSURL*>*)urls {
 	if (urls.count != 2)
 		return [Utils showError:self title:@"2 files must be selected! (p12 & mobileprovision)" error:nil];
@@ -821,5 +820,5 @@
 	[Utils showNotice:self title:@"Certificate Imported!"];
 	[self.tableView reloadData];
 }
-
+*/
 @end
