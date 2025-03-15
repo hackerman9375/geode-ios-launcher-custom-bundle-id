@@ -112,6 +112,7 @@
 "advanced.use-tweak" = "Use Tweak instead of JIT";
 "advanced.use-tweak.warning" = "You will need to use the TrollStore (.tipa) version of the Geode Launcher to install & update Geode automatically, otherwise you will need to manually download Geode each time using Filza.";
 "advanced.manual-reopen-jit" = "Manual reopen with JIT";
+"advanced.use-nightly" = "Use Nightly Release";
 "advanced.view-recent-logs" = "View Recent Logs";
 "advanced.view-app-logs" = "View App Logs";
 "advanced.view-recent-crash" = "View Recent Crash";

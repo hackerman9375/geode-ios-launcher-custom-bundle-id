@@ -50,7 +50,9 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 		_root = root;
 	}
 	_root.optionalTextLabel.text = @"launcher.status.getting-ver".loc;
-	[self setVersion];
+	if (![[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
+		[self setVersion];
+	}
 
 	NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeReleaseURL]]];
 	NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
@@ -159,19 +161,10 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 					NSDictionary* jsonDict = (NSDictionary*)jsonObject;
 					NSString* tagName = jsonDict[@"tag_name"];
 					if (tagName && [tagName isKindOfClass:[NSString class]]) {
-						BOOL greaterThanVer = [CompareSemVer isVersion:tagName greaterThanVersion:[Utils getGeodeVersion]];
-						AppLog(@"Latest Geode version is %@ (Currently on %@)", tagName, [Utils getGeodeVersion]);
-						if (greaterThanVer) {
-							if ([Utils getGeodeVersion] == nil || [[Utils getGeodeVersion] isEqual:@""]) {
-								AppLog(@"Updated launcher ver!");
-								[Utils updateGeodeVersion:tagName];
-							}
-							dispatch_async(dispatch_get_main_queue(), ^{ [self verifyChecksum]; });
-						} else if (!greaterThanVer) {
+						if ([[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
 							// assume out of date
 							dispatch_async(dispatch_get_main_queue(), ^{
 								if (download) {
-									[Utils updateGeodeVersion:tagName];
 									AppLog(@"Geode is out of date, updating...");
 									[self startInstall:nil ignoreRoot:YES];
 								} else {
@@ -179,6 +172,28 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 									[root.launchButton setEnabled:YES];
 								}
 							});
+						} else {
+							BOOL greaterThanVer = [CompareSemVer isVersion:tagName greaterThanVersion:[Utils getGeodeVersion]];
+							AppLog(@"Latest Geode version is %@ (Currently on %@)", tagName, [Utils getGeodeVersion]);
+							if (greaterThanVer) {
+								if ([Utils getGeodeVersion] == nil || [[Utils getGeodeVersion] isEqual:@""]) {
+									AppLog(@"Updated launcher ver!");
+									[Utils updateGeodeVersion:tagName];
+								}
+								dispatch_async(dispatch_get_main_queue(), ^{ [self verifyChecksum]; });
+							} else if (!greaterThanVer) {
+								// assume out of date
+								dispatch_async(dispatch_get_main_queue(), ^{
+									if (download) {
+										[Utils updateGeodeVersion:tagName];
+										AppLog(@"Geode is out of date, updating...");
+										[self startInstall:nil ignoreRoot:YES];
+									} else {
+										root.optionalTextLabel.text = @"launcher.status.update-available".loc;
+										[root.launchButton setEnabled:YES];
+									}
+								});
+							}
 						}
 					}
 				}

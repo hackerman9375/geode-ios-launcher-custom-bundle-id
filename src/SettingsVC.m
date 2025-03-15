@@ -64,9 +64,8 @@
 
 - (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
 	switch (section) {
-	case 0:
 	case 4:
-		return 5;
+		return 6;
 	case 1:
 	case 5:
 		return 4;
@@ -77,6 +76,7 @@
 		return 0;
 	case 6:
 		return [self.creditsArray count];
+	case 0:
 	case 7:
 		return 5;
 	default:
@@ -245,9 +245,14 @@
 			}
 			return cellval1;
 		} else if (indexPath.row == 3) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_NIGHTLY"] tag:11 disable:NO];
+			cellval1.textLabel.text = @"advanced.use-nightly".loc;
+			return cellval1;
+		} else if (indexPath.row == 4) {
 			cell.textLabel.text = @"advanced.view-recent-logs".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 4) {
+		} else if (indexPath.row == 5) {
 			cell.textLabel.text = @"advanced.view-recent-crash".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		}
@@ -588,7 +593,7 @@
 		}
 	} else if (indexPath.section == 4) {
 		switch (indexPath.row) {
-		case 3: { // View app logs
+		case 4: { // View app logs
 			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/logs/"].path];
 			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
 				file = [Utils pathToMostRecentLogInDirectory:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/logs/"]];
@@ -596,7 +601,7 @@
 			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:file] animated:YES];
 			break;
 		}
-		case 4: { // View recent crash
+		case 5: { // View recent crash
 			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/crashlogs/"].path];
 			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
 				file = [Utils pathToMostRecentLogInDirectory:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/crashlogs/"]];
@@ -706,6 +711,11 @@
 		break;
 	case 10:
 		[Utils toggleKey:@"USE_ZSIGN"];
+		break;
+	case 11:
+		[Utils toggleKey:@"USE_NIGHTLY"];
+		[[Utils getPrefs] setBool:NO forKey:@"UPDATE_AUTOMATICALLY"];
+		[self.tableView reloadData];
 		break;
 	}
 }

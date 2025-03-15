@@ -43,7 +43,11 @@ NSString* gdDocPath = nil;
 
 + (NSString*)getGeodeReleaseURL {
 	// return @"http://192.168.200.1:38000";
-	return @"https://api.github.com/repos/geode-sdk/geode/releases/latest";
+	if ([[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
+		return @"https://api.github.com/repos/geode-sdk/geode/releases/tags/nightly";
+	} else {
+		return @"https://api.github.com/repos/geode-sdk/geode/releases/latest";
+	}
 }
 + (NSString*)getGeodeLauncherURL {
 	return @"https://api.github.com/repos/geode-sdk/ios-launcher/releases/latest";
