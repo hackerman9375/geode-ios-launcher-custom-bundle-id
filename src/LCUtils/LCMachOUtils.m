@@ -168,8 +168,8 @@ struct ui_CS_SuperBlob {
 	uint32_t magic;	 /* magic number */
 	uint32_t length; /* total length of SuperBlob */
 	uint32_t count;	 /* number of index entries following */
-	// CS_BlobIndex index[];            /* (count) entries */
-	/* followed by Blobs in no particular order as indicated by offsets in index */
+					 // CS_BlobIndex index[];            /* (count) entries */
+					 /* followed by Blobs in no particular order as indicated by offsets in index */
 };
 
 struct ui_CS_blob {

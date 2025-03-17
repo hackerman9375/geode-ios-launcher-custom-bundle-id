@@ -71,7 +71,7 @@ extern NSBundle* lcMainBundle;
 		exit(0);
 		return;
 	}
-	if ([lcUserDefaults boolForKey:@"JITLESS"]) {
+	if ([lcUserDefaults boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"]) {
 		LCAppInfo* app = [[LCAppInfo alloc] initWithBundlePath:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app"].path];
 		app.signer = [lcUserDefaults boolForKey:@"USE_ZSIGN"] ? 1 : 0;
 		if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
@@ -129,6 +129,7 @@ extern NSBundle* lcMainBundle;
 		}
 		return YES;
 	}
+	AppLog(@"Launching the app with JITStreamer: %@/launch_app/%@", sideJITServerAddress, lcMainBundle.bundleIdentifier);
 	NSString* launchJITUrlStr = [NSString stringWithFormat:@"%@/launch_app/%@", sideJITServerAddress, lcMainBundle.bundleIdentifier];
 	NSURLSession* session = [NSURLSession sharedSession];
 	NSURL* launchJITUrl = [NSURL URLWithString:launchJITUrlStr];

@@ -68,7 +68,7 @@ Class LCSharedUtilsClass = nil;
 		[[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
 		return YES;
 	}
-	if (![[Utils getPrefs] boolForKey:@"JITLESS"] && ![LCUtils askForJIT])
+	if (![[Utils getPrefs] boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"] && ![LCUtils askForJIT])
 		return YES;
 	return [LCSharedUtilsClass launchToGuestApp];
 }

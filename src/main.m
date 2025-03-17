@@ -54,7 +54,7 @@ void NUDGuestHooksInit();
 @end
 
 static BOOL checkJITEnabled() {
-	if ([lcUserDefaults boolForKey:@"JITLESS"])
+	if ([lcUserDefaults boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"])
 		return NO;
 	// check if jailbroken
 	if (access("/var/mobile", R_OK) == 0) {
@@ -221,7 +221,7 @@ void* new_dlsym(void* __handle, const char* __symbol) {
 
 static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContainer, BOOL safeMode, int argc, char* argv[]) {
 	NSString* appError = nil;
-	if (![lcUserDefaults boolForKey:@"JITLESS"]) {
+	if (![lcUserDefaults boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"]) {
 		// First of all, let's check if we have JIT
 		for (int i = 0; i < 10 && !checkJITEnabled(); i++) {
 			usleep(1000 * 100);
