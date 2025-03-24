@@ -1,2 +1,33 @@
-# ios-launcher
-Manages installing and launching Geometry Dash for iOS
+# Geode iOS Launcher
+Manages installing and launching **Geometry Dash** with **Geode** for iOS.
+
+<p align="center">
+	<img src="/screenshots/thumbnail.png" />
+</p>
+
+## Requirements
+- iOS/iPadOS 14.0 or later
+- Full version of Geometry Dash installed
+- An internet connection
+
+## Quick Start
+1. Navigate to https://github.com/geode-catgirls/ios-launcher/releases, if you are not **jailbroken**, download the latest **ipa** file. If you wish to use the tweak and have **TrollStore**, download the latest **tipa** file.
+2. Install the launcher by following the [Installation Guide](./INSTALL.md), or reading the **INSTALL.md** file.
+3. Enjoy using Geode!
+
+## Support
+
+If you have any further questions, or need help, be sure to join [our Discord server](https://discord.gg/9e43WMKzhp)!
+
+## Building / Development
+
+To build this project, you must have the following prerequisites installed:
+- [Theos](https://theos.dev/docs/) [WSL for Windows]
+- [make](https://formulae.brew.sh/formula/make) [Mac OS only]
+
+After installing these, you can compile the project by running:
+```bash
+git clone https://github.com/geode-catgirls/ios-launcher
+cd ios-launcher
+make package FINALPACKAGE=1 STRIP=0
+```

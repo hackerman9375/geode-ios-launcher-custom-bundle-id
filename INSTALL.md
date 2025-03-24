@@ -22,15 +22,15 @@
 	- Download and install [AltServer](https://altstore.io/), or [AltServer-Linux](https://github.com/NyaMisty/AltServer-Linux) for Linux.
 
 3. **Installing AltStore**
-	- If you plan on installing SideStore, skip this step, otherwise follow these steps depending on what computer you have:
+	- If you plan on installing SideStore, skip this step. Otherwise follow these steps depending on what computer you have:
 	- [Windows Guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows)
 	- [Mac OS Guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-macos)
 
 4. **Installing SideStore** (Recommended)
-	- If you plan on installing AltStore, skip this step, otherwise follow the steps provided on the website: https://sidestore.io/#get-started
+	- If you plan on installing AltStore, skip this step. Otherwise follow the steps provided on the website: https://sidestore.io/#get-started
 	- SideStore is recommended if you do not want to refresh your apps while keeping your PC on.
 
-Now you can proceed with installing Geode! If you are not jailbroken, **install the IPA**, otherwise install the **TIPA** file if you are jailbroken and have TrollStore.
+Now you can proceed with installing Geode! If you are not jailbroken, **install the IPA**, otherwise **install the TIPA** file if you are jailbroken and have TrollStore. Though the **TIPA** version of the launcher isn't a requirement if you are jailbroken, just an option.
 
 ## Installing Geode through AltStore / SideStore
 > ℹ️ **Note**: You will need to **refresh** both the store and Geode every week, otherwise you will not be able to run the app.
@@ -72,7 +72,7 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 1. Tap the **Launch** button in the Geode app.
 2. Geode should launch in Geometry Dash!
 
-### For iOS 17+
+### For iOS 17+ and Later
 #### JITStreamer
 > ℹ️ **Note**: For the first time setup, you will need a computer to get a Pairing File. After the setup, you will never need a computer for SideStore or JIT. If you installed SideStore, you likely already have a pairing profile, meaning there is no need to reinstall JitterBugPair.
 
@@ -103,5 +103,5 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 
 > Optionally, you can follow the youtube tutorial here for installing both SideStore and JITStreamer: https://www.youtube.com/watch?v=Mt4cwFyPsoM
 
-## Post Installation
+## Conclusion
 You should now be able to run Geometry Dash with Geode! You can install mods by tapping the **Geode** button on the bottom of the menu, and browse for mods to install!
