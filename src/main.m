@@ -228,7 +228,7 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 		}
 		if (!checkJITEnabled()) {
 			appError = @"JIT was not enabled. Please ensure that you launched the Geode launcher with JIT.";
-			//appError = @"JIT was not enabled. If you want to use Geode without JIT, setup JITLess mode in settings.";
+			// appError = @"JIT was not enabled. If you want to use Geode without JIT, setup JITLess mode in settings.";
 			return appError;
 		}
 	}

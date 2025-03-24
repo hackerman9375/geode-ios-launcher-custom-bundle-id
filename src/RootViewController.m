@@ -38,6 +38,12 @@
 	}
 }
 
+- (void)progressText:(NSString*)text {
+	if (self.progressBar != nil) {
+		[self.progressBar setProgressText:text];
+	}
+}
+
 - (void)progressCancelVisibility:(BOOL)hidden {
 	if (self.progressBar != nil) {
 		[self.progressBar setHidden:hidden];
@@ -82,6 +88,8 @@
 	self.launchButton.backgroundColor = [Theming getAccentColor];
 	[self.launchButton setTitleColor:[Theming getTextColor:[Theming getAccentColor]] forState:UIControlStateNormal];
 	[self.launchButton setTintColor:[Theming getTextColor:[Theming getAccentColor]]];
+
+	[self.progressBar setProgressText:@"launcher.progress.download.text".loc];
 
 	[self.optionalTextLabel setHidden:YES];
 	[self.launchButton setEnabled:YES];
@@ -188,7 +196,7 @@
 
 	// progress bar for downloading!
 	self.progressBar = [[ProgressBar alloc] initWithFrame:CGRectMake(self.view.center.x - 140, self.view.center.y + 200, 280, 68)
-											 progressText:@"launcher.progress.text".loc // note for me, nil for no string
+											 progressText:@"launcher.progress.download.text".loc // note for me, nil for no string
 										 showCancelButton:YES
 													 root:self];
 	[self.progressBar setHidden:YES];
@@ -329,6 +337,7 @@
 		// so apparently i have to run this asynchronously or else it wont work... WHY
 		AppLog(@"start installing ipa!");
 		self.optionalTextLabel.text = @"launcher.status.extracting".loc;
+		[self.progressBar setProgressText:@"launcher.progress.extract.text".loc];
 		[self.progressBar setHidden:NO];
 		[self.progressBar setCancelHidden:YES];
 	});

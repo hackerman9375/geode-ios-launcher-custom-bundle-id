@@ -94,7 +94,7 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 3. It is recommended to follow the guide on an iOS device, as you will need to upload the pairing file to get the wireguard config.
 4. After installing the shortcut, launch the **Geode** app again.
 5. Tap the **Launch** button in the Geode app.
-6. Exit the Geode app.
+6. Exit the Geode app. (https://support.apple.com/en-us/109359 if you don't know how to exit an app)
 7. Open the **JitStreamer EB** Shortcut
 8. Tap **Geode** when the shortcut asks "Which one?"
 9. Geode should launch in Geometry Dash!

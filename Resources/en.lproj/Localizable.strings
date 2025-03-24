@@ -82,7 +82,8 @@
 "launcher.error.req-failed" = "Request failed";
 "launcher.error.json-failed" = "JSON parsing failed";
 
-"launcher.progress.text" = "Downloading... {percent}%";
+"launcher.progress.download.text" = "Downloading... {percent}%";
+"launcher.progress.extract.text" = "Extracting... {percent}%";
 
 // Settings
 "general" = "General";
