@@ -53,10 +53,10 @@ After going through the setup process, you may have seen the warning that **Just
 
 There are a few ways to launch Geode with JIT, depending on both iOS version, and your use case.
 
-### For iOS 16 and Below
+### For iOS 16.6.1 and Below
 > ℹ️ **Note**: This method requires **AltStore** or **SideStore**. If you sideloaded this app with Sideloadly, this method __will not work__.
 
-Ensure that AltServer is running before proceeding.
+Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.1 or Below, it is recommended to install **TrollStore** instead here: https://ios.cfw.guide/installing-trollstore
 
 #### Option 1: AltStore  (AltJIT)
 1. Enable the **Manual reopen with JIT** setting in the Geode app if you are using AltStore.
@@ -101,7 +101,7 @@ Ensure that AltServer is running before proceeding.
 
 ![](screenshots/jitstreamer-manual.png)
 
-> Optionally, you can follow the youtube tutorial here for both installing SideStore and JITStreamer: https://www.youtube.com/watch?v=Mt4cwFyPsoM
+> Optionally, you can follow the youtube tutorial here for installing both SideStore and JITStreamer: https://www.youtube.com/watch?v=Mt4cwFyPsoM
 
 ## Post Installation
 You should now be able to run Geometry Dash with Geode! You can install mods by tapping the **Geode** button on the bottom of the menu, and browse for mods to install!
