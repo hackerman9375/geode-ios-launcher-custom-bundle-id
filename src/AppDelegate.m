@@ -102,7 +102,7 @@
 				return NO;
 			if (waitpid(pid, &status, 0) != -1) {
 				if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-					dispatch_async(dispatch_get_main_queue(), ^{ [LCUtils launchToGuestApp]; });
+					dispatch_async(dispatch_get_main_queue(), ^{ [Utils tweakLaunch_withSafeMode:NO]; });
 					return NO;
 				}
 			}
