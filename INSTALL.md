@@ -6,33 +6,31 @@
 - PC (Windows, Linux) or Mac OS
 - Apple ID (Secondary / Throwaway Recommended)
 - USB Cable to connect your device (Lightning / USB C)
-- [AltServer](https://altstore.io/) or [Sideloadly](https://sideloadly.io/) installed on your computer
 
-## Installing AltStore / SideStore
-> 💡 **Tip**: You can skip this step if you are using Sideloadly or TrollStore, but you may still need to follow the first few steps, especially if you have never sideloaded an app before.
+## Installing SideStore / AltStore
+> 💡 **Tip**: **SideStore** is recommended to use over **AltStore**, because a PC is **not required** after the initial install.
+> You can skip this step if you are using Sideloadly or TrollStore, but you may still need to follow the first step, especially if you have never sideloaded an app before.
 
 1. **Enabling Developer Mode (iOS 16+)**
-	- If you are on iOS 16 or later, you will need to enable **Developer Mode** in order to launch third party apps like AltStore, otherwise you will encounter this error when attempting to sideload AltStore or any app:
+	- If you are on iOS 16 or later, you will need to enable **Developer Mode** in order to launch third party apps like SideStore, otherwise you will encounter this error when attempting to sideload SideStore or any app:
 	- ![](screenshots/install-1.png)
 	- To enable **Developer Mode** on your iOS device, navigate to `Settings -> Privacy & Security -> Developer Mode`. Do note that this will require restarting your device.
 	- ![](https://faq.altstore.io/~gitbook/image?url=https%3A%2F%2F2606795771-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FAfe8qEztjcTjsjjaMBY2%252Fuploads%252FWSvXhUTj8UZyGd1ex652%252FFcejvMRXgAE8k3R.jpg%3Falt%3Dmedia%26token%3D5e380cd0-be4e-406a-914b-8fa0519e1196&width=768&dpr=2&quality=100&sign=8860eb96&sv=2)
 	- After your device restarts, you will be prompted to "Turn on Developer Mode", press "Turn On", and **Developer Mode** should be enabled!
 
-2. **Installing AltServer on your computer**
-	- Download and install [AltServer](https://altstore.io/), or [AltServer-Linux](https://github.com/NyaMisty/AltServer-Linux) for Linux.
+2. **Installing SideStore** (Recommended)
+	- Follow the steps provided here: https://sidestore.io/#get-started
+	- SideStore is recommended if you do not want to refresh your apps while keeping your PC on.
 
 3. **Installing AltStore**
 	- If you plan on installing SideStore, skip this step. Otherwise follow these steps depending on what computer you have:
+    - Download and install [AltServer](https://altstore.io/), or [AltServer-Linux](https://github.com/NyaMisty/AltServer-Linux) for Linux.
 	- [Windows Guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows)
 	- [Mac OS Guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-macos)
 
-4. **Installing SideStore** (Recommended)
-	- If you plan on installing AltStore, skip this step. Otherwise follow the steps provided on the website: https://sidestore.io/#get-started
-	- SideStore is recommended if you do not want to refresh your apps while keeping your PC on.
-
 Now you can proceed with installing Geode! If you are not jailbroken, **install the IPA**, otherwise **install the TIPA** file if you are jailbroken and have TrollStore. Though the **TIPA** version of the launcher isn't a requirement if you are jailbroken, just an option.
 
-## Installing Geode through AltStore / SideStore
+## Installing Geode through SideStore / AltStore
 > ℹ️ **Note**: You will need to **refresh** both the store and Geode every week, otherwise you will not be able to run the app.
 
 Navigate to the **My Apps** tab, and tap the `+` button to add an app. Select the IPA for the Geode app, and the Geode app should appear on your home screen!
@@ -58,7 +56,7 @@ There are a few ways to launch Geode with JIT, depending on both iOS version, an
 
 Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.1 or Below, it is recommended to install **TrollStore** instead here: https://ios.cfw.guide/installing-trollstore
 
-#### Option 1: AltStore  (AltJIT)
+#### Option 1: AltStore (AltJIT)
 1. Enable the **Manual reopen with JIT** setting in the Geode app if you are using AltStore.
 2. Tap the **Launch** button in the Geode app.
 3. Exit the Geode app.
