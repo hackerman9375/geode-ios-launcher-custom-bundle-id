@@ -102,6 +102,8 @@ extern NSBundle* lcMainBundle;
 	} else if (self.certificatePassword) {
 		tries = 2;
 		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", lcAppUrlScheme];
+	} else if ([application canOpenURL:[NSURL URLWithString:@"stikjit://"]]) {
+		urlScheme = @"stikjit://enable-jit?bundle-id=%@";
 	} else if ([application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) {
 		urlScheme = @"sidestore://sidejit-enable?bid=%@";
 	} else {
