@@ -27,4 +27,5 @@
 + (const char*)getKillAllPath;
 + (void)increaseLaunchCount;
 + (void)tweakLaunch_withSafeMode:(BOOL)safemode;
++ (NSString*)colorToHex:(UIColor*)color;
 @end

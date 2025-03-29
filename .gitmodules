@@ -1,3 +1,6 @@
 [submodule "fishhook"]
 	path = fishhook
 	url = https://github.com/khanhduytran0/fishhook
+[submodule "GCDWebServer"]
+	path = GCDWebServer
+	url = https://github.com/swisspol/GCDWebServer.git

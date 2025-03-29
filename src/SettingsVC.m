@@ -80,7 +80,7 @@
 	case 6: // Credits
 		return [self.creditsArray count];
 	case 7: // Developer
-		return 4;
+		return 5;
 	default:
 		return 0;
 	}
@@ -330,11 +330,16 @@
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"CompletedSetup"] tag:6 disable:NO];
 			return cellval1;
 		} else if (indexPath.row == 2) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.textLabel.text = @"developer.webserver".loc;
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"WEB_SERVER"] tag:12 disable:NO];
+			return cellval1;
+		} else if (indexPath.row == 3) {
 			cell.textLabel.text = @"Test GD Bundle Access";
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 3) {
-			cell.textLabel.text = @"Import IPA";
+		} else if (indexPath.row == 4) {
+			cell.textLabel.text = @"developer.importipa".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
 		}
@@ -703,6 +708,12 @@
 		[Utils toggleKey:@"USE_NIGHTLY"];
 		[[Utils getPrefs] setBool:NO forKey:@"UPDATE_AUTOMATICALLY"];
 		[self.tableView reloadData];
+		break;
+	case 12:
+		if ([sender isOn]) {
+			[Utils showNotice:self title:@"developer.webserver.msg".loc];
+		}
+		[Utils toggleKey:@"WEB_SERVER"];
 		break;
 	}
 }

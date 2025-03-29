@@ -312,4 +312,32 @@ NSString* gdDocPath = nil;
 
 	[[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:@"com.robtop.geometryjump"];
 }
+
++ (NSString*)colorToHex:(UIColor*)color {
+	CGFloat red, green, blue, alpha;
+
+	// Get the color components
+	if ([color getRed:&red green:&green blue:&blue alpha:&alpha]) {
+		// Convert to integer in range [0, 255]
+		int redInt = (int)roundf(red * 255);
+		int greenInt = (int)roundf(green * 255);
+		int blueInt = (int)roundf(blue * 255);
+
+		// Return formatted hex string
+		return [NSString stringWithFormat:@"#%02X%02X%02X", redInt, greenInt, blueInt];
+	}
+
+	// If the color isn't in RGB-compatible color space, attempt conversion
+	CGColorRef colorRef = color.CGColor;
+	size_t count = CGColorGetNumberOfComponents(colorRef);
+	const CGFloat* components = CGColorGetComponents(colorRef);
+	if (count == 2) {
+		// Grayscale color space: components are [white, alpha]
+		int whiteInt = (int)roundf(components[0] * 255);
+		return [NSString stringWithFormat:@"#%02X%02X%02X", whiteInt, whiteInt, whiteInt];
+	}
+
+	// If extraction fails, return nil as a fallback
+	return nil;
+}
 @end

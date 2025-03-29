@@ -15,11 +15,16 @@
 #import <dlfcn.h>
 #import <objc/runtime.h>
 
+#import "GCDWebServer/GCDWebServer/Core/GCDWebServer.h"
+#import "GCDWebServer/GCDWebServer/Requests/GCDWebServerMultiPartFormRequest.h"
+#import "GCDWebServer/GCDWebServer/Responses/GCDWebServerDataResponse.h"
+
 @interface RootViewController ()
 
 @property(nonatomic, strong) ProgressBar* progressBar;
 @property(nonatomic, strong) NSTimer* launchTimer;
 @property(nonatomic, assign) NSInteger countdown;
+@property(nonatomic, strong) GCDWebServer* webServer;
 
 @end
 
@@ -203,9 +208,118 @@
 	[self.view addSubview:self.progressBar];
 }
 
+- (void)startWeb {
+	if ([[Utils getPrefs] boolForKey:@"WEB_SERVER"]) {
+		__weak RootViewController* weakSelf = self;
+		self.webServer = [[GCDWebServer alloc] init];
+
+		NSString* websitePath = [[NSBundle mainBundle] pathForResource:@"web" ofType:nil];
+
+		[self.webServer addGETHandlerForBasePath:@"/" directoryPath:websitePath indexFilename:nil cacheAge:0 allowRangeRequests:YES];
+
+		NSURL* hostAddr = [NSURL URLWithString:@"Unknown"];
+		if (self.webServer.serverURL != nil) {
+			hostAddr = self.webServer.serverURL;
+		}
+
+		NSString* infoPlistPath;
+		if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+			infoPlistPath = [[Utils getGDBundlePath] stringByAppendingPathComponent:@"GeometryJump.app/Info.plist"];
+		} else {
+			infoPlistPath = [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"Info.plist"].path;
+		}
+		NSDictionary* infoDictionary = [NSDictionary dictionaryWithContentsOfFile:infoPlistPath];
+
+		NSString* model = [[UIDevice currentDevice] localizedModel];
+		NSString* systemName = [[UIDevice currentDevice] systemName];
+		NSString* systemVersion = [[UIDevice currentDevice] systemVersion];
+		NSString* deviceStr = [NSString stringWithFormat:@"%@ %@ (%@,%@)", systemName, systemVersion, model, [Utils archName]];
+		NSFileManager* fm = [NSFileManager defaultManager];
+		[self.webServer addHandlerForMethod:@"GET" pathRegex:@"/.*\\.html" requestClass:[GCDWebServerRequest class]
+							   processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
+								   NSError* error = nil;
+								   NSArray* files = [fm contentsOfDirectoryAtPath:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/mods/"].path
+																			error:&error];
+								   if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+									   files = [fm contentsOfDirectoryAtPath:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/mods/"] error:&error];
+								   }
+								   int modsInstalled = 0;
+								   if (!error) {
+									   modsInstalled = (unsigned long)[files count];
+								   }
+								   NSDictionary* variables = @{
+									   @"host" : [NSString stringWithFormat:@"%@", weakSelf.webServer.serverURL],
+									   @"version" : [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"] ?: @"N/A",
+									   @"geode" : [Utils getGeodeVersion],
+									   @"gd" : [infoDictionary objectForKey:@"CFBundleShortVersionString"] ?: @"N/A",
+									   @"device" : deviceStr,
+									   @"mods" : [NSString stringWithFormat:@"%i", modsInstalled],
+								   };
+								   return [GCDWebServerDataResponse responseWithHTMLTemplate:[websitePath stringByAppendingPathComponent:request.path] variables:variables];
+							   }];
+
+		[self.webServer addHandlerForMethod:@"GET" path:@"/styles.css" requestClass:[GCDWebServerRequest class] processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
+			NSString* path = [[NSBundle mainBundle] pathForResource:@"styles" ofType:@"css" inDirectory:@"web"];
+			NSError* error = nil;
+			NSString* content = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
+			if (error) {
+				AppLog(@"Couldn't read styles.css: %@", error);
+				return [GCDWebServerDataResponse responseWithStatusCode:500];
+			}
+			return [GCDWebServerDataResponse responseWithData:[[content stringByReplacingOccurrencesOfString:@"%accent%" withString:[Utils colorToHex:[Theming getAccentColor]]]
+																  dataUsingEncoding:NSUTF8StringEncoding]
+												  contentType:@"text/css"];
+		}];
+
+		[self.webServer addHandlerForMethod:@"GET" path:@"/" requestClass:[GCDWebServerRequest class] processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
+			return [GCDWebServerResponse responseWithRedirect:[NSURL URLWithString:@"index.html" relativeToURL:request.URL] permanent:NO];
+		}];
+		[self.webServer addHandlerForMethod:@"POST" path:@"/launch" requestClass:[GCDWebServerRequest class] processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
+			GCDWebServerDataResponse* response = [GCDWebServerDataResponse responseWithStatusCode:200];
+			[weakSelf launchGame];
+			return response;
+		}];
+		[self.webServer addHandlerForMethod:@"POST" path:@"/stop" requestClass:[GCDWebServerRequest class] processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
+			GCDWebServerDataResponse* response = [GCDWebServerDataResponse responseWithStatusCode:200];
+			[weakSelf.webServer stop];
+			return response;
+		}];
+		[self.webServer addHandlerForMethod:@"POST" path:@"/upload" requestClass:[GCDWebServerMultiPartFormRequest class]
+							   processBlock:^GCDWebServerResponse*(GCDWebServerMultiPartFormRequest* request) {
+								   GCDWebServerMultiPartFile* file = [request firstFileForControlName:@"file"];
+								   if (!file)
+									   return [GCDWebServerDataResponse responseWithStatusCode:400];
+								   AppLog(@"[Server] Received request to upload %@", file.fileName);
+
+								   NSURL* path = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/mods/"];
+								   if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+									   path = [NSURL URLWithString:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/mods/"]];
+								   }
+								   NSURL* destinationURL = [path URLByAppendingPathComponent:file.fileName];
+								   NSError* error = nil;
+								   if ([fm fileExistsAtPath:destinationURL.path]) {
+									   [fm removeItemAtURL:destinationURL error:&error];
+									   if (error) {
+										   AppLog(@"[Server] Couldn't replace file: %@", error);
+										   return [GCDWebServerDataResponse responseWithStatusCode:500];
+									   }
+								   }
+								   if ([fm moveItemAtPath:file.temporaryPath toPath:destinationURL.path error:&error]) {
+									   AppLog(@"[Server] Uploaded file!");
+									   return [GCDWebServerDataResponse responseWithText:[NSString stringWithFormat:@"File %@ uploaded successfully", file.fileName]];
+								   } else {
+									   NSLog(@"[Server] Error saving file: %@", error);
+									   return [GCDWebServerDataResponse responseWithStatusCode:500];
+								   }
+							   }];
+		[self.webServer startWithPort:8080 bonjourName:nil];
+		AppLog(@"Started server: %@", self.webServer.serverURL);
+	}
+}
+
 - (void)viewDidLayoutSubviews {
 	[super viewDidLayoutSubviews];
-
+	[self startWeb];
 	[self updateState];
 }
 
