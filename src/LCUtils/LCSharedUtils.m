@@ -99,19 +99,19 @@ extern NSBundle* lcMainBundle;
 	int tries = 1;
 	if (!access(tsPath.UTF8String, F_OK)) {
 		urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
-	} else if (self.certificatePassword) {
-		tries = 2;
-		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", lcAppUrlScheme];
 	} else if ([application canOpenURL:[NSURL URLWithString:@"stikjit://"]]) {
 		urlScheme = @"stikjit://enable-jit?bundle-id=%@";
 	} else if ([application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) {
 		urlScheme = @"sidestore://sidejit-enable?bid=%@";
+	} else if (self.certificatePassword) {
+		tries = 2;
+		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", lcAppUrlScheme];
 	} else {
 		tries = 2;
 		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", lcAppUrlScheme];
 	}
 	NSURL* launchURL = [NSURL URLWithString:[NSString stringWithFormat:urlScheme, lcMainBundle.bundleIdentifier]];
-
+	AppLog(@"Attempting to launch geode with %@", launchURL);
 	if ([application canOpenURL:launchURL]) {
 		//[UIApplication.sharedApplication suspend];
 		for (int i = 0; i < tries; i++) {

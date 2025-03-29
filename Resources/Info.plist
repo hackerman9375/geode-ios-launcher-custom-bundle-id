@@ -176,6 +176,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>sidestore</string>
+		<string>stikjit</string>
 		<string>geode</string>
 	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
