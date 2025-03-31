@@ -71,13 +71,35 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 2. Geode should launch in Geometry Dash!
 
 ### For iOS 17+ and Later
+#### StikJIT (Recommended)
+> ℹ️ **Note**: For the first time setup, you will need a computer to get a Pairing File. If you installed SideStore, you likely already have a pairing profile, meaning there is no need to reinstall Jitterbug Pair.
+
+#### Steps for downloading Jitterbug Pair (Skippable if you already have a Pairing File)
+1. Go to [Jitterbug Pair](https://github.com/osy/Jitterbug/releases) and download the version for your computer.
+2. Run the program with your iOS device connected to your computer. It will save a file to your computer.
+3. Use iCloud, Airdrop, or a website such as [Pairdrop](https://pairdrop.net/) to upload the pairing file to your iOS device.
+
+#### Downloading StikJIT
+1. Download the latest IPA of StikJIT here: https://github.com/0-Blu/StikJIT/releases
+2. Sideload the IPA by using the same method as you did installing Geode.
+3. (If you haven't already) Download [WireGuard](https://apps.apple.com/us/app/wireguard/id1441195209) from the App Store.
+4. Download the [VPNConfig](https://link.storjshare.io/raw/jwza26uq6rnkyu6ozo35vpyuxgzq/stikjit/StikJIT.conf) (or [here](./screenshots/StikJIT.conf) if the link doesn't work) and share it with WireGuard.
+5. Activate the WireGuard VPN (This is needed every time you want to activate JIT with StikJIT to launch with Geode)
+6. Ensure you have Background App Refresh turned off by navigating to `Settings -> General -> Background App Refresh -> Background App Refresh` and ticking it off.
+7. Launch the StikJIT app, and upload the Pairing File you've received from Jitterbug Pair.
+8. Open the Geode app.
+9. Tap the **Launch** button in the Geode app.
+10. Geode should launch in Geometry Dash!
+
+> 💡 **Tip**: StikJIT doesn't require a Wi-Fi connection to launch with JIT! While it is required to enable Wi-Fi due to Apple's restrictions, you can still use your cellular data by turning cellular data off, turning on Wi-Fi, launching Geode, turning cellular data on.
+
 #### JITStreamer
-> ℹ️ **Note**: For the first time setup, you will need a computer to get a Pairing File. After the setup, you will never need a computer for SideStore or JIT. If you installed SideStore, you likely already have a pairing profile, meaning there is no need to reinstall JitterBugPair.
+> ℹ️ **Note**: For the first time setup, you will need a computer to get a Pairing File. After the setup, you will never need a computer for SideStore or JIT. If you installed SideStore, you likely already have a pairing profile, meaning there is no need to reinstall Jitterbug Pair. Additionally, this method is only if you do not want to use StikJIT, as unlike JITStreamer, StikJIT doesn't require an internet connection, as it is on-device JIT.
 
 [JITStreamer](https://github.com/jkcoxson/JitStreamer-EB) works for iOS 18+, and overall is the recommended method to launching Geode with JIT, as it does not require a computer each time you want to run Geometry Dash.
 
 #### Option 1: Auto JIT
-1. Follow https://jkcoxson.com/jitstreamer (For JitterBugPair, install the `.zip` corresponding to your operating system.)
+1. Follow https://jkcoxson.com/jitstreamer (For Jitterbug Pair, install the `.zip` corresponding to your operating system.)
 2. It is recommended to follow the guide on an iOS device, as you will need to upload the pairing file to get the wireguard config.
 3. After installing the shortcut, launch the **Geode** app again.
 4. Enable the **Enable Auto JIT** setting in the Geode app.
@@ -88,7 +110,7 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 
 #### Option 2: Manual Method
 1. Enable the **Manual reopen with JIT** setting in the Geode app.
-2. Follow https://jkcoxson.com/jitstreamer (For JitterBugPair, install the `.zip` corresponding to your operating system.)
+2. Follow https://jkcoxson.com/jitstreamer (For Jitterbug Pair, install the `.zip` corresponding to your operating system.)
 3. It is recommended to follow the guide on an iOS device, as you will need to upload the pairing file to get the wireguard config.
 4. After installing the shortcut, launch the **Geode** app again.
 5. Tap the **Launch** button in the Geode app.
