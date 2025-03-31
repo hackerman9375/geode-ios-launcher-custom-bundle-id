@@ -86,19 +86,28 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 2. Run the program with your iOS device connected to your computer. It will save a file to your computer.
 3. Use iCloud, Airdrop, or a website such as [Pairdrop](https://pairdrop.net/) to upload the pairing file to your iOS device.
 
+#### Downloading StosVPN
+1. Download StosVPN from TestFlight: https://testflight.apple.com/join/hBUbg4ZJ.
+If it's full, download the IPA [here](https://github.com/TreyHam27/StosVPN/releases/tag/Release) and sideload it just like Geode.
+3. Launch the app and click on Connect
+4. It'll ask you to add "StosVPN" as a VPN Configuration. Click "Allow" and enter your passcode to add it.
+5. Go back to StosVPN and click on "Connect", this is what should appear on the screen. If it does, you can continue with this guide by installing StikJIT. image here
+
+> [!TIP]
+> StosVPN allows StikJit and SideStore to work without Wi-Fi connection, just by Airplane Mode. Unfortunately, this on-device VPN does not support cellular. However, as later will be mentioned in StikJIT, you can use cellular data after launching an app with JIT.
+
 #### Downloading StikJIT
 1. Download the latest IPA of StikJIT here: https://github.com/0-Blu/StikJIT/releases
 2. Sideload the IPA by using the same method as you did installing Geode.
-3. (If you haven't already) Download [WireGuard](https://apps.apple.com/us/app/wireguard/id1441195209) from the App Store.
-4. Download the [VPNConfig](https://link.storjshare.io/raw/jwza26uq6rnkyu6ozo35vpyuxgzq/stikjit/StikJIT.conf) (or [here](./screenshots/StikJIT.conf) if the link doesn't work) and share it with WireGuard.
-5. Activate the WireGuard VPN (This is needed every time you want to activate JIT with StikJIT to launch with Geode)
-6. Launch the StikJIT app, and upload the Pairing File you've received from Jitterbug Pair.
-7. Open the Geode app.
-8. Tap the **Launch** button in the Geode app.
-9. Geode should launch in Geometry Dash!
+3. (If you haven't already) Download StosVPN.
+4. Click "Connect" in StosVPN (This is needed every time you want to activate JIT with StikJIT to launch with Geode)
+5. Launch the StikJIT app (and upload the Pairing File you've received from Jitterbug Pair if you haven't done that already).
+6. Open the Geode app.
+7. Tap the **Launch** button in the Geode app.
+8. Geode should launch in Geometry Dash!
 
 > [!TIP]
-> StikJIT doesn't require a Wi-Fi connection to launch with JIT! While it is required to enable Wi-Fi due to Apple's restrictions, you can still use your cellular data by turning cellular data off, turning on Wi-Fi, launching Geode, turning cellular data on.
+> StikJIT doesn't require a Wi-Fi to be connected to the network to launch with JIT as it happens on-device, but it does require Wi-Fi connection. This is due to Apple limitations, but can be bypassed by downloading StosVPN! You can still use your cellular data after enabling an app with JIT by turning cellular data off, turning on Wi-Fi, launching Geode, turning cellular data back on.
 
 #### JITStreamer
 > [!NOTE]
