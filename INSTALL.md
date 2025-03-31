@@ -1,5 +1,6 @@
 # Installation Guide
-> ⚠️ **Warning**: For this installation guide, it is **recommended** to have a computer with Administrator access, as this guide will require installing software on your computer to sideload Geode. Additionally, **JIT** is a **__requirement__** if you want to run Geode without jailbreaking.
+> [!WARNING]
+> For this installation guide, it is **recommended** to have a computer with Administrator access, as this guide will require installing software on your computer to sideload Geode. Additionally, **JIT** is a **__requirement__** if you want to run Geode without jailbreaking.
 
 ## Prerequisites
 - iOS/iPadOS 14.0 or later
@@ -8,7 +9,8 @@
 - USB Cable to connect your device (Lightning / USB C)
 
 ## Installing SideStore / AltStore
-> 💡 **Tip**: **SideStore** is recommended to use over **AltStore**, because a PC is **not required** after the initial install.
+> [!TIP]
+> **SideStore** is recommended to use over **AltStore**, because a PC is **not required** after the initial install.
 > You can skip this step if you are using Sideloadly or TrollStore, but you may still need to follow the first step, especially if you have never sideloaded an app before.
 
 1. **Enabling Developer Mode (iOS 16+)**
@@ -31,7 +33,8 @@
 Now you can proceed with installing Geode! If you are not jailbroken, **install the IPA**, otherwise **install the TIPA** file if you are jailbroken and have TrollStore. Though the **TIPA** version of the launcher isn't a requirement if you are jailbroken, just an option.
 
 ## Installing Geode through SideStore / AltStore
-> ℹ️ **Note**: You will need to **refresh** both the store and Geode every week, otherwise you will not be able to run the app.
+> [!NOTE]
+> You will need to **refresh** both the store and Geode every week, otherwise you will not be able to run the app.
 
 Navigate to the **My Apps** tab, and tap the `+` button to add an app. Select the IPA for the Geode app, and the Geode app should appear on your home screen!
 
@@ -43,16 +46,19 @@ Tap the `+` button and tap either **Install IPA File** or **Install From URL**, 
 ![](screenshots/install-trollstore.png)
 
 ## Post Installation (IPA / Non-Jailbroken)
-> 💡 **Tip**: You can skip this step if you installed the .tipa version of Geode, and are jailbroken. Simply follow the steps in the setup process in the app.
+> [!TIP]
+> You can skip this step if you installed the .tipa version of Geode, and are jailbroken. Simply follow the steps in the setup process in the app.
 
 After going through the setup process, you may have seen the warning that **Just-In-Time** (JIT) compilation is required. This is true if you want to run Geode without being jailbroken, as by default, Apple restricts how apps can manage memory.
 
-> ⚠️ **Warning**: JIT also requires you to have **Wi-Fi** enabled on your iOS device. Cellular and/or Airplane Mode will **not work**.
+> [!WARNING]
+> JIT also requires you to have **Wi-Fi** enabled on your iOS device. Cellular and/or Airplane Mode will **not work**.
 
 There are a few ways to launch Geode with JIT, depending on both iOS version, and your use case.
 
 ### For iOS 16.6.1 and Below
-> ℹ️ **Note**: This method requires **AltStore** or **SideStore**. If you sideloaded this app with Sideloadly, this method __will not work__.
+> [!NOTE]
+> This method requires **AltStore** or **SideStore**. If you sideloaded this app with Sideloadly, this method __will not work__.
 
 Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.1 or Below, it is recommended to install **TrollStore** instead here: https://ios.cfw.guide/installing-trollstore
 
@@ -72,7 +78,8 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 
 ### For iOS 17+ and Later
 #### StikJIT (Recommended)
-> ℹ️ **Note**: For the first time setup, you will need a computer to get a Pairing File. If you installed SideStore, you likely already have a pairing profile, meaning there is no need to reinstall Jitterbug Pair.
+> [!NOTE]
+> For the first time setup, you will need a computer to get a Pairing File. If you installed SideStore, you likely already have a pairing profile, meaning there is no need to reinstall Jitterbug Pair.
 
 #### Steps for downloading Jitterbug Pair (Skippable if you already have a Pairing File)
 1. Go to [Jitterbug Pair](https://github.com/osy/Jitterbug/releases) and download the version for your computer.
@@ -91,10 +98,12 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 9. Tap the **Launch** button in the Geode app.
 10. Geode should launch in Geometry Dash!
 
-> 💡 **Tip**: StikJIT doesn't require a Wi-Fi connection to launch with JIT! While it is required to enable Wi-Fi due to Apple's restrictions, you can still use your cellular data by turning cellular data off, turning on Wi-Fi, launching Geode, turning cellular data on.
+> [!TIP]
+> StikJIT doesn't require a Wi-Fi connection to launch with JIT! While it is required to enable Wi-Fi due to Apple's restrictions, you can still use your cellular data by turning cellular data off, turning on Wi-Fi, launching Geode, turning cellular data on.
 
 #### JITStreamer
-> ℹ️ **Note**: For the first time setup, you will need a computer to get a Pairing File. After the setup, you will never need a computer for SideStore or JIT. If you installed SideStore, you likely already have a pairing profile, meaning there is no need to reinstall Jitterbug Pair. Additionally, this method is only if you do not want to use StikJIT, as unlike JITStreamer, StikJIT doesn't require an internet connection, as it is on-device JIT.
+> [!NOTE]
+> For the first time setup, you will need a computer to get a Pairing File. After the setup, you will never need a computer for SideStore or JIT. If you installed SideStore, you likely already have a pairing profile, meaning there is no need to reinstall Jitterbug Pair. Additionally, this method is only if you do not want to use StikJIT, as unlike JITStreamer, StikJIT doesn't require an internet connection, as it is on-device JIT.
 
 [JITStreamer](https://github.com/jkcoxson/JitStreamer-EB) works for iOS 18+, and overall is the recommended method to launching Geode with JIT, as it does not require a computer each time you want to run Geometry Dash.
 
