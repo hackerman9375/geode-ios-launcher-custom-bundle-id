@@ -78,6 +78,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 				NSDictionary* jsonDict = (NSDictionary*)jsonObject;
 				NSArray* assets = jsonDict[@"assets"];
 				if ([assets isKindOfClass:[NSArray class]]) {
+					bool foundAsset = false;
 					for (NSDictionary* asset in assets) {
 						if ([asset isKindOfClass:[NSDictionary class]]) {
 							NSString* assetName = asset[@"name"];
@@ -93,17 +94,18 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 											downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:downloadURL]];
 											[downloadTask resume];
 										});
+										foundAsset = true;
 										break;
 									}
-								} else {
-                                    dispatch_async(dispatch_get_main_queue(), ^{
-                                        [Utils showError:_root title:@"launcher.error.download-not-found".loc error:nil];
-                                        [self.root updateState];
-                                    });
-                                    break;
-                                }
+								}
 							}
 						}
+					}
+					if (!foundAsset) {
+						return dispatch_async(dispatch_get_main_queue(), ^{
+							[Utils showError:_root title:@"launcher.error.download-not-found".loc error:nil];
+							[self.root updateState];
+						});
 					}
 				}
 			}
