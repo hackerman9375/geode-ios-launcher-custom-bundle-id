@@ -88,7 +88,7 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 
 #### Downloading StosVPN
 1. Download StosVPN from TestFlight: https://testflight.apple.com/join/hBUbg4ZJ.
-If it's full, download the IPA [here](https://github.com/TreyHam27/StosVPN/releases/tag/Release) and sideload it just like Geode.
+If it's full AND you have a Development Certificate with VPN entitlement, download the IPA [here](https://github.com/TreyHam27/StosVPN/releases/tag/Release) and sideload it. If it's full and you don't have a Development Certificate, then unfortunately you cannot install StosVPN for now.
 3. Launch the app and click on Connect
 4. It'll ask you to add "StosVPN" as a VPN Configuration. Click "Allow" and enter your passcode to add it.
 5. Go back to StosVPN and click on "Connect", this is what should appear on the screen. If it does, you can continue with this guide by installing StikJIT.
