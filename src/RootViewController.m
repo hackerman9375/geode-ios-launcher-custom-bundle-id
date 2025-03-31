@@ -217,11 +217,6 @@
 
 		[self.webServer addGETHandlerForBasePath:@"/" directoryPath:websitePath indexFilename:nil cacheAge:0 allowRangeRequests:YES];
 
-		NSURL* hostAddr = [NSURL URLWithString:@"Unknown"];
-		if (self.webServer.serverURL != nil) {
-			hostAddr = self.webServer.serverURL;
-		}
-
 		NSString* infoPlistPath;
 		if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
 			infoPlistPath = [[Utils getGDBundlePath] stringByAppendingPathComponent:@"GeometryJump.app/Info.plist"];
