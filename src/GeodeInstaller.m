@@ -73,7 +73,6 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 					[self.root updateState];
 					AppLog(@"Error during JSON: %@", error);
 				});
-				return;
 			}
 			if ([jsonObject isKindOfClass:[NSDictionary class]]) {
 				NSDictionary* jsonDict = (NSDictionary*)jsonObject;
@@ -83,7 +82,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 						if ([asset isKindOfClass:[NSDictionary class]]) {
 							NSString* assetName = asset[@"name"];
 							if ([assetName isKindOfClass:[NSString class]]) {
-								if ([assetName hasSuffix:@"-mac.zip"]) { // TODO: change to -ios.zip when it releases officially
+								if ([assetName hasSuffix:@"-ios.zip"]) {
 									NSString* downloadURL = asset[@"browser_download_url"];
 									if ([downloadURL isKindOfClass:[NSString class]]) {
 										dispatch_async(dispatch_get_main_queue(), ^{
@@ -91,13 +90,18 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 											_root.optionalTextLabel.text = @"launcher.status.download-geode".loc;
 											NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self
 																							 delegateQueue:nil];
-											downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/geode-v4.2.0-ios.zip"]];
-											// downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:downloadURL]];
+											downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:downloadURL]];
 											[downloadTask resume];
 										});
 										break;
 									}
-								}
+								} else {
+                                    dispatch_async(dispatch_get_main_queue(), ^{
+                                        [Utils showError:_root title:@"launcher.error.download-not-found".loc error:nil];
+                                        [self.root updateState];
+                                    });
+                                    break;
+                                }
 							}
 						}
 					}
