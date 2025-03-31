@@ -93,7 +93,7 @@ If it's full, download the IPA [here](https://github.com/TreyHam27/StosVPN/relea
 4. It'll ask you to add "StosVPN" as a VPN Configuration. Click "Allow" and enter your passcode to add it.
 5. Go back to StosVPN and click on "Connect", this is what should appear on the screen. If it does, you can continue with this guide by installing StikJIT.
 
-![](screenshots/stikjit.png)
+![](screenshots/stosvpn.png)
 
 > [!TIP]
 > StosVPN allows StikJit and SideStore to work without Wi-Fi connection, just by Airplane Mode. Unfortunately, this on-device VPN does not support cellular. However, as later will be mentioned in StikJIT, you can use cellular data after launching an app with JIT.
