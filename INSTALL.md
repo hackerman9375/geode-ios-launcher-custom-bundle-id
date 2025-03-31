@@ -30,7 +30,7 @@
 	- [Windows Guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows)
 	- [Mac OS Guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-macos)
 
-Now you can proceed with installing Geode! If you are not jailbroken, **install the IPA**, otherwise **install the TIPA** file if you are jailbroken and have TrollStore. Though the **TIPA** version of the launcher isn't a requirement if you are jailbroken, just an option.
+Now you can proceed with installing Geode! If you are not jailbroken, **install the IPA**. If you're jailbroken and plan to stay so, **install the TIPA** version.
 
 ## Installing Geode through SideStore / AltStore
 > [!NOTE]
@@ -76,7 +76,7 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 1. Tap the **Launch** button in the Geode app.
 2. Geode should launch in Geometry Dash!
 
-### For iOS 17+ and Later
+### For iOS 17.4+ and Later
 #### StikJIT (Recommended)
 > [!NOTE]
 > For the first time setup, you will need a computer to get a Pairing File. If you installed SideStore, you likely already have a pairing profile, meaning there is no need to reinstall Jitterbug Pair.
@@ -92,11 +92,10 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 3. (If you haven't already) Download [WireGuard](https://apps.apple.com/us/app/wireguard/id1441195209) from the App Store.
 4. Download the [VPNConfig](https://link.storjshare.io/raw/jwza26uq6rnkyu6ozo35vpyuxgzq/stikjit/StikJIT.conf) (or [here](./screenshots/StikJIT.conf) if the link doesn't work) and share it with WireGuard.
 5. Activate the WireGuard VPN (This is needed every time you want to activate JIT with StikJIT to launch with Geode)
-6. Ensure you have Background App Refresh turned off by navigating to `Settings -> General -> Background App Refresh -> Background App Refresh` and ticking it off.
-7. Launch the StikJIT app, and upload the Pairing File you've received from Jitterbug Pair.
-8. Open the Geode app.
-9. Tap the **Launch** button in the Geode app.
-10. Geode should launch in Geometry Dash!
+6. Launch the StikJIT app, and upload the Pairing File you've received from Jitterbug Pair.
+7. Open the Geode app.
+8. Tap the **Launch** button in the Geode app.
+9. Geode should launch in Geometry Dash!
 
 > [!TIP]
 > StikJIT doesn't require a Wi-Fi connection to launch with JIT! While it is required to enable Wi-Fi due to Apple's restrictions, you can still use your cellular data by turning cellular data off, turning on Wi-Fi, launching Geode, turning cellular data on.
