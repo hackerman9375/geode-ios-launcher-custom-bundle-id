@@ -343,7 +343,7 @@
 	} else {
 		[self.progressBar setHidden:NO];
 		NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
-		downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/Geometry-2.207.ipa"]];
+		downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"__DOWNLOAD_LINK__"]];
 		[downloadTask resume];
 	}
 }
