@@ -597,6 +597,7 @@
 
 	[[Utils getPrefs] setValue:@"http://[fd00::]:9172" forKey:@"SideJITServerAddr"];
 	[[Utils getPrefs] setBool:YES forKey:@"CompletedSetup"];
+	[[Utils getPrefs] setBool:YES forKey:@"USE_NIGHTLY"];
 	[[Utils getPrefs] synchronize];
 }
 
