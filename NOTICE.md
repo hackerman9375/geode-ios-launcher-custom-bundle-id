@@ -11,6 +11,7 @@ src/LCUtils/AltStoreCore - All files included in the directory
 ZSign - All files included in the directory
 AltStoreTweak - All files included in the directory
 TestJITLess - All files included in the directory
+TweakLoader - All files included in the directory
 ```
 
 For details, please refer to the Apache License 2.0 text included in either this repository, or the [LiveContainer license](https://github.com/khanhduytran0/LiveContainer/blob/main/LICENSE)
