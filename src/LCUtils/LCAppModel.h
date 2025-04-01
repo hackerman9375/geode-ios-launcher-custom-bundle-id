@@ -20,7 +20,6 @@
 @property NSArray* uiContainers;
 @property NSString* uiTweakFolder;
 @property BOOL uiDoSymlinkInbox;
-@property BOOL uiUseLCBundleId;
 @property BOOL uiBypassAssertBarrierOnQueue;
 @property Signer* uiSigner;
 

@@ -63,7 +63,7 @@ static dispatch_queue_t loggingQueue;
 
 + (void)clearLogs {
 	if ([[Utils getPrefs] integerForKey:@"LAUNCH_COUNT"] % 5 == 0) {
-		dispatch_sync(loggingQueue, ^{ // Ensure clear completes before returning
+		dispatch_sync(loggingQueue, ^{
 			NSError* error = nil;
 			[@"" writeToFile:[self logFilePath] atomically:YES encoding:NSUTF8StringEncoding error:&error];
 		});

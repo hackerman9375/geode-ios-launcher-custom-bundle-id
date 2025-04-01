@@ -150,8 +150,6 @@
 		logoImageView.clipsToBounds = YES;
 		logoImageView.frame = CGRectMake(view.center.x - 75, view.center.y - 130, 150, 150);
 		[view addSubview:logoImageView];
-	} else {
-		// self.logoImageView.backgroundColor = [UIColor redColor];
 	}
 
 	UILabel* titleLabel = [[UILabel alloc] init];
@@ -273,7 +271,6 @@
 
 	UILabel* normalLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(normalRadioButton.frame) + 10, 10, view.bounds.size.width - 160, 30)];
 	normalLabel.text = @"intro.s3.option1.title".loc;
-	// lock.open
 	normalLabel.textColor = [Theming getWhiteColor];
 	normalLabel.font = [UIFont boldSystemFontOfSize:16];
 	[normalOptionContainer addSubview:normalLabel];
@@ -376,7 +373,6 @@
 
 	UILabel* normalLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(normalRadioButton.frame) + 10, 10, view.bounds.size.width - 160, 30)];
 	normalLabel.text = @"intro.s4.option1.title".loc;
-	// lock.open
 	normalLabel.textColor = [Theming getWhiteColor];
 	normalLabel.font = [UIFont boldSystemFontOfSize:16];
 	[normalOptionContainer addSubview:normalLabel];

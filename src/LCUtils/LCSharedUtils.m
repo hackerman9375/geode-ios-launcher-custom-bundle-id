@@ -156,25 +156,19 @@ extern NSBundle* lcMainBundle;
 
 	NSString* launchBundleId = nil;
 	NSString* openUrl = nil;
-	// NSString* containerFolderName = nil;
 	for (NSURLQueryItem* queryItem in components.queryItems) {
 		if ([queryItem.name isEqualToString:@"bundle-name"]) {
 			launchBundleId = queryItem.value;
 		} else if ([queryItem.name isEqualToString:@"open-url"]) {
 			NSData* decodedData = [[NSData alloc] initWithBase64EncodedString:queryItem.value options:0];
 			openUrl = [[NSString alloc] initWithData:decodedData encoding:NSUTF8StringEncoding];
-		} else if ([queryItem.name isEqualToString:@"container-folder-name"]) {
-			// containerFolderName = queryItem.value;
 		}
 	}
 	if (launchBundleId) {
 		if (openUrl) {
 			[lcUserDefaults setObject:openUrl forKey:@"launchAppUrlScheme"];
 		}
-
-		// Attempt to restart LiveContainer with the selected guest app
 		[lcUserDefaults setObject:launchBundleId forKey:@"selected"];
-		//[lcUserDefaults setObject:containerFolderName forKey:@"selectedContainer"];
 		[lcUserDefaults setObject:@"GeometryDash" forKey:@"selectedContainer"];
 		return [self launchToGuestApp];
 	}
@@ -207,7 +201,6 @@ extern NSBundle* lcMainBundle;
 	if (!info) {
 		return nil;
 	}
-
 	for (NSString* key in info) {
 		if ([bundleId isEqualToString:info[key]]) {
 			if ([key isEqualToString:lcAppUrlScheme]) {
@@ -216,7 +209,6 @@ extern NSBundle* lcMainBundle;
 			return key;
 		}
 	}
-
 	return nil;
 }
 
@@ -226,7 +218,6 @@ extern NSBundle* lcMainBundle;
 	if (!info) {
 		return nil;
 	}
-
 	for (NSString* key in info) {
 		if ([folderName isEqualToString:info[key]]) {
 			if ([key isEqualToString:lcAppUrlScheme]) {
@@ -235,7 +226,6 @@ extern NSBundle* lcMainBundle;
 			return key;
 		}
 	}
-
 	return nil;
 }
 

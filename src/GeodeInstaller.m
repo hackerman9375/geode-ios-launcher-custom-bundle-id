@@ -7,7 +7,6 @@
 
 typedef void (^DecompressCompletion)(NSError* _Nullable error);
 
-// ai
 @interface CompareSemVer : NSObject
 + (BOOL)isVersion:(NSString*)versionA greaterThanVersion:(NSString*)versionB;
 @end
@@ -258,7 +257,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 			return dispatch_async(dispatch_get_main_queue(), ^{
 				[Utils showError:_root title:@"launcher.error.req-failed".loc error:error];
 				[self.root updateState];
-				AppLog(@"", error);
+				AppLog(@"Couldn't send request to get GD version: %@", error);
 			});
 		}
 		if (data) {
