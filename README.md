@@ -36,3 +36,6 @@ make package FINALPACKAGE=1 STRIP=0
 - [LiveContainer](https://github.com/khanhduytran0/LiveContainer) - Made the launcher possible!
 - [MSColorPicker](https://github.com/sgl0v/MSColorPicker) - Helper for Color Picking
 - [GCDWebServer](https://github.com/swisspol/GCDWebServer) - For the web debug panel!
+
+## License
+This project is licensed under the [Boost Software License 1.0](./LICENSE). Additionally, this project also uses code from [LiveContainer](https://github.com/khanhduytran0/LiveContainer). View the [NOTICE.md](./NOTICE.md) for more details.
