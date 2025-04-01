@@ -644,11 +644,11 @@
 		}
 	} else if (indexPath.section == 7) {
 		switch (indexPath.row) {
-		case 2: { // Bundle Path
+		case 3: { // Bundle Path
 			[Utils showNotice:self title:[Utils getGDDocPath]];
 			break;
 		}
-		case 3: { // Import IPA
+		case 4: { // Import IPA
 			UTType* type = [UTType typeWithIdentifier:@"com.apple.itunes.ipa"];
 			UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ type ] asCopy:YES];
 			picker.delegate = self;
