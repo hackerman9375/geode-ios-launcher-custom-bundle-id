@@ -31,3 +31,8 @@ git clone https://github.com/geode-sdk/ios-launcher
 cd ios-launcher
 make package FINALPACKAGE=1 STRIP=0
 ```
+
+## Libraries
+- [LiveContainer](https://github.com/khanhduytran0/LiveContainer) - Made the launcher possible!
+- [MSColorPicker](https://github.com/sgl0v/MSColorPicker) - Helper for Color Picking
+- [GCDWebServer](https://github.com/swisspol/GCDWebServer) - For the web debug panel!
