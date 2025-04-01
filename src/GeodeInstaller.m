@@ -185,7 +185,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 									AppLog(@"Updated launcher ver!");
 									[Utils updateGeodeVersion:tagName];
 								}
-								dispatch_async(dispatch_get_main_queue(), ^{ [self verifyChecksum]; });
+								dispatch_async(dispatch_get_main_queue(), ^{ [self checkLauncherUpdates:_root]; });
 							} else if (!greaterThanVer) {
 								// assume out of date
 								dispatch_async(dispatch_get_main_queue(), ^{
@@ -235,9 +235,12 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 					NSString* tagName = jsonDict[@"tag_name"];
 					if (tagName && [tagName isKindOfClass:[NSString class]]) {
 						BOOL greaterThanVer = [CompareSemVer isVersion:tagName greaterThanVersion:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
+						AppLog(@"Latest Launcher version is %@ (Currently on %@)", tagName, [[NSBundle mainBundle] infoDictionary]);
 						if (!greaterThanVer) {
 							// assume out of date
 							dispatch_async(dispatch_get_main_queue(), ^{ [Utils showNotice:_root title:@"launcher.notice.launcher-update".loc]; });
+						} else {
+							dispatch_async(dispatch_get_main_queue(), ^{ [self verifyChecksum]; });
 						}
 					}
 				}
