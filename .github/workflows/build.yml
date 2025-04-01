@@ -46,7 +46,7 @@ jobs:
           $THEOS/bin/install-sdk iPhoneOS16.5
 
       - name: Replace Download Link
-        run: sed -i 's/__DOWNLOAD_LINK__/${{ secrets.GD_DOWNLOAD }}/' src/RootViewController.m
+        run: sed -i 's|__DOWNLOAD_LINK__|${{ secrets.GD_DOWNLOAD }}|' src/RootViewController.m
 
       - name: Build
         run: |
