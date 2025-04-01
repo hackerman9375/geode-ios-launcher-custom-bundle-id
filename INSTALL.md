@@ -1,6 +1,6 @@
 # Installation Guide
 > [!WARNING]
-> For this installation guide, it is **recommended** to have a computer with Administrator access, as this guide will require installing software on your computer to sideload Geode. Additionally, **JIT** is a **__requirement__** if you want to run Geode without jailbreaking.
+> For this installation guide, it is **required** to have a computer with Administrator access, as this guide will require installing software on your computer to sideload Geode. Additionally, **JIT** is a **__requirement__** if you want to run Geode without jailbreaking.
 
 ## Prerequisites
 - iOS/iPadOS 14.0 or later
