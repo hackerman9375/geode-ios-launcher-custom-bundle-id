@@ -536,19 +536,19 @@
 	case 0: { // Sileo
 		if (![[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"sileo://"]])
 			return [Utils showError:self title:@"You do not have Sileo installed!" error:nil];
-		[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"sileo://source/https://geode-catgirls.github.io/repo"] options:@{} completionHandler:nil];
+		[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"sileo://source/https://ios-repo.geode-sdk.org"] options:@{} completionHandler:nil];
 		break;
 	}
 	case 1: { // Zebra
 		if (![[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"zbra://"]])
 			return [Utils showError:self title:@"You do not have Zebra installed!" error:nil];
-		[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"zbra://sources/add/https://geode-catgirls.github.io/repo"] options:@{} completionHandler:nil];
+		[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"zbra://sources/add/https://ios-repo.geode-sdk.org"] options:@{} completionHandler:nil];
 		break;
 	}
 	case 2: { // Cydia
 		if (![[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"cydia://"]])
 			return [Utils showError:self title:@"You do not have Cydia installed!" error:nil];
-		[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"cydia://url/https://cydia.saurik.com/api/share#?source=https://geode-catgirls.github.io/repo"] options:@{}
+		[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"cydia://url/https://cydia.saurik.com/api/share#?source=https://ios-repo.geode-sdk.org"] options:@{}
 								 completionHandler:nil];
 		break;
 	}
@@ -556,11 +556,11 @@
 }
 
 - (void)otherStoreOption {
-	/*NSURL *zipFileURL = [NSURL URLWithString:@"https://github.com/geode-catgirls/repo/raw/refs/heads/main/debs/gay.rooot.geodeinject_0.0.2_iphoneos-arm.deb"];
+	/*NSURL *zipFileURL = [NSURL URLWithString:@"https://ios-repo.geode-sdk.org/debs/gay.rooot.geodeinject_0.0.2_iphoneos-arm.deb"];
 	UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[zipFileURL] applicationActivities:nil];
 	activityVC.excludedActivityTypes = @[UIActivityTypeAssignToContact, UIActivityTypePrint];
 	[self presentViewController:activityVC animated:YES completion:nil];*/
-	NSURL* url = [NSURL URLWithString:@"https://geode-catgirls.github.io/repo"];
+	NSURL* url = [NSURL URLWithString:@"https://ios-repo.geode-sdk.org/repo"];
 	if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
 		[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
 	}
