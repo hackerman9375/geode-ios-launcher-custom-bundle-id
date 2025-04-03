@@ -32,7 +32,7 @@
 "intro.s5.openin" = "Open in\n%@";
 
 "intro.warning.title" = "Warning";
-"intro.warning.subtitle" = "If you are not jailbroken or don't have TrollStore, you will need a Computer to set up JIT. JIT is required for Geode, and will not work when installed with an Enterprise Certificate.\n\nPlease refrain from asking about this.";
+"intro.warning.subtitle" = "If you are not jailbroken or don't have TrollStore, you will need a Computer to set up JIT; specifically for the pairing profile. JIT is required for Geode, and will not work when installed with an Enterprise Certificate.\n\nPlease refrain from asking about this.";
 "intro.warning.understood" = "Understood";
 
 "intro.final.title" = "Setup complete!";

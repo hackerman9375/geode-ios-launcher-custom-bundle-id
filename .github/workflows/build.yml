@@ -52,6 +52,8 @@ jobs:
         run: |
           git submodule update --init --recursive
           make package FINALPACKAGE=1 STRIP=0
+          make clean
+          make package FINALPACKAGE=1 STRIP=0 TROLLSTORE=1
 
       - name: Upload artifact
         uses: actions/upload-artifact@main

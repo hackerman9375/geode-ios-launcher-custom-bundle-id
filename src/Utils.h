@@ -6,6 +6,9 @@
 + (NSString*)gdBundleName;
 + (NSString*)launcherBundleName;
 + (NSString*)getGeodeVersion;
+
++ (NSString*)docPath;
+
 + (void)updateGeodeVersion:(NSString*)newVer;
 + (BOOL)isJailbroken;
 + (NSString*)getGeodeReleaseURL;

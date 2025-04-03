@@ -621,18 +621,12 @@
 			break;
 		}
 		case 4: { // View geode logs
-			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/logs/"].path];
-			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-				file = [Utils pathToMostRecentLogInDirectory:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/logs/"]];
-			}
+			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[Utils docPath] stringByAppendingString:@"game/geode/logs/"]];
 			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:file] animated:YES];
 			break;
 		}
 		case 5: { // View recent crash
-			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/crashlogs/"].path];
-			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-				file = [Utils pathToMostRecentLogInDirectory:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/crashlogs/"]];
-			}
+			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[Utils docPath] stringByAppendingString:@"game/geode/crashlogs/"]];
 			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:file] animated:YES];
 			break;
 		}

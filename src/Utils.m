@@ -11,6 +11,7 @@ BOOL checkedSandboxed = NO;
 BOOL sandboxValue = NO;
 NSString* gdBundlePath = nil;
 NSString* gdDocPath = nil;
+NSString* cachedVersion = nil;
 
 @implementation Utils
 + (NSString*)launcherBundleName {
@@ -31,14 +32,38 @@ NSString* gdDocPath = nil;
 }
 
 + (NSString*)getGeodeVersion {
-	NSString* verTag = [[Utils getPrefs] stringForKey:@"CURRENT_VERSION_TAG"];
-	return (verTag) ? verTag : @"Geode not installed";
+	// NSString* verTag = [[Utils getPrefs] stringForKey:@"CURRENT_VERSION_TAG"];
+	if (cachedVersion) {
+		if ([[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
+			return @"Nightly";
+		} else {
+			return cachedVersion;
+		}
+	}
+	NSError* error;
+	NSData* data = [NSData dataWithContentsOfFile:[[Utils docPath] stringByAppendingPathComponent:@"save/geode/mods/geode.loader/saved.json"] options:0 error:&error];
+	if (data && !error) {
+		id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+		if (jsonObject && !error) {
+			if ([jsonObject isKindOfClass:[NSDictionary class]]) {
+				NSDictionary* jsonDict = (NSDictionary*)jsonObject;
+				NSString* tagName = jsonDict[@"latest-version-auto-update-check"];
+				if (tagName && [tagName isKindOfClass:[NSString class]]) {
+					if ([[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
+						return @"Nightly";
+					} else {
+						cachedVersion = tagName;
+						return tagName;
+					}
+				}
+			}
+		}
+	}
+	return @"Geode not installed";
 }
 
 + (void)updateGeodeVersion:(NSString*)newVer {
-	NSUserDefaults* userDefaults = [Utils getPrefs];
-	[userDefaults setObject:newVer forKey:@"CURRENT_VERSION_TAG"];
-	[userDefaults synchronize]; // apple says this is not recommended... DOES ANYWAYS
+	cachedVersion = newVer;
 }
 
 + (NSString*)getGeodeReleaseURL {
@@ -50,7 +75,8 @@ NSString* gdDocPath = nil;
 	}
 }
 + (NSString*)getGeodeLauncherURL {
-	return @"https://api.github.com/repos/geode-sdk/ios-launcher/releases/latest";
+	// return @"https://api.github.com/repos/geode-sdk/ios-launcher/releases/latest";
+	return @"https://api.github.com/repos/geode-sdk/ios-launcher/releases";
 }
 
 // ai generated because i cant figure this out
@@ -339,5 +365,18 @@ NSString* gdDocPath = nil;
 
 	// If extraction fails, return nil as a fallback
 	return nil;
+}
++ (NSString*)docPath {
+	NSString* path;
+	if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+		path = [[Utils getGDDocPath] stringByAppendingString:@"Documents/"];
+	} else {
+		path = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/"].path;
+	}
+	if ([path hasSuffix:@"/"]) {
+		return path;
+	} else {
+		return [NSString stringWithFormat:@"%@/", path];
+	}
 }
 @end

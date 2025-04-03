@@ -49,10 +49,6 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 		_root = root;
 	}
 	_root.optionalTextLabel.text = @"launcher.status.getting-ver".loc;
-	if (![[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
-		[self setVersion];
-	}
-
 	NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeReleaseURL]]];
 	NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
 	NSURLSessionDataTask* dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error) {
@@ -76,6 +72,17 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 			if ([jsonObject isKindOfClass:[NSDictionary class]]) {
 				NSDictionary* jsonDict = (NSDictionary*)jsonObject;
 				NSArray* assets = jsonDict[@"assets"];
+				if ([[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
+					NSString* published_at = jsonDict[@"published_at"];
+					if (published_at && [published_at isKindOfClass:[NSString class]]) {
+						[[Utils getPrefs] setObject:published_at forKey:@"NIGHTLY_DATE"];
+					}
+				} else {
+					NSString* tagName = jsonDict[@"tag_name"];
+					if (tagName && [tagName isKindOfClass:[NSString class]]) {
+						[Utils updateGeodeVersion:tagName];
+					}
+				}
 				if ([assets isKindOfClass:[NSArray class]]) {
 					bool foundAsset = false;
 					for (NSDictionary* asset in assets) {
@@ -113,33 +120,8 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 	[dataTask resume];
 }
 
-- (void)setVersion {
-	NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeReleaseURL]]];
-	NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
-	NSURLSessionDataTask* dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error) {
-		if (error) {
-			AppLog(@"Error during request: %@", error);
-		}
-		if (data) {
-			NSError* jsonError;
-			id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
-			if (jsonError) {
-				dispatch_async(dispatch_get_main_queue(), ^{ AppLog(@"Error parsing JSON: %@", jsonError); });
-			} else {
-				if ([jsonObject isKindOfClass:[NSDictionary class]]) {
-					NSDictionary* jsonDict = (NSDictionary*)jsonObject;
-					NSString* tagName = jsonDict[@"tag_name"];
-					if (tagName && [tagName isKindOfClass:[NSString class]]) {
-						[Utils updateGeodeVersion:tagName];
-					}
-				}
-			}
-		}
-	}];
-	[dataTask resume];
-}
-
 - (void)checkUpdates:(RootViewController*)root download:(BOOL)download {
+	AppLog(@"Checking for Geode updates...");
 	_root = root;
 	NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeReleaseURL]]];
 	NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
@@ -167,21 +149,29 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 					NSString* tagName = jsonDict[@"tag_name"];
 					if (tagName && [tagName isKindOfClass:[NSString class]]) {
 						if ([[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
-							// assume out of date
-							dispatch_async(dispatch_get_main_queue(), ^{
-								if (download) {
-									AppLog(@"Geode is out of date, updating...");
-									[self startInstall:nil ignoreRoot:YES];
-								} else {
-									root.optionalTextLabel.text = @"launcher.status.update-available".loc;
-									[root.launchButton setEnabled:YES];
+							NSString* published_at = jsonDict[@"published_at"];
+							if (published_at && [published_at isKindOfClass:[NSString class]]) {
+								NSString* nightly_date = [[Utils getPrefs] stringForKey:@"NIGHTLY_DATE"];
+								if (nightly_date && ![nightly_date isEqualToString:published_at]) {
+									AppLog(@"Nightly date mismatch: %@ - %@", [[Utils getPrefs] stringForKey:@"NIGHTLY_DATE"], published_at);
+									dispatch_async(dispatch_get_main_queue(), ^{
+										if (download) {
+											AppLog(@"Geode is out of date, updating...");
+											[self startInstall:nil ignoreRoot:YES];
+										} else {
+											root.optionalTextLabel.text = @"launcher.status.update-available".loc;
+											[root.launchButton setEnabled:YES];
+										}
+									});
+									return;
 								}
-							});
+							}
+							dispatch_async(dispatch_get_main_queue(), ^{ [self checkLauncherUpdates:_root]; });
 						} else {
 							BOOL greaterThanVer = [CompareSemVer isVersion:tagName greaterThanVersion:[Utils getGeodeVersion]];
 							AppLog(@"Latest Geode version is %@ (Currently on %@)", tagName, [Utils getGeodeVersion]);
 							if (greaterThanVer) {
-								if ([Utils getGeodeVersion] == nil || [[Utils getGeodeVersion] isEqual:@""]) {
+								if ([Utils getGeodeVersion] == nil || [[Utils getGeodeVersion] isEqualToString:@"Geode not installed"]) {
 									AppLog(@"Updated launcher ver!");
 									[Utils updateGeodeVersion:tagName];
 								}
@@ -209,6 +199,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 }
 
 - (void)checkLauncherUpdates:(RootViewController*)root {
+	AppLog(@"Checking for Launcher updates...");
 	if (_root == nil) {
 		_root = root;
 	}
@@ -223,22 +214,29 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 		}
 		if (data) {
 			NSError* jsonError;
-			id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+			// id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+			NSArray* jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
 			if (jsonError) {
 				dispatch_async(dispatch_get_main_queue(), ^{
 					[Utils showError:_root title:@"launcher.error.json-failed".loc error:jsonError];
 					AppLog(@"Error parsing JSON: %@", jsonError);
 				});
 			} else {
-				if ([jsonObject isKindOfClass:[NSDictionary class]]) {
-					NSDictionary* jsonDict = (NSDictionary*)jsonObject;
+				// if ([jsonObject isKindOfClass:[NSDictionary class]]) {
+				if ([jsonObject isKindOfClass:[NSArray class]]) {
+					// NSDictionary* jsonDict = (NSDictionary*)jsonObject;
+					NSDictionary* jsonDict = jsonObject[0];
 					NSString* tagName = jsonDict[@"tag_name"];
 					if (tagName && [tagName isKindOfClass:[NSString class]]) {
-						BOOL greaterThanVer = [CompareSemVer isVersion:tagName greaterThanVersion:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
-						AppLog(@"Latest Launcher version is %@ (Currently on %@)", tagName, [[NSBundle mainBundle] infoDictionary]);
+						NSString* launcherVer = [NSString stringWithFormat:@"v%@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
+						BOOL greaterThanVer = [CompareSemVer isVersion:tagName greaterThanVersion:launcherVer];
+						AppLog(@"Latest Launcher version is %@ (Currently on %@)", tagName, launcherVer);
 						if (!greaterThanVer) {
 							// assume out of date
-							dispatch_async(dispatch_get_main_queue(), ^{ [Utils showNotice:_root title:@"launcher.notice.launcher-update".loc]; });
+							dispatch_async(dispatch_get_main_queue(), ^{
+								[Utils showNotice:_root title:@"launcher.notice.launcher-update".loc];
+								[self.root updateState];
+							});
 						} else {
 							dispatch_async(dispatch_get_main_queue(), ^{ [self verifyChecksum]; });
 						}
@@ -253,6 +251,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 - (void)verifyChecksum {
 	if (_root == nil || ![VerifyInstall verifyGDInstalled])
 		return;
+	AppLog(@"Verifying GD version...");
 	NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://jinx.firee.dev/gode/version.txt"]];
 	NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
 	NSURLSessionDataTask* dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error) {

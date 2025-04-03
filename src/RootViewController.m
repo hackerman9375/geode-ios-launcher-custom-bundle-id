@@ -88,6 +88,8 @@
 		AppLog(@"Found error: %@", errStr);
 		[Utils showError:self title:[@"launcher.error.gd" localizeWithFormat:errStr] error:nil];
 		[[Utils getPrefs] setObject:nil forKey:@"error"];
+	} else {
+		// add logic for checking crash logs, lastCrash
 	}
 
 	self.launchButton.backgroundColor = [Theming getAccentColor];
@@ -233,11 +235,7 @@
 		[self.webServer addHandlerForMethod:@"GET" pathRegex:@"/.*\\.html" requestClass:[GCDWebServerRequest class]
 							   processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
 								   NSError* error = nil;
-								   NSArray* files = [fm contentsOfDirectoryAtPath:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/mods/"].path
-																			error:&error];
-								   if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-									   files = [fm contentsOfDirectoryAtPath:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/mods/"] error:&error];
-								   }
+								   NSArray* files = [fm contentsOfDirectoryAtPath:[[Utils docPath] stringByAppendingString:@"game/geode/mods/"] error:&error];
 								   int modsInstalled = 0;
 								   if (!error) {
 									   modsInstalled = (unsigned long)[files count];
@@ -286,11 +284,31 @@
 									   return [GCDWebServerDataResponse responseWithStatusCode:400];
 								   AppLog(@"[Server] Received request to upload %@", file.fileName);
 
-								   NSURL* path = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/mods/"];
-								   if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-									   path = [NSURL URLWithString:[[Utils getGDDocPath] stringByAppendingString:@"Documents/game/geode/mods/"]];
-								   }
+								   NSURL* path = [NSURL URLWithString:[[Utils docPath] stringByAppendingString:@"game/geode/mods/"]];
 								   NSURL* destinationURL = [path URLByAppendingPathComponent:file.fileName];
+								   if ([file.fileName isEqualToString:@"Geode.ios.dylib"]) {
+									   AppLog(@"[Server] Getting Geode dylib path...");
+									   NSString* docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
+									   NSString* tweakPath = [NSString stringWithFormat:@"%@/Tweaks/Geode.ios.dylib", docPath];
+									   if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+										   NSString* applicationSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
+										   if (applicationSupportDirectory != nil) {
+											   // https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m
+											   NSString* geode_dir = [applicationSupportDirectory stringByAppendingString:@"/GeometryDash/game/geode"];
+											   NSString* geode_lib = [geode_dir stringByAppendingString:@"/Geode.ios.dylib"];
+											   bool is_dir;
+											   NSFileManager* fm = [NSFileManager defaultManager];
+											   if (![fm fileExistsAtPath:geode_dir isDirectory:&is_dir]) {
+												   AppLog(@"mrow creating geode dir !!");
+												   if (![fm createDirectoryAtPath:geode_dir withIntermediateDirectories:YES attributes:nil error:NULL]) {
+													   AppLog(@"mrow failed to create folder!!");
+												   }
+											   }
+											   tweakPath = geode_lib;
+										   }
+									   }
+									   destinationURL = [NSURL URLWithString:tweakPath];
+								   }
 								   NSError* error = nil;
 								   if ([fm fileExistsAtPath:destinationURL.path]) {
 									   [fm removeItemAtURL:destinationURL error:&error];
