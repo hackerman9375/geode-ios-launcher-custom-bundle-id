@@ -1,4 +1,4 @@
-name: Build
+name: Build Trollstore
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: Build Trollstore
     runs-on: ubuntu-22.04
 
     steps:
@@ -51,7 +51,7 @@ jobs:
       - name: Build
         run: |
           git submodule update --init --recursive
-          make package FINALPACKAGE=1 STRIP=0
+          make package FINALPACKAGE=1 STRIP=0 TROLLSTORE=1
 
       - name: Upload artifact
         uses: actions/upload-artifact@main
