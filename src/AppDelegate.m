@@ -12,6 +12,17 @@
 @implementation AppDelegate
 - (BOOL)application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions {
 	self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+	switch ([[Utils getPrefs] integerForKey:@"CURRENT_THEME"]) {
+	default: // System
+		self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleUnspecified;
+		break;
+	case 1: // Light
+		self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleLight;
+		break;
+	case 2: // Dark
+		self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
+		break;
+	}
 	self.window.backgroundColor = [Theming getBackgroundColor];
 	if ([[Utils getPrefs] boolForKey:@"CompletedSetup"]) {
 		RootViewController* rootViewController = [[RootViewController alloc] init];

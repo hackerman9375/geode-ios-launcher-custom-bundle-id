@@ -69,10 +69,8 @@
 	</array>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<key>arm64</key>
-		<true/>
-		<key>opengles-1</key>
-		<true/>
+		<string>arm64</string>
+		<string>opengles-1</string>
 	</array>
 	<key>UILaunchImageFile</key>
 	<string>LaunchImage</string>

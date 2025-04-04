@@ -95,6 +95,10 @@
 "general.check-updates" = "Check for Updates";
 "general.check-updates.error" = "You do not have Geode installed!";
 "general.footer" = "Current loader version: %@";
+"general.theme" = "Theme";
+"general.theme.system" = "System";
+"general.theme.light" = "Light";
+"general.theme.dark" = "Dark";
 
 "gameplay" = "Gameplay";
 "gameplay.safe-mode" = "Launch in Safe Mode";

@@ -32,6 +32,13 @@
 	NSURLSessionDownloadTask* downloadTask;
 }
 
+- (void)refreshTheme {
+	self.titleLabel.textColor = [Theming getWhiteColor];
+	self.settingsButton.backgroundColor = [Theming getDarkColor];
+	[self.settingsButton setTintColor:[Theming getWhiteColor]];
+	self.optionalTextLabel.textColor = [Theming getFooterColor];
+}
+
 - (BOOL)progressVisible {
 	return ![self.progressBar isHidden];
 }
@@ -242,9 +249,9 @@
 								   }
 								   NSDictionary* variables = @{
 									   @"host" : [NSString stringWithFormat:@"%@", weakSelf.webServer.serverURL],
-									   @"version" : [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"] ?: @"N/A",
+									   @"version" : [NSString stringWithFormat:@"v%@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"] ?: @"N/A"],
 									   @"geode" : [Utils getGeodeVersion],
-									   @"gd" : [infoDictionary objectForKey:@"CFBundleShortVersionString"] ?: @"N/A",
+									   @"gd" : [NSString stringWithFormat:@"v%@", [infoDictionary objectForKey:@"CFBundleShortVersionString"] ?: @"N/A"],
 									   @"device" : deviceStr,
 									   @"mods" : [NSString stringWithFormat:@"%i", modsInstalled],
 								   };

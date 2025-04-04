@@ -12,6 +12,7 @@
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #include <dlfcn.h>
 #include <spawn.h>
+#include <sys/syslog.h>
 
 @interface SettingsVC () <UIDocumentPickerDelegate>
 @property(nonatomic, strong) NSArray* creditsArray;
@@ -65,7 +66,7 @@
 - (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
 	switch (section) {
 	case 0: // General
-		return 5;
+		return 6;
 	case 1: // Gameplay
 		return 4;
 	case 2: // JIT
@@ -127,15 +128,27 @@
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
 		} else if (indexPath.row == 2) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			UISegmentedControl* control = [[UISegmentedControl alloc] initWithItems:@[ @"general.theme.system".loc, @"general.theme.light".loc, @"general.theme.dark".loc ]];
+			cellval1.accessoryView = control;
+			// cellval1.separatorInset = UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, CGFLOAT_MAX);
+			control.autoresizingMask =
+				UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
+			control.center = CGPointMake(cell.contentView.bounds.size.width / 1.5, cell.contentView.bounds.size.height / 2);
+			control.selectedSegmentIndex = [[Utils getPrefs] integerForKey:@"CURRENT_THEME"];
+			[control addTarget:self action:@selector(themeSelected:) forControlEvents:UIControlEventValueChanged];
+			cellval1.textLabel.text = @"general.theme".loc;
+			return cellval1;
+		} else if (indexPath.row == 3) {
 			cell.textLabel.text = @"general.open-fm".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 3) {
+		} else if (indexPath.row == 4) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"general.enable-updates".loc;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"UPDATE_AUTOMATICALLY"] tag:0 disable:NO];
 			return cellval1;
-		} else if (indexPath.row == 4) {
+		} else if (indexPath.row == 5) {
 			cell.textLabel.text = @"general.check-updates".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
@@ -285,11 +298,10 @@
 		cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 		if (indexPath.row == 0) {
 			cellval1.textLabel.text = @"about.launcher".loc;
-			cellval1.detailTextLabel.text = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+			cellval1.detailTextLabel.text = [NSString stringWithFormat:@"v%@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
 			cellval1.textLabel.userInteractionEnabled = YES;
 			UILongPressGestureRecognizer* longPressGR = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(showDevMode:)];
 			[cellval1.textLabel addGestureRecognizer:longPressGR];
-
 		} else if (indexPath.row == 1) {
 			cellval1.textLabel.text = @"about.geode".loc;
 			cellval1.detailTextLabel.text = [Utils getGeodeVersion];
@@ -302,7 +314,7 @@
 			}
 			NSDictionary* infoDictionary = [NSDictionary dictionaryWithContentsOfFile:infoPlistPath];
 			cellval1.textLabel.text = @"about.geometry-dash".loc;
-			cellval1.detailTextLabel.text = [infoDictionary objectForKey:@"CFBundleShortVersionString"];
+			cellval1.detailTextLabel.text = [NSString stringWithFormat:@"v%@", [infoDictionary objectForKey:@"CFBundleShortVersionString"]];
 		} else if (indexPath.row == 3) {
 			cellval1.textLabel.text = @"about.device".loc;
 			NSString* model = [[UIDevice currentDevice] localizedModel];
@@ -448,7 +460,7 @@
 			[self.tableView reloadData];
 			break;
 		}
-		case 2: { // Open file manager
+		case 3: { // Open file manager
 			NSString* openURL;
 			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
 				openURL = [NSString stringWithFormat:@"filza://%@", [[Utils getGDDocPath] stringByAppendingPathComponent:@"Documents"]];
@@ -461,7 +473,7 @@
 			}
 			break;
 		}
-		case 4: { // Check for updates
+		case 5: { // Check for updates
 			if ([VerifyInstall verifyGeodeInstalled]) {
 				[[GeodeInstaller alloc] checkUpdates:_root download:YES];
 				[self dismissViewControllerAnimated:YES completion:nil];
@@ -709,6 +721,38 @@
 		}
 		[Utils toggleKey:@"WEB_SERVER"];
 		break;
+	}
+}
+
+- (void)themeSelected:(UISegmentedControl*)sender {
+	NSInteger style = sender.selectedSegmentIndex;
+	[[Utils getPrefs] setInteger:style forKey:@"CURRENT_THEME"];
+
+	UIWindow* keyWindow = nil;
+	for (UIWindow* window in [UIApplication sharedApplication].windows) {
+		if (window.isKeyWindow) {
+			keyWindow = window;
+			break;
+		}
+	}
+	if (!keyWindow) {
+		keyWindow = [UIApplication sharedApplication].windows.firstObject;
+	}
+	if (keyWindow) {
+		switch (style) {
+		case 0: // System
+			keyWindow.overrideUserInterfaceStyle = UIUserInterfaceStyleUnspecified;
+			break;
+		case 1: // Light
+			keyWindow.overrideUserInterfaceStyle = UIUserInterfaceStyleLight;
+			break;
+		case 2: // Dark
+			keyWindow.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
+			break;
+		}
+		keyWindow.backgroundColor = [Theming getBackgroundColor];
+		[self.root refreshTheme];
+		[self.tableView reloadData];
 	}
 }
 
