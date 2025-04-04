@@ -284,7 +284,7 @@
 									   return [GCDWebServerDataResponse responseWithStatusCode:400];
 								   AppLog(@"[Server] Received request to upload %@", file.fileName);
 
-								   NSURL* path = [NSURL URLWithString:[[Utils docPath] stringByAppendingString:@"game/geode/mods/"]];
+								   NSURL* path = [NSURL fileURLWithPath:[[Utils docPath] stringByAppendingString:@"game/geode/mods/"]];
 								   NSURL* destinationURL = [path URLByAppendingPathComponent:file.fileName];
 								   if ([file.fileName isEqualToString:@"Geode.ios.dylib"]) {
 									   AppLog(@"[Server] Getting Geode dylib path...");
@@ -307,7 +307,7 @@
 											   tweakPath = geode_lib;
 										   }
 									   }
-									   destinationURL = [NSURL URLWithString:tweakPath];
+									   destinationURL = [NSURL fileURLWithPath:tweakPath];
 								   }
 								   NSError* error = nil;
 								   if ([fm fileExistsAtPath:destinationURL.path]) {
