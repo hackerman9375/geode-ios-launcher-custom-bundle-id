@@ -12,7 +12,6 @@
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #include <dlfcn.h>
 #include <spawn.h>
-#include <sys/syslog.h>
 
 @interface SettingsVC () <UIDocumentPickerDelegate>
 @property(nonatomic, strong) NSArray* creditsArray;
@@ -650,7 +649,7 @@
 		}
 	} else if (indexPath.section == 7) {
 		switch (indexPath.row) {
-		case 3: { // Bundle Path
+		case 3: { // Test GD Bundle Access
 			[Utils showNotice:self title:[Utils getGDDocPath]];
 			break;
 		}

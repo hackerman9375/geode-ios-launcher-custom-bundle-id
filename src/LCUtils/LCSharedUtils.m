@@ -6,16 +6,16 @@
 #import "src/Utils.h"
 #import "src/components/LogUtils.h"
 
-extern NSUserDefaults* lcUserDefaults;
-extern NSString* lcAppUrlScheme;
-extern NSBundle* lcMainBundle;
+extern NSUserDefaults* gcUserDefaults;
+extern NSString* gcAppUrlScheme;
+extern NSBundle* gcMainBundle;
 
 @implementation LCSharedUtils
 
 + (NSString*)teamIdentifier {
 	static NSString* ans = nil;
 	static dispatch_once_t onceToken;
-	dispatch_once(&onceToken, ^{ ans = [[lcMainBundle.bundleIdentifier componentsSeparatedByString:@"."] lastObject]; });
+	dispatch_once(&onceToken, ^{ ans = [[gcMainBundle.bundleIdentifier componentsSeparatedByString:@"."] lastObject]; });
 	return ans;
 }
 
@@ -48,8 +48,8 @@ extern NSBundle* lcMainBundle;
 }
 
 + (NSString*)certificatePassword {
-	if ([lcUserDefaults boolForKey:@"LCCertificateImported"]) {
-		NSString* ans = [lcUserDefaults objectForKey:@"LCCertificatePassword"];
+	if ([gcUserDefaults boolForKey:@"LCCertificateImported"]) {
+		NSString* ans = [gcUserDefaults objectForKey:@"LCCertificatePassword"];
 		return ans;
 	} else {
 		// password of cert retrieved from the store tweak is always @"". We just keep this function so we can check if certificate presents without changing codes.
@@ -63,17 +63,17 @@ extern NSBundle* lcMainBundle;
 }
 
 + (void)relaunchApp {
-	[lcUserDefaults setValue:[Utils gdBundleName] forKey:@"selected"];
-	[lcUserDefaults setValue:@"GeometryDash" forKey:@"selectedContainer"];
-	if ([lcUserDefaults boolForKey:@"USE_TWEAK"] && [Utils isJailbroken]) {
+	[gcUserDefaults setValue:[Utils gdBundleName] forKey:@"selected"];
+	[gcUserDefaults setValue:@"GeometryDash" forKey:@"selectedContainer"];
+	if ([gcUserDefaults boolForKey:@"USE_TWEAK"] && [Utils isJailbroken]) {
 		NSString* appBundleIdentifier = @"com.robtop.geometryjump";
 		[[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
 		exit(0);
 		return;
 	}
-	if ([lcUserDefaults boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"]) {
+	if ([gcUserDefaults boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"]) {
 		LCAppInfo* app = [[LCAppInfo alloc] initWithBundlePath:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app"].path];
-		app.signer = [lcUserDefaults boolForKey:@"USE_ZSIGN"] ? 1 : 0;
+		app.signer = [gcUserDefaults boolForKey:@"USE_ZSIGN"] ? 1 : 0;
 		if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
 			app.signer = ZSign;
 		}
@@ -95,7 +95,7 @@ extern NSBundle* lcMainBundle;
 	UIApplication* application = [NSClassFromString(@"UIApplication") sharedApplication];
 	NSString* urlScheme;
 
-	NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", lcMainBundle.bundlePath];
+	NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", gcMainBundle.bundlePath];
 	int tries = 1;
 	if (!access(tsPath.UTF8String, F_OK)) {
 		urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
@@ -105,12 +105,12 @@ extern NSBundle* lcMainBundle;
 		urlScheme = @"sidestore://sidejit-enable?bid=%@";
 	} else if (self.certificatePassword) {
 		tries = 2;
-		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", lcAppUrlScheme];
+		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
 	} else {
 		tries = 2;
-		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", lcAppUrlScheme];
+		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
 	}
-	NSURL* launchURL = [NSURL URLWithString:[NSString stringWithFormat:urlScheme, lcMainBundle.bundleIdentifier]];
+	NSURL* launchURL = [NSURL URLWithString:[NSString stringWithFormat:urlScheme, gcMainBundle.bundleIdentifier]];
 	AppLog(@"Attempting to launch geode with %@", launchURL);
 	if ([application canOpenURL:launchURL]) {
 		//[UIApplication.sharedApplication suspend];
@@ -123,23 +123,23 @@ extern NSBundle* lcMainBundle;
 }
 
 + (BOOL)askForJIT {
-	NSString* sideJITServerAddress = [lcUserDefaults objectForKey:@"SideJITServerAddr"];
-	if (!sideJITServerAddress || ![lcUserDefaults boolForKey:@"AUTO_JIT"]) {
-		if ([lcUserDefaults boolForKey:@"AUTO_JIT"]) {
+	NSString* sideJITServerAddress = [gcUserDefaults objectForKey:@"SideJITServerAddr"];
+	if (!sideJITServerAddress || ![gcUserDefaults boolForKey:@"AUTO_JIT"]) {
+		if ([gcUserDefaults boolForKey:@"AUTO_JIT"]) {
 			[Utils showErrorGlobal:@"JITStreamer Server Address not set." error:nil];
 			return NO;
 		}
 		return YES;
 	}
-	AppLog(@"Launching the app with JITStreamer: %@/launch_app/%@", sideJITServerAddress, lcMainBundle.bundleIdentifier);
-	NSString* launchJITUrlStr = [NSString stringWithFormat:@"%@/launch_app/%@", sideJITServerAddress, lcMainBundle.bundleIdentifier];
+	AppLog(@"Launching the app with JITStreamer: %@/launch_app/%@", sideJITServerAddress, gcMainBundle.bundleIdentifier);
+	NSString* launchJITUrlStr = [NSString stringWithFormat:@"%@/launch_app/%@", sideJITServerAddress, gcMainBundle.bundleIdentifier];
 	NSURLSession* session = [NSURLSession sharedSession];
 	NSURL* launchJITUrl = [NSURL URLWithString:launchJITUrlStr];
 	NSURLRequest* req = [[NSURLRequest alloc] initWithURL:launchJITUrl];
 	NSURLSessionDataTask* task = [session dataTaskWithRequest:req completionHandler:^(NSData* _Nullable data, NSURLResponse* _Nullable response, NSError* _Nullable error) {
 		if (error) {
 			return dispatch_async(dispatch_get_main_queue(), ^{
-				[Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer", sideJITServerAddress, lcMainBundle.bundleIdentifier]
+				[Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer", sideJITServerAddress, gcMainBundle.bundleIdentifier]
 								 error:error];
 				AppLog(@"Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
 			});
@@ -166,17 +166,17 @@ extern NSBundle* lcMainBundle;
 	}
 	if (launchBundleId) {
 		if (openUrl) {
-			[lcUserDefaults setObject:openUrl forKey:@"launchAppUrlScheme"];
+			[gcUserDefaults setObject:openUrl forKey:@"launchAppUrlScheme"];
 		}
-		[lcUserDefaults setObject:launchBundleId forKey:@"selected"];
-		[lcUserDefaults setObject:@"GeometryDash" forKey:@"selectedContainer"];
+		[gcUserDefaults setObject:launchBundleId forKey:@"selected"];
+		[gcUserDefaults setObject:@"GeometryDash" forKey:@"selectedContainer"];
 		return [self launchToGuestApp];
 	}
 	return NO;
 }
 
 + (void)setWebPageUrlForNextLaunch:(NSString*)urlString {
-	[lcUserDefaults setObject:urlString forKey:@"webPageToOpen"];
+	[gcUserDefaults setObject:urlString forKey:@"webPageToOpen"];
 }
 
 + (NSURL*)appLockPath {
@@ -203,7 +203,7 @@ extern NSBundle* lcMainBundle;
 	}
 	for (NSString* key in info) {
 		if ([bundleId isEqualToString:info[key]]) {
-			if ([key isEqualToString:lcAppUrlScheme]) {
+			if ([key isEqualToString:gcAppUrlScheme]) {
 				return nil;
 			}
 			return key;
@@ -220,7 +220,7 @@ extern NSBundle* lcMainBundle;
 	}
 	for (NSString* key in info) {
 		if ([folderName isEqualToString:info[key]]) {
-			if ([key isEqualToString:lcAppUrlScheme]) {
+			if ([key isEqualToString:gcAppUrlScheme]) {
 				return nil;
 			}
 			return key;
@@ -238,9 +238,9 @@ extern NSBundle* lcMainBundle;
 		info = [NSMutableDictionary new];
 	}
 	if (bundleId == nil) {
-		[info removeObjectForKey:lcAppUrlScheme];
+		[info removeObjectForKey:gcAppUrlScheme];
 	} else {
-		info[lcAppUrlScheme] = bundleId;
+		info[gcAppUrlScheme] = bundleId;
 	}
 	[info writeToFile:infoPath.path atomically:YES];
 }
@@ -253,9 +253,9 @@ extern NSBundle* lcMainBundle;
 		info = [NSMutableDictionary new];
 	}
 	if (folderName == nil) {
-		[info removeObjectForKey:lcAppUrlScheme];
+		[info removeObjectForKey:gcAppUrlScheme];
 	} else {
-		info[lcAppUrlScheme] = folderName;
+		info[gcAppUrlScheme] = folderName;
 	}
 	[info writeToFile:infoPath.path atomically:YES];
 }
@@ -330,7 +330,7 @@ extern NSBundle* lcMainBundle;
 	NSFileManager* fm = [[NSFileManager alloc] init];
 	NSError* error1;
 
-	NSDictionary* preferences = [lcUserDefaults objectForKey:dataUUID];
+	NSDictionary* preferences = [gcUserDefaults objectForKey:dataUUID];
 	if (!preferences) {
 		return;
 	}
@@ -346,7 +346,7 @@ extern NSBundle* lcMainBundle;
 		}
 		[preference writeToFile:itemPath atomically:YES];
 	}
-	[lcUserDefaults removeObjectForKey:dataUUID];
+	[gcUserDefaults removeObjectForKey:dataUUID];
 }
 
 + (NSString*)findDefaultContainerWithBundleId:(NSString*)bundleId {

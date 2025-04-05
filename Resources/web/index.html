@@ -12,7 +12,7 @@
         <header>
             <h1>Geode</h1>
         </header>
-        <section>
+        <section id="upload-mod">
             <h2>Upload Mod</h2>
             <div class="upload" id="uploadArea">
                 <p>Drag & Drop Geode or a Mod file here or</p>
@@ -23,8 +23,18 @@
 
         <section>
             <h2>Controls</h2>
-            <button onclick="onLaunch();"><span class="icon">▶</span> Launch</button>
+            <button onclick="onLaunch();"><span class="icon">▶</span> %launch%</button>
             <button onclick="onStop();" class="danger-color"><span class="icon">■</span> Stop Server</button>
+        </section>
+
+
+        <section id="logs-section">
+            <h2>Logs</h2>
+            <button onclick="fetchLogs();" class="success-color"><span class="icon">↻</span> Refresh</button>
+            <button onclick="onStartLogs();"><span class="icon">▶</span> Start Logs</button>
+            <button onclick="onStopLogs();" class="danger-color"><span class="icon">■</span> Stop Logs</button>
+            <!--<button onclick="onClear();" class="danger-color">Clear</button>-->
+            <div id="logs-container"></div>
         </section>
 
         <section>
@@ -65,5 +75,10 @@
             </table>
         </section>
     </div>
+    <script defer>
+        if ("container" != "%container%") {
+            document.getElementById("logs-section").hidden = true;
+        }
+    </script>
 </body>
 </html>

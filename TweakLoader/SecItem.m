@@ -78,12 +78,12 @@ static void SecItemGuestHooksInit()  {
     NSString* containerInfoPath = [[NSString stringWithUTF8String:getenv("HOME")] stringByAppendingPathComponent:@"LCContainerInfo.plist"];
     NSDictionary* infoDict = [NSDictionary dictionaryWithContentsOfFile:containerInfoPath];
     int keychainGroupId = [infoDict[@"keychainGroupId"] intValue];
-    //NSString* groupId = [[NSUserDefaults.lcMainBundle.bundleIdentifier componentsSeparatedByString:@"."] lastObject];
+    //NSString* groupId = [[NSUserDefaults.gcMainBundle.bundleIdentifier componentsSeparatedByString:@"."] lastObject];
     NSString* groupId;
-    if([NSUserDefaults.lcUserDefaults boolForKey:@"LCCertificateImported"]) {
-        groupId = [NSUserDefaults.lcUserDefaults stringForKey:@"LCCertificateTeamId"];
+    if([NSUserDefaults.gcUserDefaults boolForKey:@"LCCertificateImported"]) {
+        groupId = [NSUserDefaults.gcUserDefaults stringForKey:@"LCCertificateTeamId"];
     } else {
-        groupId = [[NSUserDefaults.lcMainBundle.bundleIdentifier componentsSeparatedByString:@"."] lastObject];
+        groupId = [[NSUserDefaults.gcMainBundle.bundleIdentifier componentsSeparatedByString:@"."] lastObject];
     }
     if(keychainGroupId == 0) {
         accessGroup = [NSString stringWithFormat:@"%@.com.kdt.livecontainer.shared", groupId];

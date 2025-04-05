@@ -16,13 +16,13 @@ static void NSFMGuestHooksInit() {
 
 - (nullable NSURL *)hook_containerURLForSecurityApplicationGroupIdentifier:(NSString *)groupIdentifier {
     if([groupIdentifier isEqualToString:[NSClassFromString(@"LCSharedUtils") appGroupID]]) {
-        return [NSURL fileURLWithPath: NSUserDefaults.lcAppGroupPath];
+        return [NSURL fileURLWithPath: NSUserDefaults.gcAppGroupPath];
     }
     NSURL *result;
     if(isolateAppGroup) {
         result = [NSURL fileURLWithPath:[NSString stringWithFormat:@"%s/LCAppGroup/%@", getenv("HOME"), groupIdentifier]];
     } else {
-        result = [NSURL fileURLWithPath:[NSString stringWithFormat:@"%@/LiveContainer/Data/AppGroup/%@", NSUserDefaults.lcAppGroupPath, groupIdentifier]];
+        result = [NSURL fileURLWithPath:[NSString stringWithFormat:@"%@/Geode/Data/AppGroup/%@", NSUserDefaults.gcAppGroupPath, groupIdentifier]];
     }
     [NSFileManager.defaultManager createDirectoryAtURL:result withIntermediateDirectories:YES attributes:nil error:nil];
     return result;

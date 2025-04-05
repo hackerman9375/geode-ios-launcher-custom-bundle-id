@@ -23,30 +23,30 @@
 
 static int (*appMain)(int, char**);
 static const char* dyldImageName;
-NSUserDefaults* lcUserDefaults;
-NSUserDefaults* lcSharedDefaults;
-NSString* lcAppGroupPath;
-NSString* lcAppUrlScheme;
-NSBundle* lcMainBundle;
+NSUserDefaults* gcUserDefaults;
+NSUserDefaults* gcSharedDefaults;
+NSString* gcAppGroupPath;
+NSString* gcAppUrlScheme;
+NSBundle* gcMainBundle;
 NSDictionary* guestAppInfo;
 
 void NUDGuestHooksInit();
 
 @implementation NSUserDefaults (Geode)
-+ (instancetype)lcUserDefaults {
-	return lcUserDefaults;
++ (instancetype)gcUserDefaults {
+	return gcUserDefaults;
 }
-+ (instancetype)lcSharedDefaults {
-	return lcSharedDefaults;
++ (instancetype)gcSharedDefaults {
+	return gcSharedDefaults;
 }
-+ (NSString*)lcAppGroupPath {
-	return lcAppGroupPath;
++ (NSString*)gcAppGroupPath {
+	return gcAppGroupPath;
 }
-+ (NSString*)lcAppUrlScheme {
-	return lcAppUrlScheme;
++ (NSString*)gcAppUrlScheme {
+	return gcAppUrlScheme;
 }
-+ (NSBundle*)lcMainBundle {
-	return lcMainBundle;
++ (NSBundle*)gcMainBundle {
+	return gcMainBundle;
 }
 + (NSDictionary*)guestAppInfo {
 	return guestAppInfo;
@@ -54,7 +54,7 @@ void NUDGuestHooksInit();
 @end
 
 static BOOL checkJITEnabled() {
-	if ([lcUserDefaults boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"])
+	if ([gcUserDefaults boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"])
 		return NO;
 	// check if jailbroken
 	if (access("/var/mobile", R_OK) == 0) {
@@ -221,7 +221,7 @@ void* new_dlsym(void* __handle, const char* __symbol) {
 
 static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContainer, BOOL safeMode, int argc, char* argv[]) {
 	NSString* appError = nil;
-	if (![lcUserDefaults boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"]) {
+	if (![gcUserDefaults boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"]) {
 		// First of all, let's check if we have JIT
 		for (int i = 0; i < 10 && !checkJITEnabled(); i++) {
 			usleep(1000 * 100);
@@ -288,6 +288,15 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 		remove(tweakLoaderPath.UTF8String);
 		NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"TweakLoader.dylib"];
 		symlink(target.UTF8String, tweakLoaderPath.UTF8String);
+	}
+
+	if ([gcUserDefaults boolForKey:@"WEB_SERVER"]) {
+		NSString* webServerPath = [tweakFolder stringByAppendingPathComponent:@"WebServer.dylib"];
+		if (![fm fileExistsAtPath:webServerPath]) {
+			remove(webServerPath.UTF8String);
+			NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"WebServer.dylib"];
+			symlink(target.UTF8String, webServerPath.UTF8String);
+		}
 	}
 
 	// If JIT is enabled, bypass library validation so we can load arbitrary binaries
@@ -365,7 +374,7 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 		}
 	}
 
-	BOOL fixBlackscreen2 = [lcUserDefaults boolForKey:@"FIX_BLACKSCREEN"];
+	BOOL fixBlackscreen2 = [gcUserDefaults boolForKey:@"FIX_BLACKSCREEN"];
 	if (fixBlackscreen2) {
 		dlopen("/System/Library/Frameworks/UIKit.framework/UIKit", RTLD_GLOBAL);
 		NSLog(@"[LC] Fix BlackScreen2 %@", [NSClassFromString(@"UIScreen") mainScreen]);
@@ -387,11 +396,11 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 		[fm createDirectoryAtPath:dirPath withIntermediateDirectories:YES attributes:attributes error:nil];
 	}
 
-	[lcUserDefaults setObject:dataUUID forKey:@"lastLaunchDataUUID"];
+	[gcUserDefaults setObject:dataUUID forKey:@"lastLaunchDataUUID"];
 	if (isSharedBundle) {
-		[lcUserDefaults setObject:@"Shared" forKey:@"lastLaunchType"];
+		[gcUserDefaults setObject:@"Shared" forKey:@"lastLaunchType"];
 	} else {
-		[lcUserDefaults setObject:@"Private" forKey:@"lastLaunchType"];
+		[gcUserDefaults setObject:@"Private" forKey:@"lastLaunchType"];
 	}
 
 	// Overwrite NSBundle
@@ -410,7 +419,7 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	// hook NSUserDefault before running libraries' initializers
 	NUDGuestHooksInit();
 
-	if ([lcUserDefaults boolForKey:@"LCCertificateImported"]) {
+	if ([gcUserDefaults boolForKey:@"LCCertificateImported"]) {
 		// SecItemGuestHooksInit();
 	}
 
@@ -464,21 +473,21 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 
 static void exceptionHandler(NSException* exception) {
 	NSString* error = [NSString stringWithFormat:@"%@\nCall stack: %@", exception.reason, exception.callStackSymbols];
-	[lcUserDefaults setObject:error forKey:@"error"];
+	[gcUserDefaults setObject:error forKey:@"error"];
 }
 
 int GeodeMain(int argc, char* argv[]) {
 	// This strangely fixes some apps getting stuck on black screen
 	NSLog(@"ignore: %@", dispatch_get_main_queue());
-	lcMainBundle = [NSBundle mainBundle];
-	lcUserDefaults = [Utils getPrefs];
-	lcSharedDefaults = [[NSUserDefaults alloc] initWithSuiteName:[LCSharedUtils appGroupID]];
-	lcAppUrlScheme = NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
-	lcAppGroupPath = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[NSClassFromString(@"LCSharedUtils") appGroupID]] path];
+	gcMainBundle = [NSBundle mainBundle];
+	gcUserDefaults = [Utils getPrefs];
+	gcSharedDefaults = [[NSUserDefaults alloc] initWithSuiteName:[LCSharedUtils appGroupID]];
+	gcAppUrlScheme = NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
+	gcAppGroupPath = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[NSClassFromString(@"LCSharedUtils") appGroupID]] path];
 
-	NSString* lastLaunchDataUUID = [lcUserDefaults objectForKey:@"lastLaunchDataUUID"];
+	NSString* lastLaunchDataUUID = [gcUserDefaults objectForKey:@"lastLaunchDataUUID"];
 	if (lastLaunchDataUUID) {
-		NSString* lastLaunchType = [lcUserDefaults objectForKey:@"lastLaunchType"];
+		NSString* lastLaunchType = [gcUserDefaults objectForKey:@"lastLaunchType"];
 		NSString* preferencesTo;
 		NSURL* libraryPathUrl = [NSFileManager.defaultManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask].lastObject;
 		NSURL* docPathUrl = [NSFileManager.defaultManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject;
@@ -489,14 +498,14 @@ int GeodeMain(int argc, char* argv[]) {
 		}
 		// recover preferences
 		[LCSharedUtils dumpPreferenceToPath:preferencesTo dataUUID:lastLaunchDataUUID];
-		[lcUserDefaults removeObjectForKey:@"lastLaunchDataUUID"];
-		[lcUserDefaults removeObjectForKey:@"lastLaunchType"];
+		[gcUserDefaults removeObjectForKey:@"lastLaunchDataUUID"];
+		[gcUserDefaults removeObjectForKey:@"lastLaunchType"];
 	}
 	// ok but WHY DOES IT CRASH!? LIKE STOP, ALL IM DOING IS MOVING THE DIRECTORY, I DONT CARE THAT TYOUSTSUPID NIL SEGFAULT ITS NOT NIL SHUT UP
 	[LCSharedUtils moveSharedAppFolderBack];
 
-	NSString* selectedApp = [lcUserDefaults stringForKey:@"selected"];
-	NSString* selectedContainer = [lcUserDefaults stringForKey:@"selectedContainer"];
+	NSString* selectedApp = [gcUserDefaults stringForKey:@"selected"];
+	NSString* selectedContainer = [gcUserDefaults stringForKey:@"selectedContainer"];
 	NSFileManager* fm = [NSFileManager defaultManager];
 	NSString* docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
 	if ([fm fileExistsAtPath:[docPath stringByAppendingPathComponent:@"jitflag"]]) {
@@ -504,15 +513,15 @@ int GeodeMain(int argc, char* argv[]) {
 		selectedContainer = @"GeometryDash";
 		[fm removeItemAtPath:[docPath stringByAppendingPathComponent:@"jitflag"] error:nil];
 	}
-	BOOL safeMode = [lcUserDefaults boolForKey:@"safemode"];
+	BOOL safeMode = [gcUserDefaults boolForKey:@"safemode"];
 	if (selectedApp && !selectedContainer) {
 		selectedContainer = [LCSharedUtils findDefaultContainerWithBundleId:selectedApp];
 	}
 	NSString* runningLC = [LCSharedUtils getContainerUsingLCSchemeWithFolderName:selectedContainer];
 	if (selectedApp && runningLC) {
-		[lcUserDefaults removeObjectForKey:@"selected"];
-		[lcUserDefaults removeObjectForKey:@"selectedContainer"];
-		[lcUserDefaults removeObjectForKey:@"safemode"];
+		[gcUserDefaults removeObjectForKey:@"selected"];
+		[gcUserDefaults removeObjectForKey:@"selectedContainer"];
+		[gcUserDefaults removeObjectForKey:@"safemode"];
 		NSString* selectedAppBackUp = selectedApp;
 		selectedApp = nil;
 		dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC));
@@ -529,10 +538,10 @@ int GeodeMain(int argc, char* argv[]) {
 			if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
 				[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
 
-				NSString* launchUrl = [lcUserDefaults stringForKey:@"launchAppUrlScheme"];
+				NSString* launchUrl = [gcUserDefaults stringForKey:@"launchAppUrlScheme"];
 				// also pass url scheme to another lc
 				if (launchUrl) {
-					[lcUserDefaults removeObjectForKey:@"launchAppUrlScheme"];
+					[gcUserDefaults removeObjectForKey:@"launchAppUrlScheme"];
 
 					// Base64 encode the data
 					NSData* data = [launchUrl dataUsingEncoding:NSUTF8StringEncoding];
@@ -549,21 +558,21 @@ int GeodeMain(int argc, char* argv[]) {
 			}
 		});
 	}
-	if (selectedApp && ![lcUserDefaults boolForKey:@"USE_TWEAK"]) {
-		NSString* launchUrl = [lcUserDefaults stringForKey:@"launchAppUrlScheme"];
-		[lcUserDefaults removeObjectForKey:@"selected"];
-		[lcUserDefaults removeObjectForKey:@"selectedContainer"];
-		[lcUserDefaults removeObjectForKey:@"safemode"];
+	if (selectedApp && ![gcUserDefaults boolForKey:@"USE_TWEAK"]) {
+		NSString* launchUrl = [gcUserDefaults stringForKey:@"launchAppUrlScheme"];
+		[gcUserDefaults removeObjectForKey:@"selected"];
+		[gcUserDefaults removeObjectForKey:@"selectedContainer"];
+		[gcUserDefaults removeObjectForKey:@"safemode"];
 		// wait for app to launch so that it can receive the url
 		if (launchUrl) {
-			[lcUserDefaults removeObjectForKey:@"launchAppUrlScheme"];
+			[gcUserDefaults removeObjectForKey:@"launchAppUrlScheme"];
 			dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC));
 			dispatch_after(delay, dispatch_get_main_queue(), ^{
 				// Base64 encode the data
 				NSData* data = [launchUrl dataUsingEncoding:NSUTF8StringEncoding];
 				NSString* encodedUrl = [data base64EncodedStringWithOptions:0];
 
-				NSString* finalUrl = [NSString stringWithFormat:@"%@://open-url?url=%@", lcAppUrlScheme, encodedUrl];
+				NSString* finalUrl = [NSString stringWithFormat:@"%@://open-url?url=%@", gcAppUrlScheme, encodedUrl];
 				NSURL* url = [NSURL URLWithString:finalUrl];
 
 				[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
@@ -573,12 +582,13 @@ int GeodeMain(int argc, char* argv[]) {
 		setenv("LC_HOME_PATH", getenv("HOME"), 1);
 		NSString* appError = invokeAppMain(selectedApp, selectedContainer, safeMode, argc, argv);
 		if (appError) {
-			[lcUserDefaults setObject:appError forKey:@"error"];
+			[gcUserDefaults setObject:appError forKey:@"error"];
 			// potentially unrecovable state, exit now
 			return 1;
 		}
 	}
 	@autoreleasepool {
+		dlopen("@executable_path/Frameworks/WebServer.dylib", RTLD_LAZY);
 		void* uikitHandle = dlopen("/System/Library/Frameworks/UIKit.framework/UIKit", RTLD_GLOBAL);
 		int (*UIApplicationMain)(int, char**, NSString*, NSString*) = dlsym(uikitHandle, "UIApplicationMain");
 		return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));

@@ -23,9 +23,12 @@
 		if (_skipColor == NO) {
 			[Theming saveAccentColor:_accentColor];
 		}
-		if ([Utils isJailbroken]) {
-			_currentStep = InstallStepInstallMethod;
-			[self showInstallMethodStep];
+		// if ([Utils isJailbroken]) {
+		if (![Utils isSandboxed]) {
+			//_currentStep = InstallStepInstallMethod;
+			//[self showInstallMethodStep];
+			_currentStep = InstallStepJailbreakStore;
+			[self showJailbreakStoreStep];
 		} else {
 			/*_currentStep = InstallStepLaunchMethod;
 			[self showLaunchMethodStep];*/

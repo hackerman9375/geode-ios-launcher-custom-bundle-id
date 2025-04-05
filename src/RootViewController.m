@@ -10,21 +10,18 @@
 #import "components/LogUtils.h"
 #import "components/ProgressBar.h"
 #import "src/LCUtils/LCAppInfo.h"
+#import <CommonCrypto/CommonCrypto.h>
 #import <Foundation/Foundation.h>
 #import <MobileCoreServices/MobileCoreServices.h>
+#include <Security/SecKey.h>
 #import <dlfcn.h>
 #import <objc/runtime.h>
-
-#import "GCDWebServer/GCDWebServer/Core/GCDWebServer.h"
-#import "GCDWebServer/GCDWebServer/Requests/GCDWebServerMultiPartFormRequest.h"
-#import "GCDWebServer/GCDWebServer/Responses/GCDWebServerDataResponse.h"
 
 @interface RootViewController ()
 
 @property(nonatomic, strong) ProgressBar* progressBar;
 @property(nonatomic, strong) NSTimer* launchTimer;
 @property(nonatomic, assign) NSInteger countdown;
-@property(nonatomic, strong) GCDWebServer* webServer;
 
 @end
 
@@ -108,7 +105,7 @@
 	[self.optionalTextLabel setHidden:YES];
 	[self.launchButton setEnabled:YES];
 	[self.launchButton removeTarget:nil action:nil forControlEvents:UIControlEventTouchUpInside];
-	if ([VerifyInstall verifyAll]) {
+	if ([VerifyInstall verifyGDInstalled] && [VerifyInstall verifyGeodeInstalled]) {
 		[UIApplication sharedApplication].idleTimerDisabled = NO;
 		[self.launchButton setTitle:@"launcher.launch".loc forState:UIControlStateNormal];
 		[self.launchButton setImage:[[UIImage systemImageNamed:@"play.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
@@ -124,7 +121,7 @@
 		}
 	} else {
 		[self.optionalTextLabel setHidden:NO];
-		if (![VerifyInstall verifyGDAuthenticity]) {
+		if (![VerifyInstall verifyGDAuthenticity] && ![VerifyInstall verifyGDInstalled]) {
 			self.launchButton.frame = CGRectMake(self.view.center.x - 85, CGRectGetMaxY(self.optionalTextLabel.frame) + 15, 110, 45);
 			self.settingsButton.frame = CGRectMake(self.view.center.x + 30, CGRectGetMaxY(self.optionalTextLabel.frame) + 15, 45, 45);
 			self.optionalTextLabel.text = @"launcher.status.not-verified".loc;
@@ -218,123 +215,6 @@
 }
 
 - (void)startWeb {
-	if ([[Utils getPrefs] boolForKey:@"WEB_SERVER"]) {
-		__weak RootViewController* weakSelf = self;
-		self.webServer = [[GCDWebServer alloc] init];
-
-		NSString* websitePath = [[NSBundle mainBundle] pathForResource:@"web" ofType:nil];
-
-		[self.webServer addGETHandlerForBasePath:@"/" directoryPath:websitePath indexFilename:nil cacheAge:0 allowRangeRequests:YES];
-
-		NSString* infoPlistPath;
-		if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-			infoPlistPath = [[Utils getGDBundlePath] stringByAppendingPathComponent:@"GeometryJump.app/Info.plist"];
-		} else {
-			infoPlistPath = [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"Info.plist"].path;
-		}
-		NSDictionary* infoDictionary = [NSDictionary dictionaryWithContentsOfFile:infoPlistPath];
-
-		NSString* model = [[UIDevice currentDevice] localizedModel];
-		NSString* systemName = [[UIDevice currentDevice] systemName];
-		NSString* systemVersion = [[UIDevice currentDevice] systemVersion];
-		NSString* deviceStr = [NSString stringWithFormat:@"%@ %@ (%@,%@)", systemName, systemVersion, model, [Utils archName]];
-		NSFileManager* fm = [NSFileManager defaultManager];
-		[self.webServer addHandlerForMethod:@"GET" pathRegex:@"/.*\\.html" requestClass:[GCDWebServerRequest class]
-							   processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
-								   NSError* error = nil;
-								   NSArray* files = [fm contentsOfDirectoryAtPath:[[Utils docPath] stringByAppendingString:@"game/geode/mods/"] error:&error];
-								   int modsInstalled = 0;
-								   if (!error) {
-									   modsInstalled = (unsigned long)[files count];
-								   }
-								   NSDictionary* variables = @{
-									   @"host" : [NSString stringWithFormat:@"%@", weakSelf.webServer.serverURL],
-									   @"version" : [NSString stringWithFormat:@"v%@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"] ?: @"N/A"],
-									   @"geode" : [Utils getGeodeVersion],
-									   @"gd" : [NSString stringWithFormat:@"v%@", [infoDictionary objectForKey:@"CFBundleShortVersionString"] ?: @"N/A"],
-									   @"device" : deviceStr,
-									   @"mods" : [NSString stringWithFormat:@"%i", modsInstalled],
-								   };
-								   return [GCDWebServerDataResponse responseWithHTMLTemplate:[websitePath stringByAppendingPathComponent:request.path] variables:variables];
-							   }];
-
-		[self.webServer addHandlerForMethod:@"GET" path:@"/styles.css" requestClass:[GCDWebServerRequest class] processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
-			NSString* path = [[NSBundle mainBundle] pathForResource:@"styles" ofType:@"css" inDirectory:@"web"];
-			NSError* error = nil;
-			NSString* content = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
-			if (error) {
-				AppLog(@"Couldn't read styles.css: %@", error);
-				return [GCDWebServerDataResponse responseWithStatusCode:500];
-			}
-			return [GCDWebServerDataResponse responseWithData:[[content stringByReplacingOccurrencesOfString:@"%accent%" withString:[Utils colorToHex:[Theming getAccentColor]]]
-																  dataUsingEncoding:NSUTF8StringEncoding]
-												  contentType:@"text/css"];
-		}];
-
-		[self.webServer addHandlerForMethod:@"GET" path:@"/" requestClass:[GCDWebServerRequest class] processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
-			return [GCDWebServerResponse responseWithRedirect:[NSURL URLWithString:@"index.html" relativeToURL:request.URL] permanent:NO];
-		}];
-		[self.webServer addHandlerForMethod:@"POST" path:@"/launch" requestClass:[GCDWebServerRequest class] processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
-			GCDWebServerDataResponse* response = [GCDWebServerDataResponse responseWithStatusCode:200];
-			[weakSelf launchGame];
-			return response;
-		}];
-		[self.webServer addHandlerForMethod:@"POST" path:@"/stop" requestClass:[GCDWebServerRequest class] processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
-			GCDWebServerDataResponse* response = [GCDWebServerDataResponse responseWithStatusCode:200];
-			[weakSelf.webServer stop];
-			return response;
-		}];
-		[self.webServer addHandlerForMethod:@"POST" path:@"/upload" requestClass:[GCDWebServerMultiPartFormRequest class]
-							   processBlock:^GCDWebServerResponse*(GCDWebServerMultiPartFormRequest* request) {
-								   GCDWebServerMultiPartFile* file = [request firstFileForControlName:@"file"];
-								   if (!file)
-									   return [GCDWebServerDataResponse responseWithStatusCode:400];
-								   AppLog(@"[Server] Received request to upload %@", file.fileName);
-
-								   NSURL* path = [NSURL fileURLWithPath:[[Utils docPath] stringByAppendingString:@"game/geode/mods/"]];
-								   NSURL* destinationURL = [path URLByAppendingPathComponent:file.fileName];
-								   if ([file.fileName isEqualToString:@"Geode.ios.dylib"]) {
-									   AppLog(@"[Server] Getting Geode dylib path...");
-									   NSString* docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
-									   NSString* tweakPath = [NSString stringWithFormat:@"%@/Tweaks/Geode.ios.dylib", docPath];
-									   if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-										   NSString* applicationSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
-										   if (applicationSupportDirectory != nil) {
-											   // https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m
-											   NSString* geode_dir = [applicationSupportDirectory stringByAppendingString:@"/GeometryDash/game/geode"];
-											   NSString* geode_lib = [geode_dir stringByAppendingString:@"/Geode.ios.dylib"];
-											   bool is_dir;
-											   NSFileManager* fm = [NSFileManager defaultManager];
-											   if (![fm fileExistsAtPath:geode_dir isDirectory:&is_dir]) {
-												   AppLog(@"mrow creating geode dir !!");
-												   if (![fm createDirectoryAtPath:geode_dir withIntermediateDirectories:YES attributes:nil error:NULL]) {
-													   AppLog(@"mrow failed to create folder!!");
-												   }
-											   }
-											   tweakPath = geode_lib;
-										   }
-									   }
-									   destinationURL = [NSURL fileURLWithPath:tweakPath];
-								   }
-								   NSError* error = nil;
-								   if ([fm fileExistsAtPath:destinationURL.path]) {
-									   [fm removeItemAtURL:destinationURL error:&error];
-									   if (error) {
-										   AppLog(@"[Server] Couldn't replace file: %@", error);
-										   return [GCDWebServerDataResponse responseWithStatusCode:500];
-									   }
-								   }
-								   if ([fm moveItemAtPath:file.temporaryPath toPath:destinationURL.path error:&error]) {
-									   AppLog(@"[Server] Uploaded file!");
-									   return [GCDWebServerDataResponse responseWithText:[NSString stringWithFormat:@"File %@ uploaded successfully", file.fileName]];
-								   } else {
-									   NSLog(@"[Server] Error saving file: %@", error);
-									   return [GCDWebServerDataResponse responseWithStatusCode:500];
-								   }
-							   }];
-		[self.webServer startWithPort:8080 bonjourName:nil];
-		AppLog(@"Started server: %@", self.webServer.serverURL);
-	}
 }
 
 - (void)viewDidLayoutSubviews {
@@ -361,15 +241,70 @@
 	[[GeodeInstaller alloc] checkUpdates:self download:YES];
 }
 - (void)downloadGame {
+	if (![Utils isSandboxed]) { // since jit doesnt work anyways... why would we install it twice??
+		[Utils showNotice:self title:@"launcher.notice.ts.install".loc];
+		return;
+	}
+	if (![VerifyInstall verifyGDAuthenticity]) {
+		[Utils showError:self title:@"launcher.status.not-verified".loc error:nil];
+		return;
+	}
 	[self.launchButton setEnabled:NO];
 	[UIApplication sharedApplication].idleTimerDisabled = YES;
 	if ([VerifyInstall verifyGDInstalled] && ![VerifyInstall verifyGeodeInstalled]) {
 		[[[GeodeInstaller alloc] init] startInstall:self ignoreRoot:NO];
 	} else {
+		// this is all so unnecessary, just use import IPA if you're that desperate
+		NSData* b64Data = [[NSData alloc] initWithBase64EncodedString:@"__KEY_PART2__" options:0];
+		if (!b64Data) {
+			[Utils showError:self title:@"launcher.error.non".loc error:nil];
+			[self updateState];
+			return;
+		}
+		NSString* b64 = [[NSString alloc] initWithData:b64Data encoding:NSUTF8StringEncoding];
 		[self.progressBar setHidden:NO];
-		NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
-		downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"__DOWNLOAD_LINK__"]];
-		[downloadTask resume];
+		NSURLRequest* request2 = [NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@", b64]]];
+		NSURLSession* session2 = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
+		NSURLSessionDataTask* dataTask = [session2 dataTaskWithRequest:request2 completionHandler:^(NSData* data, NSURLResponse* response, NSError* error) {
+			if (error) {
+				return dispatch_async(dispatch_get_main_queue(), ^{
+					[Utils showError:self title:@"launcher.error.req-failed".loc error:error];
+					[self updateState];
+					AppLog(@"Error during request: %@", error);
+				});
+			}
+			if (data) {
+				NSString* keyData = [[NSString stringWithFormat:@"%@__KEY_PART1__", [[NSString alloc] initWithData:data
+																										  encoding:NSUTF8StringEncoding]] stringByReplacingOccurrencesOfString:@"\n"
+																																									withString:@""];
+				NSString* eStr = @"__DOWNLOAD_LINK__";
+				NSData* dataToDecrypt = [[NSData alloc] initWithBase64EncodedString:eStr options:0];
+				NSString* decoded = [[NSString alloc] initWithData:[Utils decryptData:dataToDecrypt withKey:keyData] encoding:NSUTF8StringEncoding];
+
+				NSData* decodedb64Data = [[NSData alloc] initWithBase64EncodedString:decoded options:0];
+				if (!decodedb64Data) {
+					dispatch_async(dispatch_get_main_queue(), ^{
+						[Utils showError:self title:@"launcher.error.req-failed".loc error:nil];
+						[self updateState];
+						AppLog(@"Error during decoding, data is invalid.");
+					});
+					return;
+				}
+				NSString* decb64 = [[NSString alloc] initWithData:decodedb64Data encoding:NSUTF8StringEncoding];
+				dispatch_async(dispatch_get_main_queue(), ^{
+					NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
+					downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:decb64]];
+					[downloadTask resume];
+				});
+			} else {
+				dispatch_async(dispatch_get_main_queue(), ^{
+					[Utils showError:self title:@"launcher.error.req-failed".loc error:nil];
+					[self updateState];
+					AppLog(@"Error during request, data is invalid.");
+				});
+			}
+		}];
+		[dataTask resume];
 	}
 }
 

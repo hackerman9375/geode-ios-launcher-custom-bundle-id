@@ -17,6 +17,7 @@
 + (NSURL*)pathToMostRecentLogInDirectory:(NSString*)directoryPath;
 + (void)showErrorGlobal:(NSString*)title error:(NSError*)error;
 + (void)showError:(UIViewController*)root title:(NSString*)title error:(NSError*)error;
++ (void)showNoticeGlobal:(NSString*)title;
 + (void)showNotice:(UIViewController*)root title:(NSString*)title;
 + (NSString*)archName;
 + (void)toggleKey:(NSString*)key;
@@ -26,9 +27,14 @@
 + (NSString*)getGDBinaryPath;
 + (NSString*)getGDBundlePath;
 + (NSUserDefaults*)getPrefs;
++ (NSUserDefaults*)getPrefsGC;
 + (BOOL)isSandboxed;
++ (BOOL)isContainerized;
 + (const char*)getKillAllPath;
 + (void)increaseLaunchCount;
 + (void)tweakLaunch_withSafeMode:(BOOL)safemode;
 + (NSString*)colorToHex:(UIColor*)color;
+
++ (NSData*)encryptData:(NSData*)data withKey:(NSString*)key;
++ (NSData*)decryptData:(NSData*)data withKey:(NSString*)key;
 @end

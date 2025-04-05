@@ -147,10 +147,6 @@
 	NSUserDefaults* defaults = [Utils getPrefs];
 	[defaults removeObjectForKey:@"selected"];
 	[defaults removeObjectForKey:@"selectedContainer"];
-	if ([defaults objectForKey:@"LCLastLanguages"]) {
-		[defaults setObject:[defaults objectForKey:@"LCLastLanguages"] forKey:@"AppleLanguages"];
-		[defaults removeObjectForKey:@"LCLastLanguages"];
-	}
 }
 
 @end

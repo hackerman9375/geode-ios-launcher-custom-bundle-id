@@ -16,7 +16,7 @@ static void UIKitGuestHooksInit() {
     swizzle(UIScene.class, @selector(scene:didReceiveActions:fromTransitionContext:), @selector(hook_scene:didReceiveActions:fromTransitionContext:));
     swizzle(UIScene.class, @selector(openURL:options:completionHandler:), @selector(hook_openURL:options:completionHandler:));
     if([UIDevice.currentDevice userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
-        if ([NSUserDefaults.lcUserDefaults boolForKey:@"FIX_ROTATION"]) {
+        if ([NSUserDefaults.gcUserDefaults boolForKey:@"FIX_ROTATION"]) {
             swizzle(UIApplication.class, @selector(_handleDelegateCallbacksWithOptions:isSuspended:restoreState:), @selector(hook__handleDelegateCallbacksWithOptions:isSuspended:restoreState:));
             swizzle(FBSSceneParameters.class, @selector(initWithXPCDictionary:), @selector(hook_initWithXPCDictionary:));
             swizzle(UIViewController.class, @selector(__supportedInterfaceOrientations), @selector(hook___supportedInterfaceOrientations));
@@ -28,7 +28,7 @@ static void UIKitGuestHooksInit() {
 
 NSString* findDefaultContainerWithBundleId(NSString* bundleId) {
     // find app's default container
-    NSString *appGroupPath = [NSUserDefaults lcAppGroupPath];
+    NSString *appGroupPath = [NSUserDefaults gcAppGroupPath];
     NSString* appGroupFolder = [appGroupPath stringByAppendingPathComponent:@"Geode"];
     
     NSString* bundleInfoPath = [NSString stringWithFormat:@"%@/Applications/%@/LCAppInfo.plist", appGroupFolder, bundleId];
@@ -45,7 +45,7 @@ NSString* findDefaultContainerWithBundleId(NSString* bundleId) {
 
 
 void LCShowSwitchAppConfirmation(NSURL *url, NSString* bundleId) {
-    if ([NSUserDefaults.lcUserDefaults boolForKey:@"LCSwitchAppWithoutAsking"]) {
+    if ([NSUserDefaults.gcUserDefaults boolForKey:@"LCSwitchAppWithoutAsking"]) {
         [NSClassFromString(@"LCSharedUtils") launchToGuestAppWithURL:url];
         return;
     }
@@ -57,7 +57,7 @@ void LCShowSwitchAppConfirmation(NSURL *url, NSString* bundleId) {
         window.windowScene = nil;
     }];
     [alert addAction:okAction];
-    if([NSUserDefaults.lcAppUrlScheme isEqualToString:@"geode"] && [UIApplication.sharedApplication canOpenURL:[NSURL URLWithString: @"geode://"]]) {
+    if([NSUserDefaults.gcAppUrlScheme isEqualToString:@"geode"] && [UIApplication.sharedApplication canOpenURL:[NSURL URLWithString: @"geode://"]]) {
         UIAlertAction* openlc2Action = [UIAlertAction actionWithTitle:@"lc.guestTweak.openInLc2" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
             NSURLComponents* newUrlComp = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
             [newUrlComp setScheme:@"geode"];
@@ -100,7 +100,7 @@ void openUniversalLink(NSString* decodedUrl) {
         NSData *data = [decodedUrl dataUsingEncoding:NSUTF8StringEncoding];
         NSString *encodedUrl = [data base64EncodedStringWithOptions:0];
         
-        NSString* finalUrl = [NSString stringWithFormat:@"%@://open-url?url=%@", NSUserDefaults.lcAppUrlScheme, encodedUrl];
+        NSString* finalUrl = [NSString stringWithFormat:@"%@://open-url?url=%@", NSUserDefaults.gcAppUrlScheme, encodedUrl];
         NSURL* url = [NSURL URLWithString: finalUrl];
         
         [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
@@ -125,7 +125,7 @@ void openUniversalLink(NSString* decodedUrl) {
 }
 
 void LCOpenWebPage(NSString* webPageUrlString, NSString* originalUrl) {
-    if ([NSUserDefaults.lcUserDefaults boolForKey:@"LCOpenWebPageWithoutAsking"]) {
+    if ([NSUserDefaults.gcUserDefaults boolForKey:@"LCOpenWebPageWithoutAsking"]) {
         openUniversalLink(webPageUrlString);
         return;
     }
@@ -142,7 +142,7 @@ void LCOpenWebPage(NSString* webPageUrlString, NSString* originalUrl) {
         openUniversalLink(webPageUrlString);
         window.windowScene = nil;
     }];
-    if([NSUserDefaults.lcAppUrlScheme isEqualToString:@"geode"] && [UIApplication.sharedApplication canOpenURL:[NSURL URLWithString: @"geode://"]]) {
+    if([NSUserDefaults.gcAppUrlScheme isEqualToString:@"geode"] && [UIApplication.sharedApplication canOpenURL:[NSURL URLWithString: @"geode://"]]) {
         UIAlertAction* openlc2Action = [UIAlertAction actionWithTitle:@"lc.guestTweak.openInLc2" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
             NSURLComponents* newUrlComp = [NSURLComponents componentsWithString:originalUrl];
             [newUrlComp setScheme:@"geode"];
@@ -236,7 +236,7 @@ void handleLiveContainerLaunch(NSURL* url) {
             lcAppInfo = [NSDictionary dictionaryWithContentsOfURL:[bundle URLForResource:@"LCAppInfo" withExtension:@"plist"]];
         }
         
-        if(!bundle || ([lcAppInfo[@"isHidden"] boolValue] && [NSUserDefaults.lcSharedDefaults boolForKey:@"LCStrictHiding"])) {
+        if(!bundle || ([lcAppInfo[@"isHidden"] boolValue] && [NSUserDefaults.gcSharedDefaults boolForKey:@"LCStrictHiding"])) {
             LCShowAppNotFoundAlert(bundleName);
         } else if ([lcAppInfo[@"isLocked"] boolValue]) {
             // need authentication
@@ -279,10 +279,10 @@ BOOL canAppOpenItself(NSURL* url) {
 @implementation UIApplication(LiveContainerHook)
 - (void)hook__applicationOpenURLAction:(id)action payload:(NSDictionary *)payload origin:(id)origin {
     NSString *url = payload[UIApplicationLaunchOptionsURLKey];
-    if ([url hasPrefix:[NSString stringWithFormat: @"%@://geode-relaunch", NSUserDefaults.lcAppUrlScheme]]) {
+    if ([url hasPrefix:[NSString stringWithFormat: @"%@://geode-relaunch", NSUserDefaults.gcAppUrlScheme]]) {
         // Ignore
         return;
-    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://open-web-page?", NSUserDefaults.lcAppUrlScheme]]) {
+    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://open-web-page?", NSUserDefaults.gcAppUrlScheme]]) {
         // launch to UI and open web page
         NSURLComponents* lcUrl = [NSURLComponents componentsWithString:url];
         NSString* realUrlEncoded = lcUrl.queryItems[0].value;
@@ -292,7 +292,7 @@ BOOL canAppOpenItself(NSURL* url) {
         NSString *decodedUrl = [[NSString alloc] initWithData:decodedData encoding:NSUTF8StringEncoding];
         LCOpenWebPage(decodedUrl, url);
         return;
-    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://open-url", NSUserDefaults.lcAppUrlScheme]]) {
+    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://open-url", NSUserDefaults.gcAppUrlScheme]]) {
         // pass url to guest app
         NSURLComponents* lcUrl = [NSURLComponents componentsWithString:url];
         NSString* realUrlEncoded = lcUrl.queryItems[0].value;
@@ -310,7 +310,7 @@ BOOL canAppOpenItself(NSURL* url) {
         }
         
         return;
-    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://geode-launch?bundle-name=", NSUserDefaults.lcAppUrlScheme]]) {
+    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://geode-launch?bundle-name=", NSUserDefaults.gcAppUrlScheme]]) {
         handleLiveContainerLaunch([NSURL URLWithString:url]);
         // Not what we're looking for, pass it
         
@@ -332,7 +332,7 @@ BOOL canAppOpenItself(NSURL* url) {
 //        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:@"com.apple.springboard"];
-            [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:NSUserDefaults.lcMainBundle.bundleIdentifier];
+            [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:NSUserDefaults.gcMainBundle.bundleIdentifier];
         });
 
     });
@@ -358,7 +358,7 @@ BOOL canAppOpenItself(NSURL* url) {
     if(canAppOpenItself(url)) {
         NSData *data = [url.absoluteString dataUsingEncoding:NSUTF8StringEncoding];
         NSString *encodedUrl = [data base64EncodedStringWithOptions:0];
-        NSString* finalUrlStr = [NSString stringWithFormat:@"%@://open-url?url=%@", NSUserDefaults.lcAppUrlScheme, encodedUrl];
+        NSString* finalUrlStr = [NSString stringWithFormat:@"%@://open-url?url=%@", NSUserDefaults.gcAppUrlScheme, encodedUrl];
         NSURL* finalUrl = [NSURL URLWithString:finalUrlStr];
         [self hook_openURL:finalUrl options:options completionHandler:completion];
     } else {
@@ -393,9 +393,9 @@ BOOL canAppOpenItself(NSURL* url) {
     }
 
     NSString *url = urlAction.url.absoluteString;
-    if ([url hasPrefix:[NSString stringWithFormat: @"%@://geode-relaunch", NSUserDefaults.lcAppUrlScheme]]) {
+    if ([url hasPrefix:[NSString stringWithFormat: @"%@://geode-relaunch", NSUserDefaults.gcAppUrlScheme]]) {
         // Ignore
-    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://open-web-page?", NSUserDefaults.lcAppUrlScheme]]) {
+    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://open-web-page?", NSUserDefaults.gcAppUrlScheme]]) {
         NSURLComponents* lcUrl = [NSURLComponents componentsWithString:url];
         NSString* realUrlEncoded = lcUrl.queryItems[0].value;
         if(!realUrlEncoded) return;
@@ -403,7 +403,7 @@ BOOL canAppOpenItself(NSURL* url) {
         NSData *decodedData = [[NSData alloc] initWithBase64EncodedString:realUrlEncoded options:0];
         NSString *decodedUrl = [[NSString alloc] initWithData:decodedData encoding:NSUTF8StringEncoding];
         LCOpenWebPage(decodedUrl, url);
-    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://open-url", NSUserDefaults.lcAppUrlScheme]]) {
+    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://open-url", NSUserDefaults.gcAppUrlScheme]]) {
         // Open guest app's URL scheme
         NSURLComponents* lcUrl = [NSURLComponents componentsWithString:url];
         NSString* realUrlEncoded = lcUrl.queryItems[0].value;
@@ -423,7 +423,7 @@ BOOL canAppOpenItself(NSURL* url) {
             [self hook_scene:scene didReceiveActions:newActions fromTransitionContext:context];
         }
 
-    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://geode-launch?bundle-name=", NSUserDefaults.lcAppUrlScheme]]){
+    } else if ([url hasPrefix:[NSString stringWithFormat: @"%@://geode-launch?bundle-name=", NSUserDefaults.gcAppUrlScheme]]){
         handleLiveContainerLaunch(urlAction.url);
         
     }
@@ -437,7 +437,7 @@ BOOL canAppOpenItself(NSURL* url) {
     if(canAppOpenItself(url)) {
         NSData *data = [url.absoluteString dataUsingEncoding:NSUTF8StringEncoding];
         NSString *encodedUrl = [data base64EncodedStringWithOptions:0];
-        NSString* finalUrlStr = [NSString stringWithFormat:@"%@://open-url?url=%@", NSUserDefaults.lcAppUrlScheme, encodedUrl];
+        NSString* finalUrlStr = [NSString stringWithFormat:@"%@://open-url?url=%@", NSUserDefaults.gcAppUrlScheme, encodedUrl];
         NSURL* finalUrl = [NSURL URLWithString:finalUrlStr];
         [self hook_openURL:finalUrl options:options completionHandler:completion];
     } else {
@@ -452,7 +452,7 @@ BOOL canAppOpenItself(NSURL* url) {
     FBSSceneParameters* ans = [self hook_initWithXPCDictionary:dict];
     UIMutableApplicationSceneSettings* settings = [ans.settings mutableCopy];
     UIMutableApplicationSceneClientSettings* clientSettings = [ans.clientSettings mutableCopy];
-    if ([NSUserDefaults.lcUserDefaults boolForKey:@"FIX_ROTATION"]) {
+    if ([NSUserDefaults.gcUserDefaults boolForKey:@"FIX_ROTATION"]) {
         [settings setInterfaceOrientation:LCOrientationLock];
         [clientSettings setInterfaceOrientation:LCOrientationLock];
     }

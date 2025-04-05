@@ -22,7 +22,7 @@ Geode_LIBRARIES = archive # thats dumb
 $(APPLICATION_NAME)_LDFLAGS = -e _GeodeMain -rpath @loader_path/Frameworks
 
 include $(THEOS_MAKE_PATH)/application.mk
-SUBPROJECTS += ZSign TweakLoader TestJITLess AltStoreTweak
+SUBPROJECTS += ZSign TweakLoader WebServerLib TestJITLess AltStoreTweak
 include $(THEOS_MAKE_PATH)/aggregate.mk
 
 

@@ -10,7 +10,7 @@
 #import "src/components/LogUtils.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 
-extern NSBundle* lcMainBundle;
+extern NSBundle* gcMainBundle;
 
 Class LCSharedUtilsClass = nil;
 
@@ -191,7 +191,7 @@ Class LCSharedUtilsClass = nil;
 
 	// I'm too lazy to reimplement signer, so let's borrow everything from SideStore
 	// For sure this will break in the future as SideStore team planned to rewrite it
-	NSURL* profilePath = [lcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
+	NSURL* profilePath = [gcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
 
 	// Load libraries from Documents, yeah
 	[self loadStoreFrameworksWithError:&error];
@@ -202,7 +202,7 @@ Class LCSharedUtilsClass = nil;
 
 	ALTCertificate* cert = [[NSClassFromString(@"ALTCertificate") alloc] initWithP12Data:self.certificateData password:self.certificatePassword];
 	if (!cert) {
-		error = [NSError errorWithDomain:lcMainBundle.bundleIdentifier code:1 userInfo:@{
+		error = [NSError errorWithDomain:gcMainBundle.bundleIdentifier code:1 userInfo:@{
 			NSLocalizedDescriptionKey : @"Failed to create ALTCertificate. Please try: 1. make sure your store is patched 2. reopen your store 3. refresh all apps"
 		}];
 		completionHandler(NO, nil, nil, error);
@@ -210,7 +210,7 @@ Class LCSharedUtilsClass = nil;
 	}
 	ALTProvisioningProfile* profile = [[NSClassFromString(@"ALTProvisioningProfile") alloc] initWithURL:profilePath];
 	if (!profile) {
-		error = [NSError errorWithDomain:lcMainBundle.bundleIdentifier code:2 userInfo:@{
+		error = [NSError errorWithDomain:gcMainBundle.bundleIdentifier code:2 userInfo:@{
 			NSLocalizedDescriptionKey : @"Failed to create ALTProvisioningProfile. Please try: 1. make sure your store is patched 2. reopen your store 3. refresh all apps"
 		}];
 		completionHandler(NO, nil, nil, error);
@@ -229,7 +229,7 @@ Class LCSharedUtilsClass = nil;
 	NSError* error;
 
 	// use zsign as our signer~
-	NSURL* profilePath = [lcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
+	NSURL* profilePath = [gcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
 	NSData* profileData = [NSData dataWithContentsOfURL:profilePath];
 	if (profileData == nil) {
 		AppLog(@"Couldn't read from mobile provisioning profile! Will assume to use embedded mobile provisioning file in documents.");
@@ -281,7 +281,7 @@ Class LCSharedUtilsClass = nil;
 + (NSString*)getCertTeamIdWithKeyData:(NSData*)keyData password:(NSString*)password {
 	NSError* error;
 
-	NSURL* profilePath = [lcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
+	NSURL* profilePath = [gcMainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
 	NSData* profileData = [NSData dataWithContentsOfURL:profilePath];
 	if (profileData == nil) {
 		AppLog(@"Couldn't read from mobile provisioning profile! Will assume to use embedded mobile provisioning file in documents.");
@@ -322,7 +322,7 @@ Class LCSharedUtilsClass = nil;
 }
 
 + (NSString*)appUrlScheme {
-	return lcMainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
+	return gcMainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
 }
 
 + (BOOL)isAppGroupAltStoreLike {
@@ -589,12 +589,12 @@ Class LCSharedUtilsClass = nil;
 	NSURL* provisionPath = [url URLByAppendingPathComponent:@"embedded.mobileprovision"];
 	NSURL* tmpExecPath = [url URLByAppendingPathComponent:@"Geode.tmp"];
 	NSURL* tmpInfoPath = [url URLByAppendingPathComponent:@"Info.plist"];
-	NSMutableDictionary* info = [lcMainBundle.infoDictionary mutableCopy];
+	NSMutableDictionary* info = [gcMainBundle.infoDictionary mutableCopy];
 	[info setObject:@"Geode.tmp" forKey:@"CFBundleExecutable"];
 	[info writeToURL:tmpInfoPath atomically:YES];
 
 	NSError* copyError = nil;
-	if (![fm copyItemAtURL:[lcMainBundle executableURL] toURL:tmpExecPath error:&copyError]) {
+	if (![fm copyItemAtURL:[gcMainBundle executableURL] toURL:tmpExecPath error:&copyError]) {
 		completion(copyError.localizedDescription, nil);
 		return;
 	}

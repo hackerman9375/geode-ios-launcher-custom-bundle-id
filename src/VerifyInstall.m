@@ -72,7 +72,7 @@ BOOL hasDoneUpdate = NO;
 // after the user installed the patched ipa
 + (BOOL)verifyGDInstalled {
 	BOOL res = NO;
-	if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"])
+	if (![Utils isSandboxed])
 		return YES;
 	if ([[NSFileManager defaultManager] fileExistsAtPath:[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName] isDirectory:YES].path isDirectory:&res]) {
 		if ([[Utils getPrefs] boolForKey:@"GDNeedsUpdate"])

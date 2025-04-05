@@ -1,3 +1,4 @@
+#import "LCUtils/LCSharedUtils.h"
 #import "LCUtils/Shared.h"
 #import "Utils.h"
 #import "components/LogUtils.h"
@@ -12,6 +13,8 @@ BOOL sandboxValue = NO;
 NSString* gdBundlePath = nil;
 NSString* gdDocPath = nil;
 NSString* cachedVersion = nil;
+
+extern NSUserDefaults* gcUserDefaults;
 
 @implementation Utils
 + (NSString*)launcherBundleName {
@@ -41,7 +44,12 @@ NSString* cachedVersion = nil;
 		}
 	}
 	NSError* error;
-	NSData* data = [NSData dataWithContentsOfFile:[[Utils docPath] stringByAppendingPathComponent:@"save/geode/mods/geode.loader/saved.json"] options:0 error:&error];
+	NSData* data;
+	if ([Utils isContainerized]) {
+		data = [NSData dataWithContentsOfFile:[[LCPath docPath].path stringByAppendingPathComponent:@"save/geode/mods/geode.loader/saved.json"] options:0 error:&error];
+	} else {
+		data = [NSData dataWithContentsOfFile:[[Utils docPath] stringByAppendingPathComponent:@"save/geode/mods/geode.loader/saved.json"] options:0 error:&error];
+	}
 	if (data && !error) {
 		id jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
 		if (jsonObject && !error) {
@@ -223,6 +231,17 @@ NSString* cachedVersion = nil;
 	[alert addAction:okAction];
 	[root presentViewController:alert animated:YES completion:nil];
 }
++ (void)showNoticeGlobal:(NSString*)title {
+	UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:title preferredStyle:UIAlertControllerStyleAlert];
+	UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
+	[alert addAction:okAction];
+
+	UIWindowScene* scene = (id)[UIApplication.sharedApplication.connectedScenes allObjects].firstObject;
+	UIWindow* window = scene.windows.firstObject;
+	if (window != nil) {
+		[window.rootViewController presentViewController:alert animated:YES completion:nil];
+	}
+}
 + (void)showError:(UIViewController*)root title:(NSString*)title error:(NSError*)error {
 	UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.error".loc
 																   message:(error == nil) ? title : [NSString stringWithFormat:@"%@: %@", title, error.localizedDescription]
@@ -275,7 +294,9 @@ NSString* cachedVersion = nil;
 	// TODO: change this to check for bundle version instead
 	return [Utils sha256sum:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/Info.plist"].path];
 }
-
++ (BOOL)isContainerized {
+	return [[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.robtop.geometryjump"];
+}
 + (BOOL)isSandboxed {
 	// make sure we dont keep doing these read operations
 	if (checkedSandboxed)
@@ -306,6 +327,13 @@ NSString* cachedVersion = nil;
 		return [[NSUserDefaults alloc] initWithSuiteName:[libPath URLByAppendingPathComponent:@"Preferences/com.geode.launcher.plist"].path];
 	} else {
 		return [NSUserDefaults standardUserDefaults];
+	}
+}
++ (NSUserDefaults*)getPrefsGC {
+	if (![Utils isSandboxed]) {
+		return [Utils getPrefs];
+	} else {
+		return gcUserDefaults;
 	}
 }
 + (const char*)getKillAllPath {
@@ -378,5 +406,47 @@ NSString* cachedVersion = nil;
 	} else {
 		return [NSString stringWithFormat:@"%@/", path];
 	}
+}
+
+// https://clouddevs.com/objective-c/security/
+// https://richardwarrender.com/2016/04/encrypt-data-using-aes-and-256-bit-keys/
+// https://github.com/coolnameismy/ios-tips/blob/e2b79e6bc648ff8b16b54cbd303132dbdb242602/3_Other/aes128%E5%8A%A0%E5%AF%86%E8%A7%A3%E5%AF%86.md
++ (NSData*)encryptData:(NSData*)data withKey:(NSString*)keyStr {
+	if ([keyStr length] != 32)
+		return nil;
+	NSData* key = [keyStr dataUsingEncoding:NSUTF8StringEncoding];
+
+	size_t bufferSize = [data length] + kCCBlockSizeAES128;
+	void* buffer = malloc(bufferSize);
+
+	size_t encryptedSize = 0;
+	CCCryptorStatus cryptStatus =
+		CCCrypt(kCCEncrypt, kCCAlgorithmAES, kCCOptionPKCS7Padding, [key bytes], kCCKeySizeAES256, NULL, [data bytes], [data length], buffer, bufferSize, &encryptedSize);
+
+	if (cryptStatus == kCCSuccess) {
+		return [NSData dataWithBytesNoCopy:buffer length:encryptedSize];
+	}
+
+	free(buffer);
+	return nil;
+}
++ (NSData*)decryptData:(NSData*)data withKey:(NSString*)keyStr {
+	if ([keyStr length] != 32)
+		return [[[NSString alloc] initWithFormat:@"eW91IGRpZCBpdCB3cm9uZw=="] dataUsingEncoding:NSUTF8StringEncoding];
+	NSData* key = [keyStr dataUsingEncoding:NSUTF8StringEncoding];
+
+	size_t bufferSize = [data length] + kCCBlockSizeAES128;
+	void* buffer = malloc(bufferSize);
+
+	size_t decryptedSize = 0;
+	CCCryptorStatus cryptStatus =
+		CCCrypt(kCCDecrypt, kCCAlgorithmAES, kCCOptionPKCS7Padding, [key bytes], kCCKeySizeAES256, NULL, [data bytes], [data length], buffer, bufferSize, &decryptedSize);
+
+	if (cryptStatus == kCCSuccess) {
+		return [NSData dataWithBytesNoCopy:buffer length:decryptedSize];
+	}
+
+	free(buffer);
+	return nil;
 }
 @end

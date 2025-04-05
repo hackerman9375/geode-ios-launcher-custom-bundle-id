@@ -65,6 +65,8 @@
 "launcher.notice.gd-outdated" = "Your Geometry Dash is outdated!";
 "launcher.notice.gd-update" = "Geode requires an update! Relaunch the app to update it!";
 "launcher.notice.launcher-update" = "A launcher update is available! Redownload the IPA to update it!";
+"launcher.notice.ts.install" = "You are using the TrollStore version of Geode! If you want to install Geometry Dash in a container, consider installing the IPA version instead.";
+
 
 "launcher.status.not-verified" = "Geometry Dash is not verified.\nYou need to verify that you installed the app.";
 "launcher.status.not-installed" = "Geode is not installed.";
@@ -76,6 +78,7 @@
 "launcher.status.download-geode" = "Downloading Geode...";
 "launcher.status.extracting" = "Extracting...";
 
+"launcher.error.non" = "Please use the release from the original github page to download Geometry Dash.";
 "launcher.error.gd" = "Geode couldn't load Geometry Dash: %@";
 "launcher.error.download-fail-restart" = "Download failed, please restart the app";
 "launcher.error.download-fail" = "Download failed";

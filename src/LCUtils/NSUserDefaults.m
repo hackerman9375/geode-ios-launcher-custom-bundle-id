@@ -13,10 +13,10 @@ void swizzle(Class class, SEL originalAction, SEL swizzledAction) {
 	method_exchangeImplementations(class_getInstanceMethod(class, originalAction), class_getInstanceMethod(class, swizzledAction));
 }
 @interface NSUserDefaults (Geode)
-+ (instancetype)lcSharedDefaults;
-+ (instancetype)lcUserDefaults;
-+ (NSString*)lcAppUrlScheme;
-+ (NSString*)lcAppGroupPath;
++ (instancetype)gcSharedDefaults;
++ (instancetype)gcUserDefaults;
++ (NSString*)gcAppUrlScheme;
++ (NSString*)gcAppGroupPath;
 @end
 
 NSMutableDictionary* LCPreferences = 0;
@@ -42,9 +42,9 @@ void NUDGuestHooksInit() {
 	[[NSNotificationCenter defaultCenter] addObserverForName:@"UIApplicationWillTerminateNotification" object:nil queue:[NSOperationQueue mainQueue]
 												  usingBlock:^(NSNotification* _Nonnull notification) {
 													  // restore language if needed
-													  NSArray* savedLaunguage = [NSUserDefaults.lcUserDefaults objectForKey:@"LCLastLanguages"];
+													  NSArray* savedLaunguage = [NSUserDefaults.gcUserDefaults objectForKey:@"LCLastLanguages"];
 													  if (savedLaunguage) {
-														  [NSUserDefaults.lcUserDefaults setObject:savedLaunguage forKey:@"AppleLanguages"];
+														  [NSUserDefaults.gcUserDefaults setObject:savedLaunguage forKey:@"AppleLanguages"];
 													  }
 												  }];
 }
@@ -72,7 +72,7 @@ NSMutableDictionary* LCGetPreference(NSString* identifier) {
 // save preference to livecontainer's user default
 void LCSavePreference(void) {
 	NSString* containerId = [[NSString stringWithUTF8String:getenv("HOME")] lastPathComponent];
-	[NSUserDefaults.lcUserDefaults setObject:LCPreferences forKey:containerId];
+	[NSUserDefaults.gcUserDefaults setObject:LCPreferences forKey:containerId];
 }
 
 @implementation NSUserDefaults (LiveContainerHooks)
@@ -89,7 +89,7 @@ void LCSavePreference(void) {
 - (id)hook_objectForKey:(NSString*)key {
 	// let LiveContainer itself bypass
 	NSString* identifier = [self realIdentifier];
-	if (self == [NSUserDefaults lcUserDefaults]) {
+	if (self == [NSUserDefaults gcUserDefaults]) {
 		return [self hook_objectForKey:key];
 	}
 
@@ -135,7 +135,7 @@ void LCSavePreference(void) {
 - (void)hook_setObject:(id)obj forKey:(NSString*)key {
 	// let LiveContainer itself bypess
 	NSString* identifier = [self realIdentifier];
-	if (self == [NSUserDefaults lcUserDefaults]) {
+	if (self == [NSUserDefaults gcUserDefaults]) {
 		return [self hook_setObject:obj forKey:key];
 	}
 	@synchronized(LCPreferences) {

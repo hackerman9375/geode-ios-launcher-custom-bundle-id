@@ -6,10 +6,10 @@ void swizzleClassMethod(Class class, SEL originalAction, SEL swizzledAction);
 
 // Exported from the main executable
 @interface NSUserDefaults(LiveContainer)
-+ (instancetype)lcSharedDefaults;
-+ (instancetype)lcUserDefaults;
-+ (NSString *)lcAppUrlScheme;
-+ (NSString *)lcAppGroupPath;
-+ (NSBundle *)lcMainBundle;
++ (instancetype)gcSharedDefaults;
++ (instancetype)gcUserDefaults;
++ (NSString *)gcAppUrlScheme;
++ (NSString *)gcAppGroupPath;
++ (NSBundle *)gcMainBundle;
 + (NSDictionary*)guestAppInfo;
 @end
