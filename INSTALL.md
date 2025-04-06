@@ -120,8 +120,6 @@ Ensure that AltServer is running before proceeding. Also if you are on iOS 16.6.
 [JITStreamer](https://github.com/jkcoxson/JitStreamer-EB) works for iOS 18+, and overall is the recommended method to launching Geode with JIT, as it does not require a computer each time you want to run Geometry Dash.
 
 #### Option 1: Auto JIT
-> [!NOTE]
-> This method is no longer supported in favor of StikJIT, and due to many others misunderstanding it's purpose.
 1. Follow https://jkcoxson.com/jitstreamer (For Jitterbug Pair, install the `.zip` corresponding to your operating system.)
 2. It is recommended to follow the guide on an iOS device, as you will need to upload the pairing file to get the wireguard config.
 3. After installing the shortcut, launch the **Geode** app again.

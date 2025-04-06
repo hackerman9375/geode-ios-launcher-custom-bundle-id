@@ -112,6 +112,8 @@
 
 "jit" = "JIT";
 "jit.enable-auto-jit" = "Enable Auto JIT";
+"jit.enable-auto-jit.warning.title" = "Are you sure you want to enable Auto JIT?";
+"jit.enable-auto-jit.warning" = "Auto JIT is meant to be used with JITStreamer-EB. If you do not have JITStreamer-EB or use other alternatives like StikJIT or Sidestore JIT, do not enable this option.";
 "jit.auto-jit-server" = "Address";
 "jit.footer" = "Set up your JITStreamer server. Local Network permission is required. This is not necessary to set up if you use TrollStore, or if you're jailbroken.";
 

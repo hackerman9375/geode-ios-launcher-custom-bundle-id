@@ -124,8 +124,8 @@ extern NSBundle* gcMainBundle;
 
 + (BOOL)askForJIT {
 	NSString* sideJITServerAddress = [gcUserDefaults objectForKey:@"SideJITServerAddr"];
-	if (!sideJITServerAddress || ![gcUserDefaults boolForKey:@"AUTO_JIT_DEV"]) {
-		if ([gcUserDefaults boolForKey:@"AUTO_JIT_DEV"]) {
+	if (!sideJITServerAddress || ![gcUserDefaults boolForKey:@"AUTO_JIT"]) {
+		if ([gcUserDefaults boolForKey:@"AUTO_JIT"]) {
 			[Utils showErrorGlobal:@"JITStreamer Server Address not set." error:nil];
 			return NO;
 		}
@@ -139,7 +139,7 @@ extern NSBundle* gcMainBundle;
 	NSURLSessionDataTask* task = [session dataTaskWithRequest:req completionHandler:^(NSData* _Nullable data, NSURLResponse* _Nullable response, NSError* _Nullable error) {
 		if (error) {
 			return dispatch_async(dispatch_get_main_queue(), ^{
-				[Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer", sideJITServerAddress, gcMainBundle.bundleIdentifier]
+				[Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer.\nIf you don't have JITStreamer-EB, disable Auto JIT and use \"Manual reopen with JIT\" if launching doesn't work.", sideJITServerAddress, gcMainBundle.bundleIdentifier]
 								 error:error];
 				AppLog(@"Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
 			});
