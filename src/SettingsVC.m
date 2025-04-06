@@ -402,7 +402,7 @@
 	// return @"jit.footer".loc;
 	// case 3:
 	// return @"jitless.footer".loc;
-	case 5:
+	case 6:
 		return @"credits.footer".loc;
 	default:
 		return nil;
