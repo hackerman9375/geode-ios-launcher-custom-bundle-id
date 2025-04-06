@@ -249,6 +249,6 @@ BOOL hasDoneUpdate = NO;
 		hasDoneUpdate = YES;
 		return NO;
 	}
-	return [VerifyInstall verifyGDAuthenticity] && [VerifyInstall verifyGDInstalled] && [VerifyInstall verifyGeodeInstalled];
+	return [VerifyInstall verifyGDInstalled] && [VerifyInstall verifyGeodeInstalled];
 }
 @end

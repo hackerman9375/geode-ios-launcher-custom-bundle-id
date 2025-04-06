@@ -105,7 +105,7 @@
 	[self.optionalTextLabel setHidden:YES];
 	[self.launchButton setEnabled:YES];
 	[self.launchButton removeTarget:nil action:nil forControlEvents:UIControlEventTouchUpInside];
-	if ([VerifyInstall verifyGDInstalled] && [VerifyInstall verifyGeodeInstalled]) {
+	if ([VerifyInstall verifyAll]) {
 		[UIApplication sharedApplication].idleTimerDisabled = NO;
 		[self.launchButton setTitle:@"launcher.launch".loc forState:UIControlStateNormal];
 		[self.launchButton setImage:[[UIImage systemImageNamed:@"play.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
