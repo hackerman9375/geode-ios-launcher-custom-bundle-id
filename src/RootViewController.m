@@ -242,7 +242,12 @@
 }
 - (void)downloadGame {
 	if (![Utils isSandboxed]) { // since jit doesnt work anyways... why would we install it twice??
-		[Utils showNotice:self title:@"launcher.notice.ts.install".loc];
+		if (![VerifyInstall verifyGeodeInstalled]) {
+			self.optionalTextLabel.text = @"launcher.status.download-geode".loc;
+			[[[GeodeInstaller alloc] init] startInstall:self ignoreRoot:NO];
+		} else {
+			[Utils showNotice:self title:@"launcher.notice.ts.install".loc];
+		}
 		return;
 	}
 	if (![VerifyInstall verifyGDAuthenticity]) {
