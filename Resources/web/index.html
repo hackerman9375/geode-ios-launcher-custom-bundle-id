@@ -76,7 +76,8 @@
         </section>
     </div>
     <script defer>
-        if ("container" != "%container%") {
+        window.containerized = "container" == "%container%";
+        if (!containerized) {
             document.getElementById("logs-section").hidden = true;
         }
     </script>

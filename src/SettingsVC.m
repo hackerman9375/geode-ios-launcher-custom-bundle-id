@@ -59,7 +59,8 @@
 #pragma mark - Table View Data Source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView*)tableView {
-	return [[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] ? 8 : 7;
+	// return [[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] ? 8 : 7;
+	return [[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] ? 7 : 6;
 }
 
 - (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
@@ -69,17 +70,18 @@
 	case 1: // Gameplay
 		return 4;
 	case 2: // JIT
-		return 2;
-	case 3: // JIT-Less
+			// return 2;
+		return 0;
+	case 3333333: // JIT-Less
 		// return 6;
 		return 0;
-	case 4: // Advanced
+	case 3: // Advanced
 		return 6;
-	case 5: // About
+	case 4: // About
 		return 4;
-	case 6: // Credits
+	case 5: // Credits
 		return [self.creditsArray count];
-	case 7: // Developer
+	case 6: // Developer
 		return 5;
 	default:
 		return 0;
@@ -203,7 +205,7 @@
 		}
 		break;
 	}
-	case 3: {
+	case 3333: {
 		if (indexPath.row == 0) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"Enable JIT-Less";
@@ -251,7 +253,7 @@
 		}
 		break;
 	}
-	case 4:
+	case 3:
 		/*if (indexPath.row == 0) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"advanced.dev-mode".loc;
@@ -293,7 +295,7 @@
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		}
 		break;
-	case 5: {
+	case 4: {
 		cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 		if (indexPath.row == 0) {
 			cellval1.textLabel.text = @"about.launcher".loc;
@@ -323,13 +325,13 @@
 		}
 		return cellval1;
 	}
-	case 6: {
+	case 5: {
 		cell.textLabel.text = self.creditsArray[indexPath.row][@"name"];
 		cell.textLabel.textColor = [Theming getAccentColor];
 		cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		return cell;
 	}
-	case 7: {
+	case 6: {
 		if (indexPath.row == 0) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"advanced.dev-mode".loc;
@@ -376,16 +378,17 @@
 	case 1:
 		return @"gameplay".loc;
 	case 2:
-		return @"jit".loc;
-	case 3:
+		return @"";
+		// return @"jit".loc;
+	case 3333333:
 		return @""; //@"jitless".loc;
-	case 4:
+	case 3:
 		return @"advanced".loc;
-	case 5:
+	case 4:
 		return @"about".loc;
-	case 6:
+	case 5:
 		return @"credits".loc;
-	case 7:
+	case 6:
 		return @"developer".loc;
 	default:
 		return @"Unknown";
@@ -398,11 +401,11 @@
 		return [@"general.footer" localizeWithFormat:[Utils getGeodeVersion]];
 	case 1:
 		return @"gameplay.footer".loc;
-	case 2:
-		return @"jit.footer".loc;
+	// case 2:
+	// return @"jit.footer".loc;
 	// case 3:
 	// return @"jitless.footer".loc;
-	case 6:
+	case 5:
 		return @"credits.footer".loc;
 	default:
 		return nil;
@@ -510,7 +513,7 @@
 			break;
 		}
 		}
-	} else if (indexPath.section == 3) {
+	} else if (indexPath.section == 33333) {
 		NSFileManager* fm = [NSFileManager defaultManager];
 		switch (indexPath.row) {
 		case 1: { // Patch
@@ -625,7 +628,7 @@
 			}];
 		}
 		}
-	} else if (indexPath.section == 4) {
+	} else if (indexPath.section == 3) {
 		switch (indexPath.row) {
 		case 3: { // View app logs
 			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:[[LCPath docPath] URLByAppendingPathComponent:@"app.log"]] animated:YES];
@@ -642,12 +645,12 @@
 			break;
 		}
 		}
-	} else if (indexPath.section == 6) {
+	} else if (indexPath.section == 5) {
 		NSURL* url = [NSURL URLWithString:self.creditsArray[indexPath.row][@"url"]];
 		if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
 			[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
 		}
-	} else if (indexPath.section == 7) {
+	} else if (indexPath.section == 6) {
 		switch (indexPath.row) {
 		case 3: { // Test GD Bundle Access
 			[Utils showNotice:self title:[Utils getGDDocPath]];

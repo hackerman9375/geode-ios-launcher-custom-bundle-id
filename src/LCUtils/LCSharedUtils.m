@@ -124,8 +124,8 @@ extern NSBundle* gcMainBundle;
 
 + (BOOL)askForJIT {
 	NSString* sideJITServerAddress = [gcUserDefaults objectForKey:@"SideJITServerAddr"];
-	if (!sideJITServerAddress || ![gcUserDefaults boolForKey:@"AUTO_JIT"]) {
-		if ([gcUserDefaults boolForKey:@"AUTO_JIT"]) {
+	if (!sideJITServerAddress || ![gcUserDefaults boolForKey:@"AUTO_JIT_DEV"]) {
+		if ([gcUserDefaults boolForKey:@"AUTO_JIT_DEV"]) {
 			[Utils showErrorGlobal:@"JITStreamer Server Address not set." error:nil];
 			return NO;
 		}

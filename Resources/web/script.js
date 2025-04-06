@@ -123,14 +123,16 @@ function fetchLogs() {
     })
 
 }
-fetchLogs();
-function onStartLogs() {
-    clearInterval(interval)
-    interval = setInterval(() => {
-        fetchLogs();
-    }, 1000)
+if (window.containerized) {
+    fetchLogs();
+    function onStartLogs() {
+        clearInterval(interval)
+        interval = setInterval(() => {
+            fetchLogs();
+        }, 1000)
+    }
+    function onStopLogs() {
+        clearInterval(interval)
+    }
+    onStartLogs();
 }
-function onStopLogs() {
-    clearInterval(interval)
-}
-onStartLogs();
