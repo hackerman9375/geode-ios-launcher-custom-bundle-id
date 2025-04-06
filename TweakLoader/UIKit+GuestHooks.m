@@ -167,36 +167,6 @@ void LCOpenWebPage(NSString* webPageUrlString, NSString* originalUrl) {
 
 }
 
-void authenticateUser(void (^completion)(BOOL success, NSError *error)) {
-    LAContext *context = [[LAContext alloc] init];
-    NSError *error = nil;
-
-    if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:&error]) {
-        NSString *reason = @"lc.utils.requireAuthentication";
-
-        // Evaluate the policy for both biometric and passcode authentication
-        [context evaluatePolicy:LAPolicyDeviceOwnerAuthentication
-                localizedReason:reason
-                          reply:^(BOOL success, NSError * _Nullable evaluationError) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (success) {
-                    completion(YES, nil);
-                } else {
-                    completion(NO, evaluationError);
-                }
-            });
-        }];
-    } else {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if([error code] == LAErrorPasscodeNotSet) {
-                completion(YES, nil);
-            } else {
-                completion(NO, error);
-            }
-        });
-    }
-}
-
 void handleLiveContainerLaunch(NSURL* url) {
     // If it's not current app, then switch
     // check if there are other LCs is running this app
@@ -238,21 +208,6 @@ void handleLiveContainerLaunch(NSURL* url) {
         
         if(!bundle || ([lcAppInfo[@"isHidden"] boolValue] && [NSUserDefaults.gcSharedDefaults boolForKey:@"LCStrictHiding"])) {
             LCShowAppNotFoundAlert(bundleName);
-        } else if ([lcAppInfo[@"isLocked"] boolValue]) {
-            // need authentication
-            authenticateUser(^(BOOL success, NSError *error) {
-                if (success) {
-                    LCShowSwitchAppConfirmation(url, bundleName);
-                } else {
-                    if ([error.domain isEqualToString:LAErrorDomain]) {
-                        if (error.code != LAErrorUserCancel) {
-                            NSLog(@"[LC] Authentication Error: %@", error.localizedDescription);
-                        }
-                    } else {
-                        NSLog(@"[LC] Authentication Error: %@", error.localizedDescription);
-                    }
-                }
-            });
         } else {
             LCShowSwitchAppConfirmation(url, bundleName);
         }

@@ -12,7 +12,6 @@ extern NSBundle* gcMainBundle;
 
 @implementation WebServer
 - (void)initServer {
-
 	if ([[Utils getPrefsGC] boolForKey:@"WEB_SERVER"]) {
 		__weak WebServer* weakSelf = self;
 		self.webServer = [[GCDWebServer alloc] init];
@@ -31,6 +30,7 @@ extern NSBundle* gcMainBundle;
 				infoPlistPath = [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"Info.plist"].path;
 			}
 		}
+		//[NSClassFromString(@"WebSharedClass") forceRestart];
 		NSDictionary* infoDictionary = [NSDictionary dictionaryWithContentsOfFile:infoPlistPath];
 
 		NSString* model = [[UIDevice currentDevice] localizedModel];
@@ -83,12 +83,7 @@ extern NSBundle* gcMainBundle;
 		[self.webServer addHandlerForMethod:@"POST" path:@"/launch" requestClass:[GCDWebServerRequest class] processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
 			GCDWebServerDataResponse* response = [GCDWebServerDataResponse responseWithStatusCode:200];
 			if ([Utils isContainerized]) {
-				NSString* openURL = [NSString stringWithFormat:@"geode://relaunch"];
-				NSURL* url = [NSURL URLWithString:openURL];
-				if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
-					//[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
-					return response;
-				};
+				[NSClassFromString(@"LCSharedUtils") relaunchApp];
 				return response;
 			}
 			if ([[Utils getPrefsGC] boolForKey:@"MANUAL_REOPEN"] && ![[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
