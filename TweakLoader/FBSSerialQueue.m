@@ -16,7 +16,7 @@
 }
 @end
 
-@implementation VSSubscriptionRegistrationCenter(LiveContainerHook)
+@implementation VSSubscriptionRegistrationCenter(GeodeHook)
 
 - (void)setCurrentSubscription:(id)sub {
     

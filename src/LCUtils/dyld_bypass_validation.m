@@ -66,7 +66,7 @@ static bool searchAndPatch(char* name, char* base, char* signature, int length, 
 	// TODO: maybe add a condition for if the user really has dopamine, considering that I may need to look further into the address space
 	// but it crashes if I have it too big!? wacky
 	// for(int i=0; i < 0x100000; i++) {
-	for (int i = 0; i < 0x80000; i++) {
+	for (int i = 0; i < 0x80000; i++) { // i+=4
 		if (base[i] == signature[0] && memcmp(base + i, signature, length) == 0) {
 			patchAddr = base + i;
 			break;
@@ -74,7 +74,7 @@ static bool searchAndPatch(char* name, char* base, char* signature, int length, 
 	}
 
 	if (patchAddr == NULL) {
-		AppLog(@"hook fails line %d", __LINE__);
+		AppLog(@"hook %s fails line %d", name, __LINE__);
 		return FALSE;
 	}
 
@@ -121,7 +121,7 @@ static int hooked___fcntl(int fildes, int cmd, void* param) {
 
 		// Check if the file is our "in-memory" file
 		if (__fcntl(fildes, F_GETPATH, filePath) != -1) {
-			const char* homeDir = getenv("LC_HOME_PATH");
+			const char* homeDir = getenv("GC_HOME_PATH");
 			if (!strncmp(filePath, homeDir, strlen(homeDir))) {
 				fsignatures_t* fsig = (fsignatures_t*)param;
 				// called to check that cert covers file.. so we'll make it cover everything ;)

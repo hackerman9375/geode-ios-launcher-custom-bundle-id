@@ -22,14 +22,12 @@ void LCPatchAltStore(const char* path, struct mach_header_64* header);
 @interface LCUtils : NSObject
 
 + (void)validateJITLessSetupWithSigner:(Signer)signer completionHandler:(void (^)(BOOL success, NSError* error))completionHandler;
-+ (NSURL*)archiveIPAWithBundleName:(NSString*)newBundleName error:(NSError**)error;
 + (NSURL*)archiveTweakedAltStoreWithError:(NSError**)error;
 + (NSData*)certificateData;
 + (NSString*)certificatePassword;
 
 + (BOOL)askForJIT;
 + (BOOL)launchToGuestApp;
-+ (BOOL)launchToGuestAppWithURL:(NSURL*)url;
 
 + (void)removeCodeSignatureFromBundleURL:(NSURL*)appURL;
 + (NSProgress*)signAppBundle:(NSURL*)path completionHandler:(void (^)(BOOL success, NSDate* expirationDate, NSString* teamId, NSError* error))completionHandler;

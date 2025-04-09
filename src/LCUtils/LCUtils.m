@@ -25,7 +25,7 @@ Class LCSharedUtilsClass = nil;
 @implementation LCUtils
 
 + (void)load {
-	LCSharedUtilsClass = NSClassFromString(@"LCSharedUtils");
+	LCSharedUtilsClass = NSClassFromString(@"GCSharedUtils");
 }
 
 #pragma mark Certificate & password
@@ -63,7 +63,9 @@ Class LCSharedUtilsClass = nil;
 + (BOOL)launchToGuestApp {
 	if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"])
 		return NO;
-	if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"] && [Utils isJailbroken]) {
+	if (NSClassFromString(@"LCSharedUtils"))
+		return NO;
+	if (![Utils isSandboxed]) {
 		NSString* appBundleIdentifier = @"com.robtop.geometryjump";
 		[[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
 		return YES;
@@ -75,10 +77,6 @@ Class LCSharedUtilsClass = nil;
 
 + (BOOL)askForJIT {
 	return [LCSharedUtilsClass askForJIT];
-}
-
-+ (BOOL)launchToGuestAppWithURL:(NSURL*)url {
-	return [LCSharedUtilsClass launchToGuestAppWithURL:url];
 }
 
 #pragma mark Code signing
@@ -390,82 +388,6 @@ Class LCSharedUtilsClass = nil;
 			dispatch_async(dispatch_get_main_queue(), ^{ completionHandler(success, error); });
 		}];
 	}
-}
-
-+ (NSURL*)archiveIPAWithBundleName:(NSString*)newBundleName error:(NSError**)error {
-	if (*error)
-		return nil;
-
-	NSFileManager* manager = NSFileManager.defaultManager;
-	NSURL* appGroupPath = [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:self.appGroupID];
-	NSURL* bundlePath = [appGroupPath URLByAppendingPathComponent:@"Apps/com.geode.launcher"];
-
-	NSURL* tmpPath = [appGroupPath URLByAppendingPathComponent:@"tmp"];
-	[manager removeItemAtURL:tmpPath error:nil];
-
-	NSURL* tmpPayloadPath = [tmpPath URLByAppendingPathComponent:@"Payload"];
-	NSURL* tmpIPAPath = [appGroupPath URLByAppendingPathComponent:@"tmp.ipa"];
-
-	[manager createDirectoryAtURL:tmpPath withIntermediateDirectories:YES attributes:nil error:error];
-	if (*error)
-		return nil;
-
-	[manager copyItemAtURL:bundlePath toURL:tmpPayloadPath error:error];
-	if (*error)
-		return nil;
-
-	NSURL* infoPath = [tmpPayloadPath URLByAppendingPathComponent:@"App.app/Info.plist"];
-	NSMutableDictionary* infoDict = [NSMutableDictionary dictionaryWithContentsOfURL:infoPath];
-	if (!infoDict)
-		return nil;
-
-	infoDict[@"CFBundleDisplayName"] = newBundleName;
-	infoDict[@"CFBundleName"] = newBundleName;
-	infoDict[@"CFBundleIdentifier"] = [NSString stringWithFormat:@"com.kdt.%@", newBundleName];
-	infoDict[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0] = [newBundleName lowercaseString];
-	infoDict[@"CFBundleIcons~ipad"][@"CFBundlePrimaryIcon"][@"CFBundleIconFiles"][0] = @"AppIcon60x60_2";
-	infoDict[@"CFBundleIcons~ipad"][@"CFBundlePrimaryIcon"][@"CFBundleIconFiles"][1] = @"AppIcon76x76_2";
-	infoDict[@"CFBundleIcons"][@"CFBundlePrimaryIcon"][@"CFBundleIconFiles"][0] = @"AppIcon60x60_2";
-	// reset a executable name so they don't look the same on the log
-	NSURL* appBundlePath = [tmpPayloadPath URLByAppendingPathComponent:@"App.app"];
-
-	NSURL* execFromPath = [appBundlePath URLByAppendingPathComponent:infoDict[@"CFBundleExecutable"]];
-	infoDict[@"CFBundleExecutable"] = @"GeodeLauncher_PleaseDoNotShortenTheExecutableNameBecauseItIsUsedToReserveSpaceForOverwritingThankYou2";
-	NSURL* execToPath = [appBundlePath URLByAppendingPathComponent:infoDict[@"CFBundleExecutable"]];
-
-	[manager moveItemAtURL:execFromPath toURL:execToPath error:error];
-	if (*error) {
-		AppLog(@"%@", *error);
-		return nil;
-	}
-
-	// We have to change executable's UUID so iOS won't consider 2 executables the same
-	NSString* errorChangeUUID = LCParseMachO([execToPath.path UTF8String], ^(const char* path, struct mach_header_64* header) { LCChangeExecUUID(header); });
-	if (errorChangeUUID) {
-		NSMutableDictionary* details = [NSMutableDictionary dictionary];
-		[details setValue:errorChangeUUID forKey:NSLocalizedDescriptionKey];
-		// populate the error object with the details
-		*error = [NSError errorWithDomain:@"world" code:200 userInfo:details];
-		AppLog(@"%@", errorChangeUUID);
-		return nil;
-	}
-
-	[infoDict writeToURL:infoPath error:error];
-
-	dlopen("/System/Library/PrivateFrameworks/PassKitCore.framework/PassKitCore", RTLD_GLOBAL);
-	NSData* zipData = [[NSClassFromString(@"PKZipArchiver") new] zippedDataForURL:tmpPayloadPath.URLByDeletingLastPathComponent];
-	if (!zipData)
-		return nil;
-
-	[manager removeItemAtURL:tmpPath error:error];
-	if (*error)
-		return nil;
-
-	[zipData writeToURL:tmpIPAPath options:0 error:error];
-	if (*error)
-		return nil;
-
-	return tmpIPAPath;
 }
 
 + (NSURL*)archiveTweakedAltStoreWithError:(NSError**)error {

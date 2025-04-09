@@ -1,14 +1,19 @@
 @import UIKit;
-#import "src/LCUtils/LCSharedUtils.h"
+#import "src/LCUtils/GCSharedUtils.h"
 #import "src/LCUtils/UIKitPrivate.h"
 #import "utils.h"
 #import <LocalAuthentication/LocalAuthentication.h>
 
-UIInterfaceOrientation LCOrientationLock = UIInterfaceOrientationLandscapeRight;
 NSMutableArray<NSString*>* LCSupportedUrlSchemes = nil;
+BOOL usingLiveContainer;
 
 __attribute__((constructor))
 static void UIKitGuestHooksInit() {
+	if (NSClassFromString(@"LCSharedUtils")) {
+		usingLiveContainer = YES;
+	} else {
+		usingLiveContainer = NO;
+	}
     swizzle(UIApplication.class, @selector(_applicationOpenURLAction:payload:origin:), @selector(hook__applicationOpenURLAction:payload:origin:));
     swizzle(UIApplication.class, @selector(_connectUISceneFromFBSScene:transitionContext:), @selector(hook__connectUISceneFromFBSScene:transitionContext:));
     swizzle(UIApplication.class, @selector(openURL:options:completionHandler:), @selector(hook_openURL:options:completionHandler:));
@@ -34,64 +39,13 @@ NSString* findDefaultContainerWithBundleId(NSString* bundleId) {
     NSString* bundleInfoPath = [NSString stringWithFormat:@"%@/Applications/%@/LCAppInfo.plist", appGroupFolder, bundleId];
     NSDictionary* infoDict = [NSDictionary dictionaryWithContentsOfFile:bundleInfoPath];
     if(!infoDict) {
-        NSString* lcDocFolder = [[NSString stringWithUTF8String:getenv("LC_HOME_PATH")] stringByAppendingPathComponent:@"Documents"];
+        NSString* lcDocFolder = [[NSString stringWithUTF8String:getenv("GC_HOME_PATH")] stringByAppendingPathComponent:@"Documents"];
         
         bundleInfoPath = [NSString stringWithFormat:@"%@/Applications/%@/LCAppInfo.plist", lcDocFolder, bundleId];
         infoDict = [NSDictionary dictionaryWithContentsOfFile:bundleInfoPath];
     }
     
     return infoDict[@"LCDataUUID"];
-}
-
-
-void LCShowSwitchAppConfirmation(NSURL *url, NSString* bundleId) {
-    if ([NSUserDefaults.gcUserDefaults boolForKey:@"LCSwitchAppWithoutAsking"]) {
-        [NSClassFromString(@"LCSharedUtils") launchToGuestAppWithURL:url];
-        return;
-    }
-
-    UIWindow *window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Geode" message:@"switch app" preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"lc.common.ok" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
-        [NSClassFromString(@"LCSharedUtils") launchToGuestAppWithURL:url];
-        window.windowScene = nil;
-    }];
-    [alert addAction:okAction];
-    if([NSUserDefaults.gcAppUrlScheme isEqualToString:@"geode"] && [UIApplication.sharedApplication canOpenURL:[NSURL URLWithString: @"geode://"]]) {
-        UIAlertAction* openlc2Action = [UIAlertAction actionWithTitle:@"lc.guestTweak.openInLc2" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
-            NSURLComponents* newUrlComp = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
-            [newUrlComp setScheme:@"geode"];
-            [UIApplication.sharedApplication openURL:[newUrlComp URL] options:@{} completionHandler:nil];
-            window.windowScene = nil;
-        }];
-        [alert addAction:openlc2Action];
-    }
-    
-    UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"lc.common.cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * action) {
-        window.windowScene = nil;
-    }];
-    [alert addAction:cancelAction];
-    window.rootViewController = [UIViewController new];
-    window.windowLevel = UIApplication.sharedApplication.windows.lastObject.windowLevel + 1;
-    window.windowScene = (id)UIApplication.sharedApplication.connectedScenes.anyObject;
-    [window makeKeyAndVisible];
-    [window.rootViewController presentViewController:alert animated:YES completion:nil];
-    objc_setAssociatedObject(alert, @"window", window, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-}
-
-void LCShowAppNotFoundAlert(NSString* bundleId) {
-    UIWindow *window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Geode" message:@"lc.guestTweak.error.bundleNotFound" preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"lc.common.ok" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
-        window.windowScene = nil;
-    }];
-    [alert addAction:okAction];
-    window.rootViewController = [UIViewController new];
-    window.windowLevel = UIApplication.sharedApplication.windows.lastObject.windowLevel + 1;
-    window.windowScene = (id)UIApplication.sharedApplication.connectedScenes.anyObject;
-    [window makeKeyAndVisible];
-    [window.rootViewController presentViewController:alert animated:YES completion:nil];
-    objc_setAssociatedObject(alert, @"window", window, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
 void openUniversalLink(NSString* decodedUrl) {
@@ -134,8 +88,8 @@ void LCOpenWebPage(NSString* webPageUrlString, NSString* originalUrl) {
     UIWindow *window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Geode" message:message preferredStyle:UIAlertControllerStyleAlert];
     UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"lc.common.ok" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
-        [NSClassFromString(@"LCSharedUtils") setWebPageUrlForNextLaunch:webPageUrlString];
-        [NSClassFromString(@"LCSharedUtils") launchToGuestApp];
+        [NSClassFromString(@"GCSharedUtils") setWebPageUrlForNextLaunch:webPageUrlString];
+        [NSClassFromString(@"GCSharedUtils") launchToGuestApp];
     }];
     [alert addAction:okAction];
     UIAlertAction* openNowAction = [UIAlertAction actionWithTitle:@"lc.guestTweak.openInCurrentApp" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
@@ -163,8 +117,6 @@ void LCOpenWebPage(NSString* webPageUrlString, NSString* originalUrl) {
     [window makeKeyAndVisible];
     [window.rootViewController presentViewController:alert animated:YES completion:nil];
     objc_setAssociatedObject(alert, @"window", window, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    
-
 }
 
 void handleLiveContainerLaunch(NSURL* url) {
@@ -193,23 +145,11 @@ void handleLiveContainerLaunch(NSURL* url) {
             openUniversalLink(openUrl);
         }
     } else {
-        NSString* runningLC = [NSClassFromString(@"LCSharedUtils") getContainerUsingLCSchemeWithFolderName:containerFolderName];
+        NSString* runningLC = [NSClassFromString(@"GCSharedUtils") getContainerUsingLCSchemeWithFolderName:containerFolderName];
         if(runningLC) {
             NSString* urlStr = [NSString stringWithFormat:@"%@://geode-launch?bundle-name=%@&container-folder-name=%@", runningLC, bundleName, containerFolderName];
             [UIApplication.sharedApplication openURL:[NSURL URLWithString:urlStr] options:@{} completionHandler:nil];
             return;
-        }
-        
-        NSBundle* bundle = [NSClassFromString(@"LCSharedUtils") findBundleWithBundleId: bundleName];
-        NSDictionary* lcAppInfo;
-        if(bundle) {
-            lcAppInfo = [NSDictionary dictionaryWithContentsOfURL:[bundle URLForResource:@"LCAppInfo" withExtension:@"plist"]];
-        }
-        
-        if(!bundle || ([lcAppInfo[@"isHidden"] boolValue] && [NSUserDefaults.gcSharedDefaults boolForKey:@"LCStrictHiding"])) {
-            LCShowAppNotFoundAlert(bundleName);
-        } else {
-            LCShowSwitchAppConfirmation(url, bundleName);
         }
     }
 }
@@ -231,7 +171,7 @@ BOOL canAppOpenItself(NSURL* url) {
 }
 
 // Handler for AppDelegate
-@implementation UIApplication(LiveContainerHook)
+@implementation UIApplication(GeodeHook)
 - (void)hook__applicationOpenURLAction:(id)action payload:(NSDictionary *)payload origin:(id)origin {
     NSString *url = payload[UIApplicationLaunchOptionsURLKey];
     if ([url hasPrefix:[NSString stringWithFormat: @"%@://geode-relaunch", NSUserDefaults.gcAppUrlScheme]]) {
@@ -284,29 +224,39 @@ BOOL canAppOpenItself(NSURL* url) {
     BOOL ans = [self hook__handleDelegateCallbacksWithOptions:arg1 isSuspended:arg2 restoreState:arg3];
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-//        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:@"com.apple.springboard"];
-            [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:NSUserDefaults.gcMainBundle.bundleIdentifier];
+            if (usingLiveContainer) {
+                if (NSClassFromString(@"LCSharedUtils")) {
+                    NSString *bundleId = [NSClassFromString(@"GCSharedUtils") liveContainerBundleID];
+                    NSLog(@"[GuestHook] Found %@ as the bundle ID!", bundleId);
+                    if (bundleId) {
+                        [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:bundleId];
+                    }
+                }
+            } else {
+                [[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:NSUserDefaults.gcMainBundle.bundleIdentifier];
+            }
         });
-
     });
-
-
     return ans;
 }
 
 - (void)hook_openURL:(NSURL *)url options:(NSDictionary<NSString *,id> *)options completionHandler:(void (^)(_Bool))completion {
     if ([url.host isEqualToString:@"relaunch"]) { // assume restart 
-        //[NSClassFromString(@"LCSharedUtils") launchToGuestApp];
-        UIWindow *window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
-        window.rootViewController = [UIViewController new];
-        window.windowLevel = UIApplication.sharedApplication.windows.lastObject.windowLevel + 1;
-        window.windowScene = (id)UIApplication.sharedApplication.connectedScenes.anyObject;
-        [window makeKeyAndVisible];
+        //[NSClassFromString(@"GCSharedUtils") launchToGuestApp];
+        if (!usingLiveContainer) {
+            UIWindow *window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
+            window.rootViewController = [UIViewController new];
+            window.windowLevel = UIApplication.sharedApplication.windows.lastObject.windowLevel + 1;
+            window.windowScene = (id)UIApplication.sharedApplication.connectedScenes.anyObject;
+            [window makeKeyAndVisible];
 
-        [NSClassFromString(@"LCSharedUtils") relaunchApp];
-        window.windowScene = nil;
+            [NSClassFromString(@"GCSharedUtils") relaunchApp];
+            window.windowScene = nil;
+        } else {
+            [NSClassFromString(@"GCSharedUtils") relaunchApp];
+        }
         //[UIApplication.sharedApplication suspend];
         return;
     }
@@ -331,7 +281,7 @@ BOOL canAppOpenItself(NSURL* url) {
 @end
 
 // Handler for SceneDelegate
-@implementation UIScene(LiveContainerHook)
+@implementation UIScene(GeodeHook)
 - (void)hook_scene:(id)scene didReceiveActions:(NSSet *)actions fromTransitionContext:(id)context {
     UIOpenURLAction *urlAction = nil;
     for (id obj in actions.allObjects) {
@@ -401,15 +351,14 @@ BOOL canAppOpenItself(NSURL* url) {
 }
 @end
 
-@implementation FBSSceneParameters(LiveContainerHook)
+@implementation FBSSceneParameters(GeodeHook)
 - (instancetype)hook_initWithXPCDictionary:(NSDictionary*)dict {
-
     FBSSceneParameters* ans = [self hook_initWithXPCDictionary:dict];
     UIMutableApplicationSceneSettings* settings = [ans.settings mutableCopy];
     UIMutableApplicationSceneClientSettings* clientSettings = [ans.clientSettings mutableCopy];
     if ([NSUserDefaults.gcUserDefaults boolForKey:@"FIX_ROTATION"]) {
-        [settings setInterfaceOrientation:LCOrientationLock];
-        [clientSettings setInterfaceOrientation:LCOrientationLock];
+        [settings setInterfaceOrientation:UIInterfaceOrientationLandscapeRight];
+        [clientSettings setInterfaceOrientation:UIInterfaceOrientationLandscapeRight];
     }
     ans.settings = settings;
     ans.clientSettings = clientSettings;
@@ -417,18 +366,13 @@ BOOL canAppOpenItself(NSURL* url) {
 }
 @end
 
-
-
-@implementation UIViewController(LiveContainerHook)
-
+@implementation UIViewController(GeodeHook)
 - (UIInterfaceOrientationMask)hook___supportedInterfaceOrientations {
     return UIInterfaceOrientationMaskLandscape;
 }
-
 - (BOOL)hook_shouldAutorotateToInterfaceOrientation:(NSInteger)orientation {
     return YES;
 }
-
 @end
 
 @implementation UIWindow(hook)

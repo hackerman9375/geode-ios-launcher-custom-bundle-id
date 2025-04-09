@@ -1,4 +1,4 @@
-#import "LCSharedUtils.h"
+#import "GCSharedUtils.h"
 #import "UIKitPrivate.h"
 #import "src/LCUtils/LCAppInfo.h"
 #import "src/LCUtils/LCUtils.h"
@@ -10,7 +10,20 @@ extern NSUserDefaults* gcUserDefaults;
 extern NSString* gcAppUrlScheme;
 extern NSBundle* gcMainBundle;
 
-@implementation LCSharedUtils
+@implementation GCSharedUtils
+
++ (NSString*)liveContainerBundleID {
+	if (NSClassFromString(@"LCSharedUtils")) {
+		NSString* lastID = [NSClassFromString(@"LCSharedUtils") teamIdentifier];
+		if (lastID == nil)
+			return nil;
+		if ([lastID isEqualToString:@"livecontainer"])
+			return @"com.kdt.livecontainer";
+		return [NSString stringWithFormat:@"com.kdt.livecontainer.%@", lastID];
+	} else {
+		return nil;
+	}
+}
 
 + (NSString*)teamIdentifier {
 	static NSString* ans = nil;
@@ -43,7 +56,7 @@ extern NSBundle* gcMainBundle;
 + (NSURL*)appGroupPath {
 	static NSURL* appGroupPath = nil;
 	static dispatch_once_t onceToken;
-	dispatch_once(&onceToken, ^{ appGroupPath = [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[LCSharedUtils appGroupID]]; });
+	dispatch_once(&onceToken, ^{ appGroupPath = [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[GCSharedUtils appGroupID]]; });
 	return appGroupPath;
 }
 
@@ -62,10 +75,44 @@ extern NSBundle* gcMainBundle;
 	}
 }
 
++ (BOOL)launchToGuestAppWithURL:(NSURL*)url {
+	return NO;
+}
+
 + (void)relaunchApp {
 	[gcUserDefaults setValue:[Utils gdBundleName] forKey:@"selected"];
 	[gcUserDefaults setValue:@"GeometryDash" forKey:@"selectedContainer"];
-	if ([gcUserDefaults boolForKey:@"USE_TWEAK"] && [Utils isJailbroken]) {
+	if (NSClassFromString(@"LCSharedUtils")) {
+		[gcUserDefaults synchronize];
+		NSFileManager* fm = [NSFileManager defaultManager];
+
+		[fm createFileAtPath:[[LCPath docPath].path stringByAppendingPathComponent:@"../../../../jitflag"] contents:[[NSData alloc] init] attributes:@{}];
+		UIApplication* application = [NSClassFromString(@"UIApplication") sharedApplication];
+		// assume livecontainer
+		NSURL* launchURL = [NSURL URLWithString:[NSString stringWithFormat:@"livecontainer://livecontainer-launch?bundle-name=%@.app", gcMainBundle.bundleIdentifier]];
+		NSURL* launchURL2 = [NSURL URLWithString:[NSString stringWithFormat:@"livecontainer2://livecontainer-launch?bundle-name=%@.app", gcMainBundle.bundleIdentifier]];
+		AppLog(@"Attempting to launch geode with %@", launchURL);
+
+		// since for some reason it doesnt do a JIT check for launchToGuestAppWithURL, otherwise itll error with "jit isn't enabled! wanna enable jitless?". Fix it!
+		[NSClassFromString(@"LCSharedUtils") launchToGuestApp];
+		return;
+		if ([application canOpenURL:launchURL]) {
+			[NSClassFromString(@"LCSharedUtils") launchToGuestAppWithURL:launchURL];
+			/*dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+				[application openURL:launchURL options:@{} completionHandler:^(BOOL b) {
+					exit(0);
+					// weird trickery, never mind it causes a crash!
+					/\*if (![NSClassFromString(@"LCSharedUtils") askForJIT])
+						return;
+					[NSClassFromString(@"LCSharedUtils") launchToGuestApp];*\/
+				}];
+			});*/
+		} else if ([application canOpenURL:launchURL2]) {
+			[NSClassFromString(@"LCSharedUtils") launchToGuestAppWithURL:launchURL2];
+		}
+		return;
+	}
+	if (![Utils isSandboxed]) {
 		NSString* appBundleIdentifier = @"com.robtop.geometryjump";
 		[[LSApplicationWorkspace defaultWorkspace] openApplicationWithBundleID:appBundleIdentifier];
 		exit(0);
@@ -85,30 +132,33 @@ extern NSBundle* gcMainBundle;
 				[LCUtils launchToGuestApp];
 			}];
 	} else {
-		if (![LCSharedUtils askForJIT])
+		if (![GCSharedUtils askForJIT])
 			return;
-		[LCSharedUtils launchToGuestApp];
+		[GCSharedUtils launchToGuestApp];
 	}
 }
 
 + (BOOL)launchToGuestApp {
 	UIApplication* application = [NSClassFromString(@"UIApplication") sharedApplication];
 	NSString* urlScheme;
-
-	NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", gcMainBundle.bundlePath];
 	int tries = 1;
-	if (!access(tsPath.UTF8String, F_OK)) {
-		urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
-	} else if ([application canOpenURL:[NSURL URLWithString:@"stikjit://"]]) {
-		urlScheme = @"stikjit://enable-jit?bundle-id=%@";
-	} else if ([application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) {
-		urlScheme = @"sidestore://sidejit-enable?bid=%@";
-	} else if (self.certificatePassword) {
-		tries = 2;
-		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
+	if (NSClassFromString(@"LCSharedUtils")) {
+		// urlScheme = @"livecontainer://livecontainer-launch?bundle-name=%@.app";
 	} else {
-		tries = 2;
-		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
+		NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", gcMainBundle.bundlePath];
+		if (!access(tsPath.UTF8String, F_OK)) {
+			urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
+		} else if ([application canOpenURL:[NSURL URLWithString:@"stikjit://"]]) {
+			urlScheme = @"stikjit://enable-jit?bundle-id=%@";
+		} else if ([application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) {
+			urlScheme = @"sidestore://sidejit-enable?bid=%@";
+		} else if (self.certificatePassword) {
+			tries = 2;
+			urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
+		} else {
+			tries = 2;
+			urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
+		}
 	}
 	NSURL* launchURL = [NSURL URLWithString:[NSString stringWithFormat:urlScheme, gcMainBundle.bundleIdentifier]];
 	AppLog(@"Attempting to launch geode with %@", launchURL);
@@ -139,7 +189,9 @@ extern NSBundle* gcMainBundle;
 	NSURLSessionDataTask* task = [session dataTaskWithRequest:req completionHandler:^(NSData* _Nullable data, NSURLResponse* _Nullable response, NSError* _Nullable error) {
 		if (error) {
 			return dispatch_async(dispatch_get_main_queue(), ^{
-				[Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer.\nIf you don't have JITStreamer-EB, disable Auto JIT and use \"Manual reopen with JIT\" if launching doesn't work.", sideJITServerAddress, gcMainBundle.bundleIdentifier]
+				[Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer.\nIf you don't have JITStreamer-EB, disable Auto JIT and use "
+																  @"\"Manual reopen with JIT\" if launching doesn't work.",
+																  sideJITServerAddress, gcMainBundle.bundleIdentifier]
 								 error:error];
 				AppLog(@"Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
 			});
@@ -149,67 +201,16 @@ extern NSBundle* gcMainBundle;
 	return NO;
 }
 
-+ (BOOL)launchToGuestAppWithURL:(NSURL*)url {
-	NSURLComponents* components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
-	if (![components.host isEqualToString:@"geode-launch"])
-		return NO;
-
-	NSString* launchBundleId = nil;
-	NSString* openUrl = nil;
-	for (NSURLQueryItem* queryItem in components.queryItems) {
-		if ([queryItem.name isEqualToString:@"bundle-name"]) {
-			launchBundleId = queryItem.value;
-		} else if ([queryItem.name isEqualToString:@"open-url"]) {
-			NSData* decodedData = [[NSData alloc] initWithBase64EncodedString:queryItem.value options:0];
-			openUrl = [[NSString alloc] initWithData:decodedData encoding:NSUTF8StringEncoding];
-		}
-	}
-	if (launchBundleId) {
-		if (openUrl) {
-			[gcUserDefaults setObject:openUrl forKey:@"launchAppUrlScheme"];
-		}
-		[gcUserDefaults setObject:launchBundleId forKey:@"selected"];
-		[gcUserDefaults setObject:@"GeometryDash" forKey:@"selectedContainer"];
-		return [self launchToGuestApp];
-	}
-	return NO;
-}
-
 + (void)setWebPageUrlForNextLaunch:(NSString*)urlString {
 	[gcUserDefaults setObject:urlString forKey:@"webPageToOpen"];
-}
-
-+ (NSURL*)appLockPath {
-	static dispatch_once_t once;
-	static NSURL* infoPath;
-
-	dispatch_once(&once, ^{ infoPath = [[LCSharedUtils appGroupPath] URLByAppendingPathComponent:@"Geode/appLock.plist"]; });
-	return infoPath;
 }
 
 + (NSURL*)containerLockPath {
 	static dispatch_once_t once;
 	static NSURL* infoPath;
 
-	dispatch_once(&once, ^{ infoPath = [[LCSharedUtils appGroupPath] URLByAppendingPathComponent:@"Geode/containerLock.plist"]; });
+	dispatch_once(&once, ^{ infoPath = [[GCSharedUtils appGroupPath] URLByAppendingPathComponent:@"Geode/containerLock.plist"]; });
 	return infoPath;
-}
-
-+ (NSString*)getAppRunningLCSchemeWithBundleId:(NSString*)bundleId {
-	NSURL* infoPath = [self appLockPath];
-	NSMutableDictionary* info = [NSMutableDictionary dictionaryWithContentsOfFile:infoPath.path];
-	if (!info) {
-		return nil;
-	}
-	for (NSString* key in info) {
-		if ([bundleId isEqualToString:info[key]]) {
-			if ([key isEqualToString:gcAppUrlScheme]) {
-				return nil;
-			}
-			return key;
-		}
-	}
-	return nil;
 }
 
 + (NSString*)getContainerUsingLCSchemeWithFolderName:(NSString*)folderName {
@@ -229,65 +230,12 @@ extern NSBundle* gcMainBundle;
 	return nil;
 }
 
-// if you pass null then remove this lc from appLock
-+ (void)setAppRunningByThisLC:(NSString*)bundleId {
-	NSURL* infoPath = [self appLockPath];
-
-	NSMutableDictionary* info = [NSMutableDictionary dictionaryWithContentsOfFile:infoPath.path];
-	if (!info) {
-		info = [NSMutableDictionary new];
-	}
-	if (bundleId == nil) {
-		[info removeObjectForKey:gcAppUrlScheme];
-	} else {
-		info[gcAppUrlScheme] = bundleId;
-	}
-	[info writeToFile:infoPath.path atomically:YES];
-}
-
-+ (void)setContainerUsingByThisLC:(NSString*)folderName {
-	NSURL* infoPath = [self containerLockPath];
-
-	NSMutableDictionary* info = [NSMutableDictionary dictionaryWithContentsOfFile:infoPath.path];
-	if (!info) {
-		info = [NSMutableDictionary new];
-	}
-	if (folderName == nil) {
-		[info removeObjectForKey:gcAppUrlScheme];
-	} else {
-		info[gcAppUrlScheme] = folderName;
-	}
-	[info writeToFile:infoPath.path atomically:YES];
-}
-
-+ (void)removeAppRunningByLC:(NSString*)LCScheme {
-	NSURL* infoPath = [self appLockPath];
-
-	NSMutableDictionary* info = [NSMutableDictionary dictionaryWithContentsOfFile:infoPath.path];
-	if (!info) {
-		return;
-	}
-	[info removeObjectForKey:LCScheme];
-	[info writeToFile:infoPath.path atomically:YES];
-}
-
-+ (void)removeContainerUsingByLC:(NSString*)LCScheme {
-	NSURL* infoPath = [self containerLockPath];
-
-	NSMutableDictionary* info = [NSMutableDictionary dictionaryWithContentsOfFile:infoPath.path];
-	if (!info) {
-		return;
-	}
-	[info removeObjectForKey:LCScheme];
-	[info writeToFile:infoPath.path atomically:YES];
-}
-
 // move app data to private folder to prevent 0xdead10cc https://forums.developer.apple.com/forums/thread/126438
 + (void)moveSharedAppFolderBack {
 	NSFileManager* fm = NSFileManager.defaultManager;
 	NSURL* libraryPathUrl = [fm URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask].lastObject;
 	NSURL* docPathUrl = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject;
-	NSURL* appGroupFolder = [[LCSharedUtils appGroupPath] URLByAppendingPathComponent:@"Geode"];
+	NSURL* appGroupFolder = [[GCSharedUtils appGroupPath] URLByAppendingPathComponent:@"Geode"];
 
 	NSError* error;
 	NSString* sharedAppDataFolderPath = [libraryPathUrl.path stringByAppendingPathComponent:@"SharedDocuments"];
@@ -310,7 +258,7 @@ extern NSBundle* gcMainBundle;
 }
 
 + (NSBundle*)findBundleWithBundleId:(NSString*)bundleId {
-	NSString* docPath = [NSString stringWithFormat:@"%s/Documents", getenv("LC_HOME_PATH")];
+	NSString* docPath = [NSString stringWithFormat:@"%s/Documents", getenv("GC_HOME_PATH")];
 
 	NSURL* appGroupFolder = nil;
 
@@ -318,7 +266,7 @@ extern NSBundle* gcMainBundle;
 	NSBundle* appBundle = [[NSBundle alloc] initWithPath:bundlePath];
 	// not found locally, let's look for the app in shared folder
 	if (!appBundle) {
-		appGroupFolder = [[LCSharedUtils appGroupPath] URLByAppendingPathComponent:@"Geode"];
+		appGroupFolder = [[GCSharedUtils appGroupPath] URLByAppendingPathComponent:@"Geode"];
 
 		bundlePath = [NSString stringWithFormat:@"%@/Applications/%@", appGroupFolder.path, bundleId];
 		appBundle = [[NSBundle alloc] initWithPath:bundlePath];
@@ -351,7 +299,7 @@ extern NSBundle* gcMainBundle;
 
 + (NSString*)findDefaultContainerWithBundleId:(NSString*)bundleId {
 	// find app's default container
-	NSURL* appGroupFolder = [[LCSharedUtils appGroupPath] URLByAppendingPathComponent:@"Geode"];
+	NSURL* appGroupFolder = [[GCSharedUtils appGroupPath] URLByAppendingPathComponent:@"Geode"];
 
 	NSString* bundleInfoPath = [NSString stringWithFormat:@"%@/Applications/%@/LCAppInfo.plist", appGroupFolder.path, bundleId];
 	NSDictionary* infoDict = [NSDictionary dictionaryWithContentsOfFile:bundleInfoPath];

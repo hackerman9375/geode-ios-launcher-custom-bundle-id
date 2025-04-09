@@ -1,6 +1,6 @@
 @import Foundation;
 #import "utils.h"
-#import "src/LCUtils/LCSharedUtils.h"
+#import "src/LCUtils/GCSharedUtils.h"
 
 BOOL isolateAppGroup = NO;
 __attribute__((constructor))
@@ -12,12 +12,11 @@ static void NSFMGuestHooksInit() {
 }
 
 // NSFileManager simulate app group
-@implementation NSFileManager(LiveContainerHooks)
-
+@implementation NSFileManager(GeodeHooks)
 - (nullable NSURL *)hook_containerURLForSecurityApplicationGroupIdentifier:(NSString *)groupIdentifier {
-    if([groupIdentifier isEqualToString:[NSClassFromString(@"LCSharedUtils") appGroupID]]) {
-        return [NSURL fileURLWithPath: NSUserDefaults.gcAppGroupPath];
-    }
+	if([groupIdentifier isEqualToString:[NSClassFromString(@"GCSharedUtils") appGroupID]]) {
+		return [NSURL fileURLWithPath: NSUserDefaults.gcAppGroupPath];
+	}
     NSURL *result;
     if(isolateAppGroup) {
         result = [NSURL fileURLWithPath:[NSString stringWithFormat:@"%s/LCAppGroup/%@", getenv("HOME"), groupIdentifier]];

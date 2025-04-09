@@ -1,4 +1,4 @@
-#import "LCUtils/LCSharedUtils.h"
+#import "LCUtils/GCSharedUtils.h"
 #import "LCUtils/Shared.h"
 #import "Utils.h"
 #import "WebServer.h"
@@ -21,7 +21,7 @@ extern NSBundle* gcMainBundle;
 		[self.webServer addGETHandlerForBasePath:@"/" directoryPath:websitePath indexFilename:nil cacheAge:0 allowRangeRequests:YES];
 
 		NSString* infoPlistPath;
-		if ([[Utils getPrefsGC] boolForKey:@"USE_TWEAK"]) {
+		if (![Utils isSandboxed]) {
 			infoPlistPath = [[Utils getGDBundlePath] stringByAppendingPathComponent:@"GeometryJump.app/Info.plist"];
 		} else {
 			if ([Utils isContainerized]) {
@@ -83,10 +83,10 @@ extern NSBundle* gcMainBundle;
 		[self.webServer addHandlerForMethod:@"POST" path:@"/launch" requestClass:[GCDWebServerRequest class] processBlock:^GCDWebServerResponse*(GCDWebServerRequest* request) {
 			GCDWebServerDataResponse* response = [GCDWebServerDataResponse responseWithStatusCode:200];
 			if ([Utils isContainerized]) {
-				[NSClassFromString(@"LCSharedUtils") relaunchApp];
+				[NSClassFromString(@"GCSharedUtils") relaunchApp];
 				return response;
 			}
-			if ([[Utils getPrefsGC] boolForKey:@"MANUAL_REOPEN"] && ![[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+			if (([[Utils getPrefsGC] boolForKey:@"MANUAL_REOPEN"] && ![Utils isSandboxed]) || NSClassFromString(@"LCSharedUtils")) {
 				[[Utils getPrefsGC] setValue:[Utils gdBundleName] forKey:@"selected"];
 				[[Utils getPrefsGC] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 				[[Utils getPrefsGC] setBool:NO forKey:@"safemode"];
@@ -96,7 +96,7 @@ extern NSBundle* gcMainBundle;
 				[Utils showNoticeGlobal:@"launcher.relaunch-notice".loc];
 				return response;
 			}
-			if ([[Utils getPrefsGC] boolForKey:@"USE_TWEAK"]) {
+			if (![Utils isSandboxed]) {
 				[Utils tweakLaunch_withSafeMode:false];
 				return response;
 			}
@@ -151,7 +151,7 @@ extern NSBundle* gcMainBundle;
 									   AppLog(@"[Server] Getting Geode dylib path...");
 									   NSString* docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
 									   NSString* tweakPath = [NSString stringWithFormat:@"%@/Tweaks/Geode.ios.dylib", docPath];
-									   if ([[Utils getPrefsGC] boolForKey:@"USE_TWEAK"]) {
+									   if (![Utils isSandboxed]) {
 										   NSString* applicationSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
 										   if (applicationSupportDirectory != nil) {
 											   // https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m

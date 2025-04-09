@@ -103,7 +103,7 @@
 		[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 		[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 		[[Utils getPrefs] setBool:NO forKey:@"safemode"];
-		if ([url.host isEqualToString:@"relaunch"] && [[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+		if ([url.host isEqualToString:@"relaunch"] && ![Utils isSandboxed]) {
 			pid_t pid;
 			int status;
 			// sorry, -9 or itll show crash log...

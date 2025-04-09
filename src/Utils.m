@@ -1,4 +1,4 @@
-#import "LCUtils/LCSharedUtils.h"
+#import "LCUtils/GCSharedUtils.h"
 #import "LCUtils/Shared.h"
 #import "Utils.h"
 #import "components/LogUtils.h"
@@ -396,7 +396,7 @@ extern NSUserDefaults* gcUserDefaults;
 }
 + (NSString*)docPath {
 	NSString* path;
-	if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+	if (![Utils isSandboxed]) {
 		path = [[Utils getGDDocPath] stringByAppendingString:@"Documents/"];
 	} else {
 		path = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/"].path;

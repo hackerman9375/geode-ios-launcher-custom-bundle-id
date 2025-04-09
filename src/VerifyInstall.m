@@ -233,7 +233,7 @@ BOOL hasDoneUpdate = NO;
 
 // after the user installed geode itself
 + (BOOL)verifyGeodeInstalled {
-	if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+	if (![Utils isSandboxed]) {
 		NSString* applicationSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
 		if (applicationSupportDirectory != nil) {
 			return [[NSFileManager defaultManager] fileExistsAtPath:[applicationSupportDirectory stringByAppendingString:@"/GeometryDash/game/geode/Geode.ios.dylib"]];

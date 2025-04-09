@@ -1,8 +1,9 @@
 #import "LCUtils/FoundationPrivate.h"
-#import "LCUtils/LCSharedUtils.h"
+#import "LCUtils/GCSharedUtils.h"
 #import "LCUtils/UIKitPrivate.h"
 #import "LCUtils/utils.h"
 #import "Utils.h"
+#import "components/LogUtils.h"
 #import <Foundation/Foundation.h>
 
 #include <mach-o/dyld.h>
@@ -30,7 +31,11 @@ NSString* gcAppUrlScheme;
 NSBundle* gcMainBundle;
 NSDictionary* guestAppInfo;
 
+BOOL usingLiveContainer;
+
 void NUDGuestHooksInit();
+
+void UIAGuestHooksInit();
 
 @implementation NSUserDefaults (Geode)
 + (instancetype)gcUserDefaults {
@@ -166,6 +171,7 @@ static void overwriteExecPath(NSString* bundlePath) {
 	close(open(newPath, O_CREAT | S_IRUSR | S_IWUSR));
 
 	// Make it RW and overwrite now
+	// | VM_PROT_COPY
 	kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)path, maxLen, false, PROT_READ | PROT_WRITE);
 	assert(ret == KERN_SUCCESS);
 	bzero(path, maxLen);
@@ -240,10 +246,16 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 
 	NSString* bundlePath = [NSString stringWithFormat:@"%@/Applications/%@", docPath, selectedApp];
 	NSBundle* appBundle = [[NSBundle alloc] initWithPath:bundlePath];
+	NSString* tweakFolder = nil;
+	if (docPath != nil) {
+		tweakFolder = [docPath stringByAppendingPathComponent:@"Tweaks"];
+	}
+
 	bool isSharedBundle = false;
 	// not found locally, let's look for the app in shared folder
 	if (!appBundle) {
-		NSURL* appGroupPath = [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[LCSharedUtils appGroupID]];
+		AppLog(@"[invokeAppMain] Couldn't find appBundle, finding locally...");
+		NSURL* appGroupPath = [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[GCSharedUtils appGroupID]];
 		appGroupFolder = [appGroupPath URLByAppendingPathComponent:@"Geode"];
 
 		bundlePath = [NSString stringWithFormat:@"%@/Applications/%@", appGroupFolder.path, selectedApp];
@@ -258,50 +270,44 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 
 	// find container in Info.plist
 	NSString* dataUUID = selectedContainer;
-	if (!dataUUID) {
-		dataUUID = guestAppInfo[@"LCDataUUID"];
-	}
-
 	if (dataUUID == nil) {
 		return @"Container not found!";
 	}
 
-	if (isSharedBundle) {
-		[LCSharedUtils setAppRunningByThisLC:selectedApp];
-		[LCSharedUtils setContainerUsingByThisLC:dataUUID];
-	}
-
 	NSError* error;
+	if (tweakFolder != nil) {
+		setenv("GC_GLOBAL_TWEAKS_FOLDER", tweakFolder.UTF8String, 1);
 
-	// Setup tweak loader
-	NSString* tweakFolder = nil;
-	if (isSharedBundle) {
-		tweakFolder = [appGroupFolder.path stringByAppendingPathComponent:@"Tweaks"];
-	} else {
-		tweakFolder = [docPath stringByAppendingPathComponent:@"Tweaks"];
-	}
-	setenv("LC_GLOBAL_TWEAKS_FOLDER", tweakFolder.UTF8String, 1);
-
-	// Update TweakLoader symlink
-	NSString* tweakLoaderPath = [tweakFolder stringByAppendingPathComponent:@"TweakLoader.dylib"];
-	if (![fm fileExistsAtPath:tweakLoaderPath]) {
-		remove(tweakLoaderPath.UTF8String);
-		NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"TweakLoader.dylib"];
-		symlink(target.UTF8String, tweakLoaderPath.UTF8String);
-	}
-
-	if ([gcUserDefaults boolForKey:@"WEB_SERVER"]) {
-		NSString* webServerPath = [tweakFolder stringByAppendingPathComponent:@"WebServer.dylib"];
-		if (![fm fileExistsAtPath:webServerPath]) {
-			remove(webServerPath.UTF8String);
-			NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"WebServer.dylib"];
-			symlink(target.UTF8String, webServerPath.UTF8String);
+		// Update TweakLoader symlink
+		NSString* tweakLoaderPath = [tweakFolder stringByAppendingPathComponent:@"TweakLoader.dylib"];
+		if (![fm fileExistsAtPath:tweakLoaderPath]) {
+			AppLog(@"invokeAppMain - Creating TweakLoader.dylib symlink");
+			remove(tweakLoaderPath.UTF8String);
+			NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"TweakLoader.dylib"];
+			symlink(target.UTF8String, tweakLoaderPath.UTF8String);
 		}
-	}
 
+		if ([gcUserDefaults boolForKey:@"WEB_SERVER"]) {
+			NSString* webServerPath = [tweakFolder stringByAppendingPathComponent:@"WebServer.dylib"];
+			if (![fm fileExistsAtPath:webServerPath]) {
+				AppLog(@"[invokeAppMain] Creating WebServer.dylib symlink");
+				remove(webServerPath.UTF8String);
+				NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"WebServer.dylib"];
+				symlink(target.UTF8String, webServerPath.UTF8String);
+			}
+		}
+	} else {
+		AppLog(@"[invokeAppMain] Couldn't find tweak folder!");
+	}
 	// If JIT is enabled, bypass library validation so we can load arbitrary binaries
-	if (checkJITEnabled()) {
-		init_bypassDyldLibValidation();
+
+	if (!usingLiveContainer) {
+		if (checkJITEnabled()) { // lc already hooks it so it's unnecessary to do it again...
+			init_bypassDyldLibValidation();
+		}
+		AppLog(@"[invokeAppMain] JIT pass (2/2) & Bypassed Dyld-lib validation!");
+	} else {
+		AppLog(@"[invokeAppMain] Ignoring bypass dyld lib validation hook since LC should already do that.");
 	}
 
 	// Locate dyld image name address
@@ -319,7 +325,13 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	const char* appExecPath = appBundle.executablePath.UTF8String;
 	*path = appExecPath;
 
-	overwriteExecPath(appBundle.bundlePath);
+	if (!usingLiveContainer) {
+		// the dumbest solution that caused me a headache, simply dont call the function!
+		// i accidentally figured that out
+		overwriteExecPath(appBundle.bundlePath);
+	} else {
+		AppLog(@"[invokeAppMain] Skip overwriteExecPath (LC)");
+	}
 	// Overwrite NSUserDefaults
 	if ([guestAppInfo[@"doUseLCBundleId"] boolValue]) {
 		NSUserDefaults.standardUserDefaults = [[NSUserDefaults alloc] initWithSuiteName:guestAppInfo[@"LCOrignalBundleIdentifier"]];
@@ -397,10 +409,12 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	}
 
 	[gcUserDefaults setObject:dataUUID forKey:@"lastLaunchDataUUID"];
-	if (isSharedBundle) {
-		[gcUserDefaults setObject:@"Shared" forKey:@"lastLaunchType"];
-	} else {
-		[gcUserDefaults setObject:@"Private" forKey:@"lastLaunchType"];
+	if (!usingLiveContainer) {
+		if (isSharedBundle) {
+			[gcUserDefaults setObject:@"Shared" forKey:@"lastLaunchType"];
+		} else {
+			[gcUserDefaults setObject:@"Private" forKey:@"lastLaunchType"];
+		}
 	}
 
 	// Overwrite NSBundle
@@ -416,8 +430,11 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	NSProcessInfo.processInfo.processName = appBundle.infoDictionary[@"CFBundleExecutable"];
 	*_CFGetProgname() = NSProcessInfo.processInfo.processName.UTF8String;
 
+	AppLog(@"[invokeAppMain] Init guest hooks...");
 	// hook NSUserDefault before running libraries' initializers
 	NUDGuestHooksInit();
+
+	// UIAGuestHooksInit();
 
 	if ([gcUserDefaults boolForKey:@"LCCertificateImported"]) {
 		// SecItemGuestHooksInit();
@@ -436,10 +453,11 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 		} else {
 			appError = @"dlopen: an unknown error occurred";
 		}
-		NSLog(@"[LCBootstrap] %@", appError);
+		AppLog(@"[GeodeBootstrap] Error: %@", appError);
 		*path = oldPath;
 		return appError;
 	}
+
 	// hook dlsym to solve RTLD_MAIN_ONLY
 	rebind_symbols((struct rebinding[1]){ { "dlsym", (void*)new_dlsym, (void**)&orig_dlsym } }, 1);
 
@@ -448,23 +466,23 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 
 	if (![appBundle loadAndReturnError:&error]) {
 		appError = error.localizedDescription;
-		NSLog(@"[LCBootstrap] loading bundle failed: %@", error);
+		AppLog(@"[GeodeBootstrap] loading bundle failed: %@", error);
 		*path = oldPath;
 		return appError;
 	}
-	NSLog(@"[LCBootstrap] loaded bundle");
+	AppLog(@"[GeodeBootstrap] loaded bundle");
 
 	// Find main()
 	appMain = getAppEntryPoint(appHandle, appIndex);
 	if (!appMain) {
 		appError = @"Could not find the main entry point";
-		NSLog(@"[LCBootstrap] %@", appError);
+		AppLog(@"[GeodeBootstrap] Error: %@", appError);
 		*path = oldPath;
 		return appError;
 	}
 
 	// Go!
-	NSLog(@"[LCBootstrap] jumping to main %p", appMain);
+	AppLog(@"[GeodeBootstrap] jumping to main %p", appMain);
 	argv[0] = (char*)appExecPath;
 	int ret = appMain(argc, argv);
 
@@ -481,9 +499,18 @@ int GeodeMain(int argc, char* argv[]) {
 	NSLog(@"ignore: %@", dispatch_get_main_queue());
 	gcMainBundle = [NSBundle mainBundle];
 	gcUserDefaults = [Utils getPrefs];
-	gcSharedDefaults = [[NSUserDefaults alloc] initWithSuiteName:[LCSharedUtils appGroupID]];
+	gcSharedDefaults = [[NSUserDefaults alloc] initWithSuiteName:[GCSharedUtils appGroupID]];
 	gcAppUrlScheme = NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0];
-	gcAppGroupPath = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[NSClassFromString(@"LCSharedUtils") appGroupID]] path];
+
+	// see if we are in livecontainer...
+	if (NSClassFromString(@"LCSharedUtils")) {
+		// why do you like nesting
+		AppLog(@"LiveContainer Detected!");
+		usingLiveContainer = YES;
+	} else {
+		gcAppGroupPath = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:[NSClassFromString(@"GCSharedUtils") appGroupID]] path];
+	}
+	// AppLog(@"Current Launch Count is %@, %@ launches until app logs clear...", launchCount, (5 - (launchCount % 5)));
 
 	NSString* lastLaunchDataUUID = [gcUserDefaults objectForKey:@"lastLaunchDataUUID"];
 	if (lastLaunchDataUUID) {
@@ -497,71 +524,72 @@ int GeodeMain(int argc, char* argv[]) {
 			preferencesTo = [docPathUrl.path stringByAppendingPathComponent:[NSString stringWithFormat:@"Data/Application/%@/Library/Preferences", lastLaunchDataUUID]];
 		}
 		// recover preferences
-		[LCSharedUtils dumpPreferenceToPath:preferencesTo dataUUID:lastLaunchDataUUID];
+		[GCSharedUtils dumpPreferenceToPath:preferencesTo dataUUID:lastLaunchDataUUID];
 		[gcUserDefaults removeObjectForKey:@"lastLaunchDataUUID"];
 		[gcUserDefaults removeObjectForKey:@"lastLaunchType"];
 	}
 	// ok but WHY DOES IT CRASH!? LIKE STOP, ALL IM DOING IS MOVING THE DIRECTORY, I DONT CARE THAT TYOUSTSUPID NIL SEGFAULT ITS NOT NIL SHUT UP
-	[LCSharedUtils moveSharedAppFolderBack];
+	if (!usingLiveContainer) {
+		[GCSharedUtils moveSharedAppFolderBack];
+	}
 
 	NSString* selectedApp = [gcUserDefaults stringForKey:@"selected"];
-	NSString* selectedContainer = [gcUserDefaults stringForKey:@"selectedContainer"];
 	NSFileManager* fm = [NSFileManager defaultManager];
 	NSString* docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
 	if ([fm fileExistsAtPath:[docPath stringByAppendingPathComponent:@"jitflag"]]) {
 		selectedApp = [Utils gdBundleName];
-		selectedContainer = @"GeometryDash";
 		[fm removeItemAtPath:[docPath stringByAppendingPathComponent:@"jitflag"] error:nil];
 	}
 	BOOL safeMode = [gcUserDefaults boolForKey:@"safemode"];
-	if (selectedApp && !selectedContainer) {
-		selectedContainer = [LCSharedUtils findDefaultContainerWithBundleId:selectedApp];
-	}
-	NSString* runningLC = [LCSharedUtils getContainerUsingLCSchemeWithFolderName:selectedContainer];
-	if (selectedApp && runningLC) {
-		[gcUserDefaults removeObjectForKey:@"selected"];
-		[gcUserDefaults removeObjectForKey:@"selectedContainer"];
-		[gcUserDefaults removeObjectForKey:@"safemode"];
-		NSString* selectedAppBackUp = selectedApp;
-		selectedApp = nil;
-		dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC));
-		dispatch_after(delay, dispatch_get_main_queue(), ^{
-			// Base64 encode the data
-			NSString* urlStr;
-			if (selectedContainer) {
-				urlStr = [NSString stringWithFormat:@"%@://geode-launch?bundle-name=%@&container-folder-name=%@", runningLC, selectedAppBackUp, selectedContainer];
-			} else {
-				urlStr = [NSString stringWithFormat:@"%@://geode-launch?bundle-name=%@", runningLC, selectedAppBackUp];
-			}
 
-			NSURL* url = [NSURL URLWithString:urlStr];
-			if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
-				[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
-
-				NSString* launchUrl = [gcUserDefaults stringForKey:@"launchAppUrlScheme"];
-				// also pass url scheme to another lc
-				if (launchUrl) {
-					[gcUserDefaults removeObjectForKey:@"launchAppUrlScheme"];
-
-					// Base64 encode the data
-					NSData* data = [launchUrl dataUsingEncoding:NSUTF8StringEncoding];
-					NSString* encodedUrl = [data base64EncodedStringWithOptions:0];
-
-					NSString* finalUrl = [NSString stringWithFormat:@"%@://open-url?url=%@", runningLC, encodedUrl];
-					NSURL* url = [NSURL URLWithString:finalUrl];
-
-					[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
+	// is this even needed
+	if (!usingLiveContainer) {
+		NSString* selectedContainer = [gcUserDefaults stringForKey:@"selectedContainer"];
+		if (selectedApp && !selectedContainer) {
+			selectedContainer = [GCSharedUtils findDefaultContainerWithBundleId:selectedApp];
+		}
+		NSString* runningLC = [GCSharedUtils getContainerUsingLCSchemeWithFolderName:selectedContainer];
+		if (selectedApp && runningLC) {
+			[gcUserDefaults removeObjectForKey:@"selected"];
+			[gcUserDefaults removeObjectForKey:@"selectedContainer"];
+			[gcUserDefaults removeObjectForKey:@"safemode"];
+			NSString* selectedAppBackUp = selectedApp;
+			selectedApp = nil;
+			dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC));
+			dispatch_after(delay, dispatch_get_main_queue(), ^{
+				// Base64 encode the data
+				NSString* urlStr;
+				if (selectedContainer) {
+					urlStr = [NSString stringWithFormat:@"%@://geode-launch?bundle-name=%@&container-folder-name=%@", runningLC, selectedAppBackUp, selectedContainer];
+				} else {
+					urlStr = [NSString stringWithFormat:@"%@://geode-launch?bundle-name=%@", runningLC, selectedAppBackUp];
 				}
-			} else {
-				[LCSharedUtils removeAppRunningByLC:runningLC];
-				[LCSharedUtils removeContainerUsingByLC:runningLC];
-			}
-		});
+
+				NSURL* url = [NSURL URLWithString:urlStr];
+				if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
+					[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
+
+					NSString* launchUrl = [gcUserDefaults stringForKey:@"launchAppUrlScheme"];
+					// also pass url scheme to another lc
+					if (launchUrl) {
+						[gcUserDefaults removeObjectForKey:@"launchAppUrlScheme"];
+
+						// Base64 encode the data
+						NSData* data = [launchUrl dataUsingEncoding:NSUTF8StringEncoding];
+						NSString* encodedUrl = [data base64EncodedStringWithOptions:0];
+
+						NSString* finalUrl = [NSString stringWithFormat:@"%@://open-url?url=%@", runningLC, encodedUrl];
+						NSURL* url = [NSURL URLWithString:finalUrl];
+
+						[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
+					}
+				}
+			});
+		}
 	}
-	if (selectedApp && ![gcUserDefaults boolForKey:@"USE_TWEAK"]) {
+	if (selectedApp && [Utils isSandboxed]) {
 		NSString* launchUrl = [gcUserDefaults stringForKey:@"launchAppUrlScheme"];
 		[gcUserDefaults removeObjectForKey:@"selected"];
-		[gcUserDefaults removeObjectForKey:@"selectedContainer"];
 		[gcUserDefaults removeObjectForKey:@"safemode"];
 		// wait for app to launch so that it can receive the url
 		if (launchUrl) {
@@ -579,8 +607,8 @@ int GeodeMain(int argc, char* argv[]) {
 			});
 		}
 		NSSetUncaughtExceptionHandler(&exceptionHandler);
-		setenv("LC_HOME_PATH", getenv("HOME"), 1);
-		NSString* appError = invokeAppMain(selectedApp, selectedContainer, safeMode, argc, argv);
+		setenv("GC_HOME_PATH", getenv("HOME"), 1);
+		NSString* appError = invokeAppMain(selectedApp, @"GeometryDash", safeMode, argc, argv);
 		if (appError) {
 			[gcUserDefaults setObject:appError forKey:@"error"];
 			// potentially unrecovable state, exit now

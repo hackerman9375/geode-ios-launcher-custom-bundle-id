@@ -74,7 +74,7 @@
 		// return 6;
 		return 0;
 	case 4: // Advanced
-		return 6;
+		return 5;
 	case 5: // About
 		return 4;
 	case 6: // Credits
@@ -166,19 +166,19 @@
 		} else if (indexPath.row == 2) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"gameplay.fix-rotation".loc;
-			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+			if (![Utils isSandboxed]) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
 			}
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_ROTATION"] tag:5 disable:[[Utils getPrefs] boolForKey:@"USE_TWEAK"]];
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_ROTATION"] tag:5 disable:![Utils isSandboxed]];
 			return cellval1;
 		}
 		if (indexPath.row == 3) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"gameplay.fix-black-screen".loc;
-			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+			if (![Utils isSandboxed]) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
 			}
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_BLACKSCREEN"] tag:8 disable:[[Utils getPrefs] boolForKey:@"USE_TWEAK"]];
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_BLACKSCREEN"] tag:8 disable:![Utils isSandboxed]];
 			return cellval1;
 		}
 		break;
@@ -186,7 +186,10 @@
 		if (indexPath.row == 0) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"jit.enable-auto-jit".loc;
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"AUTO_JIT"] tag:4 disable:NO];
+			if (NSClassFromString(@"LCSharedUtils")) {
+				cellval1.textLabel.textColor = [UIColor systemGrayColor];
+			}
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"AUTO_JIT"] tag:4 disable:NSClassFromString(@"LCSharedUtils")];
 			return cellval1;
 		} else if (indexPath.row == 1) {
 			UITextField* textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
@@ -263,32 +266,24 @@
 		} else*/
 		if (indexPath.row == 0) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-			if (![Utils isJailbroken]) {
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils")];
+			cellval1.textLabel.text = @"advanced.manual-reopen-jit".loc;
+			if (![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils")) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
 			}
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_TWEAK"] tag:3 disable:![Utils isJailbroken]];
-			cellval1.textLabel.text = @"advanced.use-tweak".loc;
 			return cellval1;
 		} else if (indexPath.row == 1) {
-			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:[[Utils getPrefs] boolForKey:@"USE_TWEAK"]];
-			cellval1.textLabel.text = @"advanced.manual-reopen-jit".loc;
-			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
-				cellval1.textLabel.textColor = [UIColor systemGrayColor];
-			}
-			return cellval1;
-		} else if (indexPath.row == 2) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_NIGHTLY"] tag:11 disable:NO];
 			cellval1.textLabel.text = @"advanced.use-nightly".loc;
 			return cellval1;
-		} else if (indexPath.row == 3) {
+		} else if (indexPath.row == 2) {
 			cell.textLabel.text = @"advanced.view-app-logs".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 4) {
+		} else if (indexPath.row == 3) {
 			cell.textLabel.text = @"advanced.view-recent-logs".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 5) {
+		} else if (indexPath.row == 4) {
 			cell.textLabel.text = @"advanced.view-recent-crash".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		}
@@ -306,7 +301,7 @@
 			cellval1.detailTextLabel.text = [Utils getGeodeVersion];
 		} else if (indexPath.row == 2) {
 			NSString* infoPlistPath;
-			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+			if (![Utils isSandboxed]) {
 				infoPlistPath = [[Utils getGDBundlePath] stringByAppendingPathComponent:@"GeometryJump.app/Info.plist"];
 			} else {
 				infoPlistPath = [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"Info.plist"].path;
@@ -461,7 +456,7 @@
 		}
 		case 3: { // Open file manager
 			NSString* openURL;
-			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+			if (![Utils isSandboxed]) {
 				openURL = [NSString stringWithFormat:@"filza://%@", [[Utils getGDDocPath] stringByAppendingPathComponent:@"Documents"]];
 			} else {
 				openURL = [NSString stringWithFormat:@"shareddocuments://%@", [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents"].path];
@@ -487,17 +482,21 @@
 	} else if (indexPath.section == 1) {
 		switch (indexPath.row) {
 		case 0: { // Safe Mode
-			if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+			if (![Utils isSandboxed]) {
 				[Utils tweakLaunch_withSafeMode:true];
 				break;
 			}
-			if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"]) {
+			if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] || NSClassFromString(@"LCSharedUtils")) {
 				[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 				[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 				[[Utils getPrefs] setBool:YES forKey:@"safemode"];
 				NSFileManager* fm = [NSFileManager defaultManager];
 				[fm createFileAtPath:[[LCPath docPath] URLByAppendingPathComponent:@"jitflag"].path contents:[[NSData alloc] init] attributes:@{}];
-				[Utils showNotice:self title:@"launcher.relaunch-notice".loc];
+				if (NSClassFromString(@"LCSharedUtils")) {
+					[Utils showNotice:self title:@"launcher.relaunch-notice.lc".loc];
+				} else {
+					[Utils showNotice:self title:@"launcher.relaunch-notice".loc];
+				}
 			} else {
 				NSString* openURL = @"geode://safe-mode";
 				NSURL* url = [NSURL URLWithString:openURL];
@@ -627,16 +626,16 @@
 		}
 	} else if (indexPath.section == 4) {
 		switch (indexPath.row) {
-		case 3: { // View app logs
+		case 2: { // View app logs
 			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:[[LCPath docPath] URLByAppendingPathComponent:@"app.log"]] animated:YES];
 			break;
 		}
-		case 4: { // View geode logs
+		case 3: { // View geode logs
 			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[Utils docPath] stringByAppendingString:@"game/geode/logs/"]];
 			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:file] animated:YES];
 			break;
 		}
-		case 5: { // View recent crash
+		case 4: { // View recent crash
 			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[Utils docPath] stringByAppendingString:@"game/geode/crashlogs/"]];
 			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:file] animated:YES];
 			break;
@@ -693,9 +692,8 @@
 																	preferredStyle:UIAlertControllerStyleAlert];
 			UIAlertAction* yesAction = [UIAlertAction actionWithTitle:@"common.yes".loc style:UIAlertActionStyleDefault
 															  handler:^(UIAlertAction* _Nonnull action) { [[Utils getPrefs] setBool:YES forKey:@"AUTO_JIT"]; }];
-			UIAlertAction* noAction = [UIAlertAction actionWithTitle:@"common.no".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-				[sender setOn:NO];
-			}];
+			UIAlertAction* noAction = [UIAlertAction actionWithTitle:@"common.no".loc style:UIAlertActionStyleDefault
+															 handler:^(UIAlertAction* _Nonnull action) { [sender setOn:NO]; }];
 			[alert addAction:yesAction];
 			[alert addAction:noAction];
 			[self presentViewController:alert animated:YES completion:nil];

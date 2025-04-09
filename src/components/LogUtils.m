@@ -13,7 +13,12 @@ static dispatch_queue_t loggingQueue;
 
 + (NSString*)logFilePath {
 	NSArray* paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-	return [paths[0] stringByAppendingPathComponent:@"app.log"];
+	if ([paths[0] hasSuffix:@"GeometryDash/Documents"]) {
+		// a fix since im lazy to actually get the shared doc
+		return [paths[0] stringByAppendingPathComponent:@"../../../../app.log"];
+	} else {
+		return [paths[0] stringByAppendingPathComponent:@"app.log"];
+	}
 }
 
 + (void)log:(NSString*)format, ... {

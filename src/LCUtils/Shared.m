@@ -10,7 +10,7 @@
 }
 
 + (NSURL*)bundlePath {
-	if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+	if (![Utils isSandboxed]) {
 		NSString* bundlePath = [Utils getGDBundlePath];
 		if (bundlePath) {
 			return [NSURL URLWithString:bundlePath];

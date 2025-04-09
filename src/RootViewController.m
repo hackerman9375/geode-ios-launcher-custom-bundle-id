@@ -1,5 +1,5 @@
 #import "GeodeInstaller.h"
-#import "LCUtils/LCSharedUtils.h"
+#import "LCUtils/GCSharedUtils.h"
 #import "LCUtils/LCUtils.h"
 #import "LCUtils/Shared.h"
 #import "RootViewController.h"
@@ -15,6 +15,7 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 #include <Security/SecKey.h>
 #import <dlfcn.h>
+#include <mach-o/dyld.h>
 #import <objc/runtime.h>
 
 @interface RootViewController ()
@@ -27,6 +28,19 @@
 
 @implementation RootViewController {
 	NSURLSessionDownloadTask* downloadTask;
+}
+
+- (BOOL)isLCTweakLoaded {
+	NSString* name = @"LiveContainer.app/Frameworks/TweakLoader.dylib";
+	int dyld_count = _dyld_image_count();
+	for (int i = 0; i < dyld_count; i++) {
+		const char* imageName = _dyld_get_image_name(i);
+		NSString* res = [NSString stringWithUTF8String:imageName];
+		if ([res hasSuffix:name]) {
+			return YES;
+		}
+	}
+	return NO;
 }
 
 - (void)refreshTheme {
@@ -154,7 +168,6 @@
 	[super viewDidLoad];
 	[Utils increaseLaunchCount];
 	[LogUtils clearLogs];
-
 	NSError* err;
 	[LCPath ensureAppGroupPaths:&err];
 	if (err) {
@@ -212,6 +225,12 @@
 													 root:self];
 	[self.progressBar setHidden:YES];
 	[self.view addSubview:self.progressBar];
+
+	if ([self isLCTweakLoaded]) {
+		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+			[Utils showNotice:self title:@"In LiveContainer, please enable \"Launch with JIT\", \"Don't Inject TweakLoader\" & \"Don't Load TweakLoader\", otherwise Geode will not launch properly. JIT-Less mode may NOT work on LiveContainer."];
+		});
+	}
 }
 
 - (void)startWeb {
@@ -259,6 +278,8 @@
 	if ([VerifyInstall verifyGDInstalled] && ![VerifyInstall verifyGeodeInstalled]) {
 		[[[GeodeInstaller alloc] init] startInstall:self ignoreRoot:NO];
 	} else {
+		if (![VerifyInstall verifyGDAuthenticity])
+			return AppLog(@"GD not verified! Not installing!");
 		// this is all so unnecessary, just use import IPA if you're that desperate
 		NSData* b64Data = [[NSData alloc] initWithBase64EncodedString:@"__KEY_PART2__" options:0];
 		if (!b64Data) {
@@ -344,17 +365,21 @@
 
 - (void)launchGame {
 	[self.launchButton setEnabled:NO];
-	if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] && ![[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+	if (([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] && [Utils isSandboxed]) || NSClassFromString(@"LCSharedUtils")) {
 		[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 		[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 		[[Utils getPrefs] setBool:NO forKey:@"safemode"];
 		NSFileManager* fm = [NSFileManager defaultManager];
 		[fm createFileAtPath:[[LCPath docPath] URLByAppendingPathComponent:@"jitflag"].path contents:[[NSData alloc] init] attributes:@{}];
 		// get around NSUserDefaults because sometimes it works and doesnt work when relaunching...
-		[Utils showNotice:self title:@"launcher.relaunch-notice".loc];
+		if (NSClassFromString(@"LCSharedUtils")) {
+			[Utils showNotice:self title:@"launcher.relaunch-notice.lc".loc];
+		} else {
+			[Utils showNotice:self title:@"launcher.relaunch-notice".loc];
+		}
 		return;
 	}
-	if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+	if (![Utils isSandboxed]) {
 		[Utils tweakLaunch_withSafeMode:false];
 		return;
 	}

@@ -150,6 +150,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 					if (tagName && [tagName isKindOfClass:[NSString class]]) {
 						if ([[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
 							NSString* published_at = jsonDict[@"published_at"];
+							AppLog(@"Latest Geode nightly release was made at %@ (Currently on %@)", published_at, [[Utils getPrefs] stringForKey:@"NIGHTLY_DATE"]);
 							if (published_at && [published_at isKindOfClass:[NSString class]]) {
 								NSString* nightly_date = [[Utils getPrefs] stringForKey:@"NIGHTLY_DATE"];
 								if (nightly_date && ![nightly_date isEqualToString:published_at]) {
@@ -265,7 +266,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 		if (data) {
 			dispatch_async(dispatch_get_main_queue(), ^{
 				NSDictionary* gdPlist;
-				if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+				if (![Utils isSandboxed]) {
 					gdPlist = [NSDictionary dictionaryWithContentsOfFile:[[Utils getGDBundlePath] stringByAppendingPathComponent:@"GeometryJump.app/Info.plist"]];
 				} else {
 					gdPlist = [NSDictionary dictionaryWithContentsOfURL:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/Info.plist"]];
@@ -276,7 +277,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 				AppLog(@"Versions: %@ & %@", hash, str);
 				if (![hash isEqualToString:str]) {
 					AppLog(@"Versions don't match. Assume GD needs an update!");
-					if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+					if (![Utils isSandboxed]) {
 						[Utils showNotice:_root title:@"launcher.notice.gd-outdated".loc];
 					} else {
 						[Utils showNotice:_root title:@"launcher.notice.gd-update".loc];
@@ -304,7 +305,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 	NSFileManager* fm = [NSFileManager defaultManager];
 	NSString* docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
 	NSString* tweakPath = [NSString stringWithFormat:@"%@/Tweaks/Geode.ios.dylib", docPath];
-	if ([[Utils getPrefs] boolForKey:@"USE_TWEAK"]) {
+	if (![Utils isSandboxed]) {
 		NSString* applicationSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
 		if (applicationSupportDirectory != nil) {
 			// https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m

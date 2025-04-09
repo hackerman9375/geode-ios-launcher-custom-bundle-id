@@ -46,9 +46,9 @@ static void showDlerrAlert(NSString *error) {
 
  __attribute__((constructor))
 static void TweakLoaderConstructor() {
-    const char *tweakFolderC = getenv("LC_GLOBAL_TWEAKS_FOLDER");
+    const char *tweakFolderC = getenv("GC_GLOBAL_TWEAKS_FOLDER");
     NSString *globalTweakFolder = @(tweakFolderC);
-    unsetenv("LC_GLOBAL_TWEAKS_FOLDER");
+    unsetenv("GC_GLOBAL_TWEAKS_FOLDER");
 
     NSMutableArray *errors = [NSMutableArray new];
 

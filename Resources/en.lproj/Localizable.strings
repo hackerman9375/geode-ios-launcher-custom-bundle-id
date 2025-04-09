@@ -54,6 +54,7 @@
 // Main Screen
 "launcher.launch" = "Launch";
 "launcher.relaunch-notice" = "Relaunch the app with JIT to start Geode!";
+"launcher.relaunch-notice.lc" = "Relaunch the app in LiveContainer to start Geode!";
 "launcher.download" = "Download";
 "launcher.update" = "Update";
 
