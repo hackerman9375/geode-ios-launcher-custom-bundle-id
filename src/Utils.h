@@ -2,6 +2,10 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
+@interface CompareSemVer : NSObject
++ (BOOL)isVersion:(NSString*)versionA greaterThanVersion:(NSString*)versionB;
+@end
+
 @interface Utils : NSObject
 + (NSString*)gdBundleName;
 + (NSString*)launcherBundleName;

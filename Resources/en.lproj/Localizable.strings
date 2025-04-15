@@ -10,6 +10,9 @@
 "intro.s1.title" = "Welcome to Geode!";
 "intro.s1.subtitle" = "Let's get you started.";
 
+"intro.update.title" = "Update available!";
+"intro.update.subtitle" = "There is an update available for the launcher. It is recommended to download the latest version of the launcher. Would you like to be redirected to the latest release?";
+
 "intro.s2.title" = "Choose your Accent Color";
 "intro.s2.color.preview" = "Preview";
 "intro.s2.color.button" = "Change Color";
@@ -65,9 +68,10 @@
 
 "launcher.notice.gd-outdated" = "Your Geometry Dash is outdated!";
 "launcher.notice.gd-update" = "Geode requires an update! Relaunch the app to update it!";
-"launcher.notice.launcher-update" = "A launcher update is available! Redownload the IPA to update it!";
+"launcher.notice.launcher-update" = "A launcher update is available!\nRedownload the launcher by tapping OK to be redirected to the latest release!";
 "launcher.notice.ts.install" = "You are using the TrollStore version of Geode! If you want to install Geometry Dash in a container, consider installing the IPA version instead.";
-
+"launcher.notice.mod-import" = "The mod '%@' has been imported!";
+"launcher.notice.mod-import.fail" = "The mod '%@' couldn't be imported";
 
 "launcher.status.not-verified" = "Geometry Dash is not verified.\nYou need to verify that you installed the app.";
 "launcher.status.not-installed" = "Geode is not installed.";
@@ -81,6 +85,7 @@
 
 "launcher.error.non" = "Please use the release from the original github page to download Geometry Dash.";
 "launcher.error.gd" = "Geode couldn't load Geometry Dash: %@";
+"launcher.error.app-uri" = "Couldn't open any app urls. Please ensure you have selected the right JIT Enabler, then restart the launcher.";
 "launcher.error.download-fail-restart" = "Download failed, please restart the app";
 "launcher.error.download-fail" = "Download failed";
 "launcher.error.download-not-found" = "Download failed, couldn't find ZIP archive. Please try again or enable nightly.";
@@ -112,11 +117,24 @@
 "gameplay.footer" = "Only enable the screen rotation fix or black screen fix if you are having problems.";
 
 "jit" = "JIT";
-"jit.enable-auto-jit" = "Enable Auto JIT";
-"jit.enable-auto-jit.warning.title" = "Are you sure you want to enable Auto JIT?";
-"jit.enable-auto-jit.warning" = "Auto JIT is meant to be used with JITStreamer-EB. If you do not have JITStreamer-EB or use other alternatives like StikJIT or Sidestore JIT, do not enable this option.";
-"jit.auto-jit-server" = "Address";
-"jit.footer" = "Set up your JITStreamer server. Local Network permission is required. This is not necessary to set up if you use TrollStore, or if you're jailbroken.";
+"jit.jit-server" = "Address";
+"jit.jit-udid" = "Device UDID";
+"jit.jit-enabler" = "JIT Enabler";
+"jit.jit-enabler.default" = "Auto";
+"jit.jit-enabler.jitstreamereb" = "JITStreamer-EB";
+"jit.jit-enabler.sidejit" = "SideJITServer/JITStreamer 2.0";
+"jit.jit-enabler.stikjit" = "StikJIT";
+"jit.jit-enabler.trollstore" = "TrollStore";
+"jit.jit-enabler.sidestore" = "SideStore JIT";
+"jit.jit-enabler.livecontainer" = "LiveContainer";
+
+"jit.footer.default" = "Geode will figure out what method of JIT to use based on certain conditions. This default option is recommended.";
+"jit.footer.jitstreamereb" = "Set up your JITStreamer-EB server. Local Network permission is required.";
+"jit.footer.sidejit" = "Set up your SideJITServer/JITStreamer server. Local Network permission is required. Use this only if you cannot use JITStreamer-EB.";
+"jit.footer.stikjit" = "Geode will open StikJIT when launched to enable JIT.";
+"jit.footer.trollstore" = "Geode will utilize TrollStore to enable JIT. Make sure you enable the \"URL Scheme Enabled\" setting in TrollStore, otherwise Geode will open the Apple Magnifier app.";
+"jit.footer.sidestore" = "Geode will open SideStore when launched to enable JIT.";
+"jit.footer.livecontainer" = "Ensure that you enabled \"Launch with JIT\" for the Geode app in LiveContainer.";
 
 "jitless" = "JIT-Less";
 "jitless.footer" = "JIT-less allows you to use Geode without enabling JIT! You will need to patch AltStore or SideStore to enable, or use ZSign. If you signed Geode with a Developer / Enterprise Certificate, you may need to import the certificate.";

@@ -7,40 +7,6 @@
 
 typedef void (^DecompressCompletion)(NSError* _Nullable error);
 
-@interface CompareSemVer : NSObject
-+ (BOOL)isVersion:(NSString*)versionA greaterThanVersion:(NSString*)versionB;
-@end
-
-@implementation CompareSemVer
-
-+ (NSString*)normalizedVersionString:(NSString*)versionString {
-	if ([versionString hasPrefix:@"v"]) {
-		return [versionString substringFromIndex:1];
-	}
-	return versionString;
-}
-+ (BOOL)isVersion:(NSString*)versionA greaterThanVersion:(NSString*)versionB {
-	if (versionA == nil || [versionA isEqual:@""])
-		return YES;
-	if (versionB == nil || [versionB isEqual:@""])
-		return YES;
-	NSString* normalizedA = [self normalizedVersionString:versionA];
-	NSString* normalizedB = [self normalizedVersionString:versionB];
-	NSArray<NSString*>* componentsA = [normalizedA componentsSeparatedByString:@"."];
-	NSArray<NSString*>* componentsB = [normalizedB componentsSeparatedByString:@"."];
-	NSUInteger maxCount = MAX(componentsA.count, componentsB.count);
-	for (NSUInteger i = 0; i < maxCount; i++) {
-		NSInteger valueA = (i < componentsA.count) ? [componentsA[i] integerValue] : 0;
-		NSInteger valueB = (i < componentsB.count) ? [componentsB[i] integerValue] : 0;
-		if (valueA > valueB) {
-			return NO;
-		}
-	}
-	return YES;
-}
-
-@end
-
 @implementation GeodeInstaller {
 	NSURLSessionDownloadTask* downloadTask;
 }
@@ -235,7 +201,24 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 						if (!greaterThanVer) {
 							// assume out of date
 							dispatch_async(dispatch_get_main_queue(), ^{
-								[Utils showNotice:_root title:@"launcher.notice.launcher-update".loc];
+								UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.launcher-update".loc
+																						preferredStyle:UIAlertControllerStyleAlert];
+								UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault
+																				 handler:^(UIAlertAction* _Nonnull action) {
+																					 NSURL* url = [NSURL URLWithString:[Utils getGeodeLauncherRedirect]];
+																					 if ([[UIApplication sharedApplication] canOpenURL:url]) {
+																						 [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+																					 }
+																				 }];
+								UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"common.cancel".loc style:UIAlertActionStyleCancel handler:nil];
+								[alert addAction:okAction];
+								[alert addAction:cancelAction];
+
+								UIWindowScene* scene = (id)[UIApplication.sharedApplication.connectedScenes allObjects].firstObject;
+								UIWindow* window = scene.windows.firstObject;
+								if (window != nil) {
+									[window.rootViewController presentViewController:alert animated:YES completion:nil];
+								}
 								[self.root updateState];
 							});
 						} else {

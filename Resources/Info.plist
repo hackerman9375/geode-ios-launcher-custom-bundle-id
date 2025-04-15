@@ -206,5 +206,42 @@
 	<string>A mod you are using is requesting this permission.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This permission is needed for accessing the JIT server.</string>
+
+	<!-- Handling .geode files -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Geode Mod</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.geode.launcher.mod</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeDescription</key>
+			<string>Geode Mod</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.geode.launcher.mod</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<string>geode</string>
+				<key>public.mime-type</key>
+				<string>application/x-geode</string>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

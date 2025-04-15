@@ -86,6 +86,43 @@
 }
 
 - (BOOL)application:(UIApplication*)application openURL:(nonnull NSURL*)url options:(nonnull NSDictionary<UIApplicationOpenURLOptionsKey, id>*)options {
+
+	if (url && [url isFileURL]) {
+		NSFileManager* fm = NSFileManager.defaultManager;
+		NSString* fileName = [url lastPathComponent];
+
+		NSURL* path;
+		NSError* error = nil;
+		if ([Utils isContainerized]) {
+			path = [NSURL fileURLWithPath:[[LCPath docPath].path stringByAppendingString:@"/game/geode/mods/"]];
+		} else {
+			path = [NSURL fileURLWithPath:[[Utils docPath] stringByAppendingString:@"game/geode/mods/"]];
+		}
+		NSURL* destinationURL = [path URLByAppendingPathComponent:fileName];
+		if ([fm fileExistsAtPath:destinationURL.path]) {
+			[fm removeItemAtURL:destinationURL error:&error];
+			if (error) {
+				AppLog(@"Couldn't replace file: %@", error);
+				return NO;
+			}
+		}
+		BOOL access = [url startAccessingSecurityScopedResource]; // to prevent ios from going "OH YOU HAVE NO PERMISSION!!!"
+		if ([fm copyItemAtURL:url toURL:destinationURL error:&error]) {
+			AppLog(@"Added new mod %@!", fileName);
+			if (access)
+				[url stopAccessingSecurityScopedResource];
+			dispatch_async(dispatch_get_main_queue(), ^{ [Utils showNoticeGlobal:[NSString stringWithFormat:@"launcher.notice.mod-import".loc, fileName]]; });
+			return YES;
+		} else {
+			AppLog(@"Couldn't copy file: %@", error);
+			if (access)
+				[url stopAccessingSecurityScopedResource];
+			dispatch_async(dispatch_get_main_queue(), ^{ [Utils showErrorGlobal:[NSString stringWithFormat:@"launcher.notice.mod-import.fail".loc, fileName] error:error]; });
+			return NO;
+		}
+		return YES;
+	}
+
 	if ([url.host isEqualToString:@"open-web-page"]) {
 		NSURLComponents* components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
 		for (NSURLQueryItem* item in components.queryItems) {
@@ -131,7 +168,9 @@
 				}];
 		} else {
 			AppLog(@"Launching Geometry Dash");
-			[LCUtils launchToGuestApp];
+			if (![LCUtils launchToGuestApp]) {
+				[Utils showErrorGlobal:[NSString stringWithFormat:@"launcher.error.gd".loc, @"launcher.error.app-uri".loc] error:nil];
+			}
 		}
 	} else if ([url.host isEqualToString:@"safe-mode"]) {
 		AppLog(@"Launching in Safe Mode");

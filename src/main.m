@@ -233,7 +233,8 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 			usleep(1000 * 100);
 		}
 		if (!checkJITEnabled()) {
-			appError = @"JIT was not enabled. Please ensure that you launched the Geode launcher with JIT. You can enable \"Manual reopen with JIT\" for manually enabling JIT (Pressing launch, closing app, open with JIT).";
+			appError = @"JIT was not enabled. Please ensure that you launched the Geode launcher with JIT. You can enable \"Manual reopen with JIT\" for manually enabling JIT "
+					   @"(Pressing launch, closing app, open with JIT).";
 			// appError = @"JIT was not enabled. If you want to use Geode without JIT, setup JITLess mode in settings.";
 			return appError;
 		}
@@ -326,6 +327,7 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	*path = appExecPath;
 
 	if (!usingLiveContainer) {
+		AppLog(@"[invokeAppMain] Overwriting exec path...");
 		// the dumbest solution that caused me a headache, simply dont call the function!
 		// i accidentally figured that out
 		overwriteExecPath(appBundle.bundlePath);
@@ -417,9 +419,10 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 		}
 	}
 
+	AppLog(@"[invokeAppMain] Overwriting NSBundle...");
 	// Overwrite NSBundle
 	overwriteMainNSBundle(appBundle);
-
+	AppLog(@"[invokeAppMain] Overwriting CFBundle...");
 	// Overwrite CFBundle
 	overwriteMainCFBundle();
 

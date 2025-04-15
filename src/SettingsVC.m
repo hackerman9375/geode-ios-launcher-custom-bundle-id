@@ -1,4 +1,5 @@
 #import "GeodeInstaller.h"
+// #import "src/components/DropdownView.h"
 #import "LogsView.h"
 #import "SettingsVC.h"
 #import "VerifyInstall.h"
@@ -69,7 +70,12 @@
 	case 1: // Gameplay
 		return 4;
 	case 2: // JIT
-		return 2;
+		if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 4) {
+			return 3;
+		} else if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 3) {
+			return 2;
+		}
+		return 1;
 	case 3: // JIT-Less
 		// return 6;
 		return 0;
@@ -184,12 +190,15 @@
 		break;
 	case 2: {
 		if (indexPath.row == 0) {
-			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-			cellval1.textLabel.text = @"jit.enable-auto-jit".loc;
+			cellval1.textLabel.text = @"jit.jit-enabler".loc;
 			if (NSClassFromString(@"LCSharedUtils")) {
+				cellval1.detailTextLabel.text = @"jit.jit-enabler.livecontainer".loc;
+				cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
+			} else {
+				cellval1.detailTextLabel.text = [self getJITEnablerOptions][[[Utils getPrefs] integerForKey:@"JIT_ENABLER"]];
 			}
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"AUTO_JIT"] tag:4 disable:NSClassFromString(@"LCSharedUtils")];
+			cellval1.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 			return cellval1;
 		} else if (indexPath.row == 1) {
 			UITextField* textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
@@ -200,9 +209,25 @@
 			textField.keyboardType = UIKeyboardTypeURL;
 			textField.tag = 0;
 			cell.accessoryView = textField;
-			cell.textLabel.text = @"jit.auto-jit-server".loc;
-			textField.placeholder = @"http://x.x.x.x:9172";
+			cell.textLabel.text = @"jit.jit-server".loc;
+			if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 4) {
+				textField.placeholder = @"http://x.x.x.x:8080";
+			} else {
+				textField.placeholder = @"http://[fd00::]:9172";
+			}
 			textField.text = [[Utils getPrefs] stringForKey:@"SideJITServerAddr"];
+		} else if (indexPath.row == 2) {
+			UITextField* textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
+			textField.textAlignment = NSTextAlignmentRight;
+			textField.delegate = self;
+			textField.returnKeyType = UIReturnKeyDone;
+			textField.autocorrectionType = UITextAutocorrectionTypeNo;
+			textField.keyboardType = UIKeyboardTypeURL;
+			textField.tag = 1;
+			cell.accessoryView = textField;
+			cell.textLabel.text = @"jit.jit-udid".loc;
+			textField.placeholder = @"00008020-008D4548007B4F26";
+			textField.text = [[Utils getPrefs] stringForKey:@"JITDeviceUDID"];
 		}
 		break;
 	}
@@ -387,14 +412,55 @@
 	}
 }
 
+- (NSArray*)getJITEnablerOptions {
+	NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", [NSBundle mainBundle].bundlePath];
+	if (NSClassFromString(@"LCSharedUtils")) {
+		return @[ @"", @"", @"", @"", @"", @"", @"jit.jit-enabler.livecontainer".loc ];
+	}
+	if (!access(tsPath.UTF8String, F_OK)) {
+		return @[
+			@"jit.jit-enabler.default".loc, @"jit.jit-enabler.trollstore".loc, @"jit.jit-enabler.stikjit".loc, @"jit.jit-enabler.jitstreamereb".loc, @"jit.jit-enabler.sidejit".loc,
+			@"jit.jit-enabler.sidestore".loc, @""
+		];
+	} else {
+		return @[
+			@"jit.jit-enabler.default".loc, @"", @"jit.jit-enabler.stikjit".loc, @"jit.jit-enabler.jitstreamereb".loc, @"jit.jit-enabler.sidejit".loc,
+			@"jit.jit-enabler.sidestore".loc, @""
+		];
+	}
+}
+
+- (NSString*)getJITEnablerFooter {
+	switch ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"]) {
+	default:
+	case 0: // Default
+		return @"jit.footer.default".loc;
+	case 1: // TrollStore
+		return @"jit.footer.trollstore".loc;
+	case 2: // StikJIT
+		return @"jit.footer.stikjit".loc;
+	case 3: // JITStreamer-EB
+		return @"jit.footer.jitstreamereb".loc;
+	case 4: // SideJITServer
+		return @"jit.footer.sidejit".loc;
+	case 5: // SideStore
+		return @"jit.footer.sidestore".loc;
+	case 6: // LiveContainer
+		return @"jit.footer.livecontainer".loc;
+	}
+}
+
 - (NSString*)tableView:(UITableView*)tableView titleForFooterInSection:(NSInteger)section {
 	switch (section) {
 	case 0:
 		return [@"general.footer" localizeWithFormat:[Utils getGeodeVersion]];
 	case 1:
 		return @"gameplay.footer".loc;
-	// case 2:
-	// return @"jit.footer".loc;
+	case 2:
+		// return @"jit.footer".loc;
+		if (NSClassFromString(@"LCSharedUtils"))
+			return @"jit.footer.livecontainer".loc;
+		return [self getJITEnablerFooter];
 	// case 3:
 	// return @"jitless.footer".loc;
 	case 6:
@@ -506,6 +572,41 @@
 					[self dismissViewControllerAnimated:YES completion:nil];
 				}
 			}
+			break;
+		}
+		}
+	} else if (indexPath.section == 2) {
+		switch (indexPath.row) {
+		case 0: {
+			if (NSClassFromString(@"LCSharedUtils"))
+				break;
+			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"jit.jit-enabler".loc message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+			for (NSInteger i = 0; i < [self getJITEnablerOptions].count; i++) {
+				NSString* value = [self getJITEnablerOptions][i];
+				if (![value isEqualToString:@""]) {
+					[alert addAction:[UIAlertAction actionWithTitle:[self getJITEnablerOptions][i] style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+							   [[Utils getPrefs] setInteger:i forKey:@"JIT_ENABLER"];
+							   [self.tableView reloadData];
+						   }]];
+				}
+			}
+
+			[alert addAction:[UIAlertAction actionWithTitle:@"common.cancel".loc style:UIAlertActionStyleCancel handler:nil]];
+
+			[self presentViewController:alert animated:YES completion:nil];
+			/*UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+
+			NSArray *options = @[@"Option 1", @"Option 2", @"Option 3", @"Option 4"];
+
+			CGPoint anchorPoint = CGPointMake(CGRectGetMidX(cell.frame), CGRectGetMaxY(cell.frame));
+
+			anchorPoint = [tableView convertPoint:anchorPoint toView:self.view];
+
+			DropdownView *dropdown = [[DropdownView alloc] initWithItems:options anchorPoint:anchorPoint width:200.0];
+			dropdown.delegate = self;
+			[dropdown show];
+
+			[tableView deselectRowAtIndexPath:indexPath animated:YES];*/
 			break;
 		}
 		}

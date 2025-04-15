@@ -94,6 +94,56 @@
 	}];
 }
 
+#pragma mark - Update checker
+- (void)checkLauncherUpdates {
+	NSLog(@"[Geode/IntroVC] Checking for Launcher updates...");
+	NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:[Utils getGeodeLauncherURL]]];
+	NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
+	NSURLSessionDataTask* dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error) {
+		if (error)
+			return;
+		if (data) {
+			NSError* jsonError;
+			NSArray* jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+			if (!jsonError) {
+				if ([jsonObject isKindOfClass:[NSArray class]]) {
+					NSDictionary* jsonDict = jsonObject[0];
+					NSString* tagName = jsonDict[@"tag_name"];
+					if (tagName && [tagName isKindOfClass:[NSString class]]) {
+						NSString* launcherVer = [NSString stringWithFormat:@"v%@", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
+						BOOL greaterThanVer = [CompareSemVer isVersion:tagName greaterThanVersion:launcherVer];
+						NSLog(@"[Geode/IntroVC] Latest Launcher version is %@ (Currently on %@)", tagName, launcherVer);
+						if (!greaterThanVer) {
+							// assume out of date
+							dispatch_async(dispatch_get_main_queue(), ^{
+								UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"intro.update.title".loc message:@"intro.update.subtitle".loc
+																						preferredStyle:UIAlertControllerStyleAlert];
+								UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.yes".loc style:UIAlertActionStyleDefault
+																				 handler:^(UIAlertAction* _Nonnull action) {
+																					 NSURL* url = [NSURL URLWithString:[Utils getGeodeLauncherRedirect]];
+																					 if ([[UIApplication sharedApplication] canOpenURL:url]) {
+																						 [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+																					 }
+																				 }];
+								UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"common.no".loc style:UIAlertActionStyleCancel handler:nil];
+								[alert addAction:okAction];
+								[alert addAction:cancelAction];
+
+								UIWindowScene* scene = (id)[UIApplication.sharedApplication.connectedScenes allObjects].firstObject;
+								UIWindow* window = scene.windows.firstObject;
+								if (window != nil) {
+									[window.rootViewController presentViewController:alert animated:YES completion:nil];
+								}
+							});
+						}
+					}
+				}
+			}
+		}
+	}];
+	[dataTask resume];
+}
+
 #pragma mark - Step Views
 
 - (void)showWarningStep {
@@ -174,6 +224,8 @@
 	UIButton* nextButton = [self addNextButton];
 	nextButton.frame = CGRectMake(view.center.x - 70, CGRectGetMaxY(subtitleLabel.frame) + 20, 140, 45);
 	[view addSubview:nextButton];
+
+	[self checkLauncherUpdates];
 
 	[self transitionToView:view];
 }

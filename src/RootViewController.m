@@ -228,9 +228,66 @@
 
 	if ([self isLCTweakLoaded]) {
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-			[Utils showNotice:self title:@"In LiveContainer, please enable \"Launch with JIT\", \"Don't Inject TweakLoader\" & \"Don't Load TweakLoader\", otherwise Geode will not launch properly. JIT-Less mode may NOT work on LiveContainer."];
+			[Utils showNotice:self title:@"In LiveContainer, please enable \"Launch with JIT\", \"Don't Inject TweakLoader\" & \"Don't Load TweakLoader\", otherwise Geode will "
+										 @"not launch properly. JIT-Less mode may NOT work on LiveContainer."];
 		});
 	}
+
+	// making sure it has right attributes
+	NSFileManager* fm = NSFileManager.defaultManager;
+	NSURL* gdPath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
+	NSURL* emptyFile = [gdPath URLByAppendingPathComponent:@"Geode"];
+	if ([fm fileExistsAtPath:emptyFile.path]) {
+		// so people can actually deactivate from SideStore
+		[fm removeItemAtURL:emptyFile error:nil];
+	}
+
+	/*
+	// TODO: Change to "App" rather than having .app at the end
+	if ([fm fileExistsAtPath:gdPath.path]) {
+		NSError *error = nil;
+		NSDictionary *currentAttributes = [fm attributesOfItemAtPath:gdPath.path error:&error];
+		if (!error) {
+			if (![currentAttributes[NSFileType] isEqualToString:NSFileTypeDirectory]) {
+				AppLog(@"Attributes aren't a directory! Changing that...");
+				NSDictionary *newAttributes = @{NSFileType: NSFileTypeDirectory};
+				error = nil;
+				BOOL success = [fm setAttributes:newAttributes ofItemAtPath:gdPath.path error:&error];
+				if (!success || error) {
+					AppLog(@"Error updating directory attributes: %@", error);
+				} else {
+					AppLog(@"Updated attribute file type!")
+				}
+			} else {
+				NSNumber *perms = currentAttributes[NSFilePosixPermissions];
+				NSNumber *newPerms = @(0755); // rwxr-xr-x
+				if (![perms isEqualToNumber:newPerms]) {
+					NSMutableDictionary *newAttributes = [NSMutableDictionary dictionaryWithDictionary:currentAttributes];
+					[newAttributes setObject:newPerms forKey:NSFilePosixPermissions];
+					BOOL success = [fm setAttributes:newAttributes ofItemAtPath:gdPath.path error:&error];
+					if (!success || error) {
+						AppLog(@"Error updating directory permissions: %@", error);
+					} else {
+						AppLog(@"Updated attribute permissions!")
+					}
+				}
+				if ([currentAttributes[NSFileExtensionHidden] isEqualToNumber:@(1)]) {
+					AppLog(@"Setting NSFileExtensionHidden to 0");
+					NSMutableDictionary *newAttributes = [NSMutableDictionary dictionaryWithDictionary:currentAttributes];
+					[newAttributes setObject:@(0) forKey:NSFileExtensionHidden];
+					BOOL success = [fm setAttributes:newAttributes ofItemAtPath:gdPath.path error:&error];
+					if (!success || error) {
+						AppLog(@"Error updating directory permissions: %@", error);
+					} else {
+						AppLog(@"Updated attribute hidden extension!")
+					}
+				}
+			}
+		} else {
+			AppLog(@"Error getting attributes: %@", error);
+		}
+	}
+	*/
 }
 
 - (void)startWeb {
@@ -250,6 +307,10 @@
 	if (self.launchTimer != nil) {
 		[self.launchTimer invalidate];
 		self.launchTimer = nil;
+		[self.launchButton addTarget:self action:@selector(launchGame) forControlEvents:UIControlEventTouchUpInside];
+		[self.optionalTextLabel setHidden:YES];
+		self.launchButton.frame = CGRectMake(self.view.center.x - 95, CGRectGetMaxY(self.titleLabel.frame) + 15, 140, 45);
+		self.settingsButton.frame = CGRectMake(self.view.center.x + 50, CGRectGetMaxY(self.titleLabel.frame) + 15, 45, 45);
 	}
 	SettingsVC* settings = [[SettingsVC alloc] initWithNibName:nil bundle:nil];
 	settings.root = self;

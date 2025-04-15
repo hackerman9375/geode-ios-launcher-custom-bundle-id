@@ -53,8 +53,12 @@
 	NSError* error;
 
 	if ([self.fileURL checkResourceIsReachableAndReturnError:&error]) {
-		self.textView.text = [NSString stringWithFormat:@"%@\n============================\n%@", self.fileURL.lastPathComponent,
-														[NSString stringWithContentsOfURL:self.fileURL encoding:NSUTF8StringEncoding error:&error]];
+		NSString* fileName = self.fileURL.lastPathComponent;
+		if ([fileName isEqualToString:@"app.log"]) {
+			fileName = [NSString stringWithFormat:@"app.log (Clearing in %lu launches)", (5 - [[Utils getPrefs] integerForKey:@"LAUNCH_COUNT"] % 5)];
+		}
+		self.textView.text = [NSString
+			stringWithFormat:@"%@\n============================\n%@", fileName, [NSString stringWithContentsOfURL:self.fileURL encoding:NSUTF8StringEncoding error:&error]];
 	}
 	if (error) {
 		AppLog(@"Error reading log file: %@", error);

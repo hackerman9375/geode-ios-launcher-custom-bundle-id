@@ -179,19 +179,19 @@ extern NSUserDefaults* gcUserDefaults;
 	for (NSString* dir in dirs) {
 		NSString* checkPrefsA = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/Library/HTTPStorages/com.robtop.geometryjump", dir];
 		NSString* checkPrefsB = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/tmp/com.robtop.geometryjump-Inbox", dir];
-        NSString* checkPrefsC = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/.com.apple.mobile_container_manager.metadata.plist", dir];
+		NSString* checkPrefsC = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/.com.apple.mobile_container_manager.metadata.plist", dir];
 		if ([fm fileExistsAtPath:checkPrefsA isDirectory:nil] || [fm fileExistsAtPath:checkPrefsB isDirectory:nil]) {
 			gdDocPath = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/", dir];
 			return gdDocPath;
 		} else if ([fm fileExistsAtPath:checkPrefsC isDirectory:nil]) {
-            NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:checkPrefsC];
-            if (plist) {
-                if (plist[@"MCMMetadataIdentifier"] && [plist[@"MCMMetadataIdentifier"] isEqualToString:@"com.robtop.geometryjump"]) {
-			        gdDocPath = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/", dir];
-                    return gdDocPath;
-                }
-            }
-        }
+			NSDictionary* plist = [NSDictionary dictionaryWithContentsOfFile:checkPrefsC];
+			if (plist) {
+				if (plist[@"MCMMetadataIdentifier"] && [plist[@"MCMMetadataIdentifier"] isEqualToString:@"com.robtop.geometryjump"]) {
+					gdDocPath = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/", dir];
+					return gdDocPath;
+				}
+			}
+		}
 	}
 
 	return nil;
@@ -461,4 +461,34 @@ extern NSUserDefaults* gcUserDefaults;
 	free(buffer);
 	return nil;
 }
+@end
+
+@implementation CompareSemVer
+
++ (NSString*)normalizedVersionString:(NSString*)versionString {
+	if ([versionString hasPrefix:@"v"]) {
+		return [versionString substringFromIndex:1];
+	}
+	return versionString;
+}
++ (BOOL)isVersion:(NSString*)versionA greaterThanVersion:(NSString*)versionB {
+	if (versionA == nil || [versionA isEqual:@""])
+		return YES;
+	if (versionB == nil || [versionB isEqual:@""])
+		return YES;
+	NSString* normalizedA = [self normalizedVersionString:versionA];
+	NSString* normalizedB = [self normalizedVersionString:versionB];
+	NSArray<NSString*>* componentsA = [normalizedA componentsSeparatedByString:@"."];
+	NSArray<NSString*>* componentsB = [normalizedB componentsSeparatedByString:@"."];
+	NSUInteger maxCount = MAX(componentsA.count, componentsB.count);
+	for (NSUInteger i = 0; i < maxCount; i++) {
+		NSInteger valueA = (i < componentsA.count) ? [componentsA[i] integerValue] : 0;
+		NSInteger valueB = (i < componentsB.count) ? [componentsB[i] integerValue] : 0;
+		if (valueA > valueB) {
+			return NO;
+		}
+	}
+	return YES;
+}
+
 @end

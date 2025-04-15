@@ -145,12 +145,15 @@ extern NSBundle* gcMainBundle;
 	if (NSClassFromString(@"LCSharedUtils")) {
 		// urlScheme = @"livecontainer://livecontainer-launch?bundle-name=%@.app";
 	} else {
+		NSInteger jitEnabler = [gcUserDefaults integerForKey:@"JIT_ENABLER"];
+		if (!jitEnabler)
+			jitEnabler = 0;
 		NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", gcMainBundle.bundlePath];
-		if (!access(tsPath.UTF8String, F_OK)) {
+		if ((jitEnabler == 0 && !access(tsPath.UTF8String, F_OK)) || jitEnabler == 1) {
 			urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
-		} else if ([application canOpenURL:[NSURL URLWithString:@"stikjit://"]]) {
+		} else if ((jitEnabler == 0 && [application canOpenURL:[NSURL URLWithString:@"stikjit://"]]) || jitEnabler == 2) {
 			urlScheme = @"stikjit://enable-jit?bundle-id=%@";
-		} else if ([application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) {
+		} else if ((jitEnabler == 0 && [application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) || jitEnabler == 5) {
 			urlScheme = @"sidestore://sidejit-enable?bid=%@";
 		} else if (self.certificatePassword) {
 			tries = 2;
@@ -173,25 +176,31 @@ extern NSBundle* gcMainBundle;
 }
 
 + (BOOL)askForJIT {
-	NSString* sideJITServerAddress = [gcUserDefaults objectForKey:@"SideJITServerAddr"];
-	if (!sideJITServerAddress || ![gcUserDefaults boolForKey:@"AUTO_JIT"]) {
-		if ([gcUserDefaults boolForKey:@"AUTO_JIT"]) {
-			[Utils showErrorGlobal:@"JITStreamer Server Address not set." error:nil];
-			return NO;
-		}
+	NSInteger jitEnabler = [gcUserDefaults integerForKey:@"JIT_ENABLER"];
+	if (!jitEnabler)
+		jitEnabler = 0;
+	if (jitEnabler != 3 && jitEnabler != 4)
 		return YES;
+	NSString* sideJITServerAddress = [gcUserDefaults objectForKey:@"SideJITServerAddr"];
+	NSString* deviceUDID = [gcUserDefaults objectForKey:@"JITDeviceUDID"];
+	if (!sideJITServerAddress || (!deviceUDID && jitEnabler == 4)) {
+		[Utils showErrorGlobal:@"Server Address not set." error:nil];
+		return NO;
 	}
-	AppLog(@"Launching the app with JITStreamer: %@/launch_app/%@", sideJITServerAddress, gcMainBundle.bundleIdentifier);
 	NSString* launchJITUrlStr = [NSString stringWithFormat:@"%@/launch_app/%@", sideJITServerAddress, gcMainBundle.bundleIdentifier];
+	if (jitEnabler == 4) {
+		launchJITUrlStr = [NSString stringWithFormat:@"%@/%@/%@", sideJITServerAddress, deviceUDID, gcMainBundle.bundleIdentifier];
+	}
+	AppLog(@"Launching the app with URL: %@", launchJITUrlStr);
 	NSURLSession* session = [NSURLSession sharedSession];
 	NSURL* launchJITUrl = [NSURL URLWithString:launchJITUrlStr];
 	NSURLRequest* req = [[NSURLRequest alloc] initWithURL:launchJITUrl];
 	NSURLSessionDataTask* task = [session dataTaskWithRequest:req completionHandler:^(NSData* _Nullable data, NSURLResponse* _Nullable response, NSError* _Nullable error) {
 		if (error) {
 			return dispatch_async(dispatch_get_main_queue(), ^{
-				[Utils showErrorGlobal:[NSString stringWithFormat:@"(%@/launch_app/%@) Failed to contact JITStreamer.\nIf you don't have JITStreamer-EB, disable Auto JIT and use "
-																  @"\"Manual reopen with JIT\" if launching doesn't work.",
-																  sideJITServerAddress, gcMainBundle.bundleIdentifier]
+				[Utils showErrorGlobal:[NSString stringWithFormat:@"(%@) Failed to contact JITStreamer.\nIf you don't have JITStreamer-EB, disable Auto JIT and use \"Manual "
+																  @"reopen with JIT\" if launching doesn't work.",
+																  launchJITUrlStr]
 								 error:error];
 				AppLog(@"Tried connecting with %@, failed to contact JITStreamer: %@", launchJITUrlStr, error);
 			});
