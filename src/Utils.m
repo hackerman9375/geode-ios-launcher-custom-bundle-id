@@ -86,6 +86,9 @@ extern NSUserDefaults* gcUserDefaults;
 	// return @"https://api.github.com/repos/geode-sdk/ios-launcher/releases/latest";
 	return @"https://api.github.com/repos/geode-sdk/ios-launcher/releases";
 }
++ (NSString*)getGeodeLauncherRedirect {
+	return @"https://github.com/geode-sdk/ios-launcher/releases";
+}
 
 // ai generated because i cant figure this out
 + (UIImageView*)imageViewFromPDF:(NSString*)pdfName {
@@ -176,10 +179,19 @@ extern NSUserDefaults* gcUserDefaults;
 	for (NSString* dir in dirs) {
 		NSString* checkPrefsA = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/Library/HTTPStorages/com.robtop.geometryjump", dir];
 		NSString* checkPrefsB = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/tmp/com.robtop.geometryjump-Inbox", dir];
+        NSString* checkPrefsC = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/.com.apple.mobile_container_manager.metadata.plist", dir];
 		if ([fm fileExistsAtPath:checkPrefsA isDirectory:nil] || [fm fileExistsAtPath:checkPrefsB isDirectory:nil]) {
 			gdDocPath = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/", dir];
 			return gdDocPath;
-		}
+		} else if ([fm fileExistsAtPath:checkPrefsC isDirectory:nil]) {
+            NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:checkPrefsC];
+            if (plist) {
+                if (plist[@"MCMMetadataIdentifier"] && [plist[@"MCMMetadataIdentifier"] isEqualToString:@"com.robtop.geometryjump"]) {
+			        gdDocPath = [NSString stringWithFormat:@"/var/mobile/Containers/Data/Application/%@/", dir];
+                    return gdDocPath;
+                }
+            }
+        }
 	}
 
 	return nil;

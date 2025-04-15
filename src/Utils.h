@@ -13,6 +13,7 @@
 + (BOOL)isJailbroken;
 + (NSString*)getGeodeReleaseURL;
 + (NSString*)getGeodeLauncherURL;
++ (NSString*)getGeodeLauncherRedirect;
 + (UIImageView*)imageViewFromPDF:(NSString*)pdfName;
 + (NSURL*)pathToMostRecentLogInDirectory:(NSString*)directoryPath;
 + (void)showErrorGlobal:(NSString*)title error:(NSError*)error;
