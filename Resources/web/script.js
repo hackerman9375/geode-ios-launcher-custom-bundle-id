@@ -16,7 +16,7 @@ function handleRequest(url, success, errorMsg, body) {
             alert(`${errorMsg} Server responded with code: ${resp.status}. View app logs for more info.`);
             return;
         }
-        alert(success);
+        alert(success.length > 0 ? success : await resp.text());
         window.location.reload();
     }).catch(err => {
         console.error(err);
@@ -24,11 +24,13 @@ function handleRequest(url, success, errorMsg, body) {
     })
 }
 
-function handleUpload(file) {
+function handleUpload(files) {
     const fileInput = document.getElementById("uploadManual");
     const formData = new FormData();
-    formData.append('file', file);
-    handleRequest("upload", "Uploaded geode mod!", "Couldn't upload file.", formData);
+    for (const file of files) {
+        formData.append("files", file);
+    }
+    handleRequest("upload", "", "Couldn't upload files.", formData);
     if (fileInput) {
         fileInput.value = '';
     }
@@ -49,13 +51,13 @@ if (uploadArea) {
         e.preventDefault();
         uploadArea.classList.remove("drag");
         if (e.dataTransfer.files.length > 0) {
-            handleUpload(e.dataTransfer.files[0]);
+            handleUpload(e.dataTransfer.files);
         }
     });
 }
 if (fileInput) {
     fileInput.addEventListener("change", (e) => {
-        handleUpload(e.target.files[0]);
+        handleUpload(e.target.files);
     })
 }
 

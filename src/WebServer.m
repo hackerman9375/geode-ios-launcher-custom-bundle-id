@@ -133,58 +133,82 @@ extern NSBundle* gcMainBundle;
 		}];
 		[self.webServer addHandlerForMethod:@"POST" path:@"/upload" requestClass:[GCDWebServerMultiPartFormRequest class]
 							   processBlock:^GCDWebServerResponse*(GCDWebServerMultiPartFormRequest* request) {
-								   GCDWebServerMultiPartFile* file = [request firstFileForControlName:@"file"];
-								   if (!file)
-									   return [GCDWebServerDataResponse responseWithStatusCode:400];
-								   AppLog(@"[Server] Received request to upload %@", file.fileName);
-								   NSURL* path;
-								   if ([Utils isContainerized]) {
-									   path = [NSURL fileURLWithPath:[[LCPath docPath].path stringByAppendingString:@"/game/geode/mods/"]];
-								   } else {
-									   path = [NSURL fileURLWithPath:[[Utils docPath] stringByAppendingString:@"game/geode/mods/"]];
-								   }
-								   NSURL* destinationURL = [path URLByAppendingPathComponent:file.fileName];
-								   if ([file.fileName isEqualToString:@"Geode.ios.dylib"]) {
-									   if ([Utils isContainerized]) {
-										   return [GCDWebServerDataResponse responseWithStatusCode:400];
-									   }
-									   AppLog(@"[Server] Getting Geode dylib path...");
-									   NSString* docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
-									   NSString* tweakPath = [NSString stringWithFormat:@"%@/Tweaks/Geode.ios.dylib", docPath];
-									   if (![Utils isSandboxed]) {
-										   NSString* applicationSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
-										   if (applicationSupportDirectory != nil) {
-											   // https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m
-											   NSString* geode_dir = [applicationSupportDirectory stringByAppendingString:@"/GeometryDash/game/geode"];
-											   NSString* geode_lib = [geode_dir stringByAppendingString:@"/Geode.ios.dylib"];
-											   bool is_dir;
-											   NSFileManager* fm = [NSFileManager defaultManager];
-											   if (![fm fileExistsAtPath:geode_dir isDirectory:&is_dir]) {
-												   AppLog(@"mrow creating geode dir !!");
-												   if (![fm createDirectoryAtPath:geode_dir withIntermediateDirectories:YES attributes:nil error:NULL]) {
-													   AppLog(@"mrow failed to create folder!!");
-												   }
-											   }
-											   tweakPath = geode_lib;
-										   }
-									   }
-									   destinationURL = [NSURL fileURLWithPath:tweakPath];
-								   }
-								   NSError* error = nil;
-								   if ([fm fileExistsAtPath:destinationURL.path]) {
-									   [fm removeItemAtURL:destinationURL error:&error];
-									   if (error) {
-										   AppLog(@"[Server] Couldn't replace file: %@", error);
-										   return [GCDWebServerDataResponse responseWithStatusCode:500];
-									   }
-								   }
-								   if ([fm moveItemAtPath:file.temporaryPath toPath:destinationURL.path error:&error]) {
-									   AppLog(@"[Server] Uploaded file!");
-									   return [GCDWebServerDataResponse responseWithText:[NSString stringWithFormat:@"File %@ uploaded successfully", file.fileName]];
-								   } else {
-									   NSLog(@"[Server] Error saving file: %@", error);
-									   return [GCDWebServerDataResponse responseWithStatusCode:500];
-								   }
+									int uploads = 0;
+									int fails = 0;
+									AppLog(@"[Server] Received request to upload files");
+									for (GCDWebServerMultiPartFile* file in request.files) {
+										if (![file.controlName isEqualToString:@"files"])
+											continue;
+										AppLog(@"[Server] Received request to upload %@", file.fileName);
+										NSURL* path;
+										if ([Utils isContainerized]) {
+											path = [NSURL fileURLWithPath:[[LCPath docPath].path stringByAppendingString:@"/game/geode/mods/"]];
+										} else {
+											path = [NSURL fileURLWithPath:[[Utils docPath] stringByAppendingString:@"game/geode/mods/"]];
+										}
+										NSURL* destinationURL = [path URLByAppendingPathComponent:file.fileName];
+										if ([file.fileName isEqualToString:@"Geode.ios.dylib"]) {
+											if ([Utils isContainerized]) {
+												AppLog(@"[Server] Geode dylib cannot be replaced ingame");
+												fails++;
+												continue;
+											}
+											AppLog(@"[Server] Getting Geode dylib path...");
+											NSString* docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
+											NSString* tweakPath = [NSString stringWithFormat:@"%@/Tweaks/Geode.ios.dylib", docPath];
+											if (![Utils isSandboxed]) {
+												NSString* applicationSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
+												if (applicationSupportDirectory != nil) {
+													// https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m
+													NSString* geode_dir = [applicationSupportDirectory stringByAppendingString:@"/GeometryDash/game/geode"];
+													NSString* geode_lib = [geode_dir stringByAppendingString:@"/Geode.ios.dylib"];
+													bool is_dir;
+													NSFileManager* fm = [NSFileManager defaultManager];
+													if (![fm fileExistsAtPath:geode_dir isDirectory:&is_dir]) {
+														AppLog(@"mrow creating geode dir !!");
+														if (![fm createDirectoryAtPath:geode_dir withIntermediateDirectories:YES attributes:nil error:NULL]) {
+															AppLog(@"mrow failed to create folder!!");
+														}
+													}
+													tweakPath = geode_lib;
+												}
+											}
+											destinationURL = [NSURL fileURLWithPath:tweakPath];
+										} else if (![[file.fileName pathExtension] isEqualToString:@"geode"]) {
+											AppLog(@"[Server] File %@ is not a geode file", file.fileName);
+											fails++;
+											continue;
+										}
+										NSError* error = nil;
+										if ([fm fileExistsAtPath:destinationURL.path]) {
+											[fm removeItemAtURL:destinationURL error:&error];
+											if (error) {
+												AppLog(@"[Server] Couldn't replace file %@: %@", file.fileName, error);
+												fails++;
+												continue;
+											}
+										}
+										if ([fm moveItemAtPath:file.temporaryPath toPath:destinationURL.path error:&error]) {
+											AppLog(@"[Server] Uploaded file %@!", file.fileName);
+											uploads++;
+										} else {
+											AppLog(@"[Server] Error saving file %@: %@", file.fileName, error);
+											fails++;
+										}
+									}
+
+									NSString* response = nil;
+									if (uploads > 0 && fails > 0) {
+										response = [NSString stringWithFormat:@"Successfully uploaded %@ files, failed to upload %@ files. View app logs for more info.",
+																@(uploads), @(fails)];
+									} else if (uploads > 0) {
+										response = [NSString stringWithFormat:@"Successfully uploaded %@ files.", @(uploads)];
+									} else if (fails > 0) {
+										response = [NSString stringWithFormat:@"Failed to upload %@ files. View app logs for more info.", @(fails)];
+									} else {
+										response = @"No files uploaded.";
+									}
+									return [GCDWebServerDataResponse responseWithText:response];
 							   }];
 		[self.webServer startWithPort:8080 bonjourName:nil];
 		AppLog(@"Started server: %@", self.webServer.serverURL);
