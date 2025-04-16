@@ -365,6 +365,7 @@ extern NSUserDefaults* gcUserDefaults;
 
 + (void)tweakLaunch_withSafeMode:(BOOL)safemode {
 	AppLog(@"tweakLaunching GD %@", safemode ? @"in safe mode" : @"normally");
+	NSString* launchArgs = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
 	if (safemode) {
 		// https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m
 		NSString* appSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
@@ -372,6 +373,15 @@ extern NSUserDefaults* gcUserDefaults;
 		NSString* geode_env = [geode_dir stringByAppendingString:@"/geode.env"];
 
 		NSString* safeModeEnv = @"LAUNCHARGS=--geode:safe-mode";
+		NSFileManager* fm = [NSFileManager defaultManager];
+		[fm createFileAtPath:geode_env contents:[safeModeEnv dataUsingEncoding:NSUTF8StringEncoding] attributes:@{}];
+	} else if (launchArgs && [launchArgs length] > 1) {
+		// https://github.com/geode-catgirls/geode-inject-ios/blob/meow/src/geode.m
+		NSString* appSupportDirectory = [[Utils getGDDocPath] stringByAppendingString:@"Library/Application Support"];
+		NSString* geode_dir = [appSupportDirectory stringByAppendingString:@"/GeometryDash/game/geode"];
+		NSString* geode_env = [geode_dir stringByAppendingString:@"/geode.env"];
+
+		NSString* safeModeEnv = [NSString stringWithFormat:@"LAUNCHARGS=%@", launchArgs];
 		NSFileManager* fm = [NSFileManager defaultManager];
 		[fm createFileAtPath:geode_env contents:[safeModeEnv dataUsingEncoding:NSUTF8StringEncoding] attributes:@{}];
 	}

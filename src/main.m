@@ -397,6 +397,11 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	setenv("CFFIXED_USER_HOME", newHomePath.UTF8String, 1);
 	setenv("HOME", newHomePath.UTF8String, 1);
 	setenv("TMPDIR", newTmpPath.UTF8String, 1);
+	NSString* launchArgs = [gcUserDefaults stringForKey:@"LAUNCH_ARGS"];
+	if (launchArgs && [launchArgs length] > 1) {
+		setenv("LAUNCHARGS", launchArgs.UTF8String, 1);
+	}
+	// safe mode
 	if (safeMode) {
 		setenv("LAUNCHARGS", "--geode:safe-mode", 1);
 	}

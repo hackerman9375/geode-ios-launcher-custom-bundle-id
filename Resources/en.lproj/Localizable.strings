@@ -161,9 +161,12 @@
 "developer" = "Developer";
 "developer.warning.title" = "Are you sure you want to enable Developer Mode?";
 "developer.warning.msg" = "Developer Mode exposes options that might be unstable, corrupt your game files, and break your install, and are meant for development purposes only.";
+"developer.completedsetup" = "Completed Setup";
 "developer.webserver" = "Web Server";
 "developer.webserver.msg" = "Restart the launcher to start the web server! The default port is 8080.";
+"developer.testbundleaccess" = "Test GD Bundle Access";
 "developer.importipa" = "Import IPA";
+"developer.launchargs" = "Launch Args";
 
 // Logs 
 "logs.error" = "%@ could not be read.";
