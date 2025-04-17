@@ -153,7 +153,7 @@
 	logoImageView.clipsToBounds = YES;
 	[logoImageView setTintColor:[Theming getAccentColor]];
 	//[41, 36].map(x => x * 6);
-	float sizeMult = 7.F;
+	float sizeMult = 5.F;
 	logoImageView.frame = CGRectMake(view.center.x - ((41 * sizeMult) / 2), (view.bounds.size.height / 8) - 20, 41 * sizeMult, 36 * sizeMult);
 	[view addSubview:logoImageView];
 
@@ -186,7 +186,7 @@
 	[nextButton setTintColor:[Theming getTextColor:[Theming getAccentColor]]];
 	[nextButton addTarget:self action:@selector(goToNextStep) forControlEvents:UIControlEventTouchUpInside];
 
-	nextButton.frame = CGRectMake(view.center.x - 70, CGRectGetMaxY(subtitleLabel.frame), 140, 45);
+	nextButton.frame = CGRectMake(view.center.x - 70, (view.bounds.size.height / 1.5), 140, 45);
 	[view addSubview:nextButton];
 
 	[self transitionToView:view];
