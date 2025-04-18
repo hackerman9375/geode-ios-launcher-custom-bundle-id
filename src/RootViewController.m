@@ -231,6 +231,13 @@
 			[Utils showNotice:self title:@"In LiveContainer, please enable \"Launch with JIT\", \"Don't Inject TweakLoader\" & \"Don't Load TweakLoader\", otherwise Geode will "
 										 @"not launch properly. JIT-Less mode may NOT work on LiveContainer."];
 		});
+	} else if (![Utils isSandboxed]) {
+		if (![Utils getGDDocPath]) {
+			dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+				[Utils showNotice:self
+							title:@"Couldn't find Geometry Dash's documents directory! Please ensure that Geometry Dash is installed, otherwise Geode cannot not install."];
+			});
+		}
 	}
 
 	// making sure it has right attributes
