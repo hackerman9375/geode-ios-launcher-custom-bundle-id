@@ -13,7 +13,7 @@
 #import <CommonCrypto/CommonCrypto.h>
 #import <Foundation/Foundation.h>
 #import <MobileCoreServices/MobileCoreServices.h>
-#include <Security/SecKey.h>
+#import <Security/SecKey.h>
 #import <dlfcn.h>
 #include <mach-o/dyld.h>
 #import <objc/runtime.h>

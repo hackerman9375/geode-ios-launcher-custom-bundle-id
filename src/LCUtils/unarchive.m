@@ -29,7 +29,12 @@ static int copy_data(struct archive* ar, struct archive* aw, NSProgress* progres
 	}
 }
 
+bool forceProgress = false;
+
 CGFloat getProgress() {
+	if (forceProgress) {
+		return 100;
+	}
 	CGFloat progress = ((completedUnitCount / totalUnitCount) * 100);
 	if (!(progress >= 0)) {
 		return 1;
@@ -39,6 +44,7 @@ CGFloat getProgress() {
 }
 
 int extract(NSString* fileToExtract, NSString* extractionPath, NSProgress* progress) {
+	forceProgress = false;
 	completedUnitCount = 0;
 	totalUnitCount = 0;
 	struct archive* a;
@@ -60,6 +66,7 @@ int extract(NSString* fileToExtract, NSString* extractionPath, NSProgress* progr
 	if ((r = archive_read_open_filename(a, fileToExtract.fileSystemRepresentation, 10240))) {
 		archive_read_free(a);
 		AppLog(@"Failed to open archive: %@", fileToExtract);
+		forceProgress = true;
 		return 1;
 	}
 	while ((r = archive_read_next_header(a, &entry)) != ARCHIVE_EOF) {
@@ -86,6 +93,7 @@ int extract(NSString* fileToExtract, NSString* extractionPath, NSProgress* progr
 	if ((r = archive_read_open_filename(a, fileToExtract.fileSystemRepresentation, 10240))) {
 		archive_read_free(a);
 		AppLog(@"Failed to reopen archive for extraction: %@", fileToExtract);
+		forceProgress = true;
 		return 1;
 	}
 	ext = archive_write_disk_new();

@@ -14,3 +14,4 @@ build-debug.sh
 .git
 Resources/Frameworks/OpenSSL.framework
 /.vscode
+sec/

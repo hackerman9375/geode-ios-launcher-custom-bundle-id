@@ -12,7 +12,7 @@
 
 #import <objc/runtime.h>
 
-typedef void (^DecompressCompletion)(NSError* _Nullable error);
+typedef void (^DecompressCompletion)(int error);
 
 BOOL hasDoneUpdate = NO;
 
@@ -88,9 +88,7 @@ BOOL hasDoneUpdate = NO;
 	AppLog(@"Starting decomp of %@ to %@", fileToExtract, extractionPath);
 	[[NSFileManager defaultManager] createDirectoryAtPath:extractionPath withIntermediateDirectories:YES attributes:nil error:nil];
 	int res = extract(fileToExtract, extractionPath, nil);
-	if (res != 0)
-		return completion([NSError errorWithDomain:@"DecompressError" code:res userInfo:nil]);
-	return completion(nil);
+	return completion(res);
 }
 
 // I CANT (return BOOL instead?)
@@ -111,10 +109,6 @@ BOOL hasDoneUpdate = NO;
 				return AppLog(@"Error removing item from payload: %@", error);
 			}
 		}
-		/*[fm removeItemAtURL:payloadPath error:&error];
-		if (error) {
-			return AppLog(@"Error removing item from url: %@", error);
-		}*/
 
 		// async bad, i cant even update ui without it.. and it sometimes is unstable too!
 		dispatch_async(dispatch_get_main_queue(), ^{
@@ -130,19 +124,28 @@ BOOL hasDoneUpdate = NO;
 				});
 			}];
 		});
-		[VerifyInstall decompress:url.path extractionPath:[[fm temporaryDirectory] path] completion:^(NSError* _Nullable decompError) {
-			if (decompError) {
-				[Utils showError:root title:@"Decompressing IPA failed" error:decompError];
-				[root updateState];
-				return AppLog(@"Error trying to decompress IPA: %@", decompError);
+
+		[VerifyInstall decompress:url.path extractionPath:[[fm temporaryDirectory] path] completion:^(int decompError) {
+			if (decompError != 0) {
+				return dispatch_async(dispatch_get_main_queue(), ^{
+					[root updateState];
+					[Utils showError:root
+							   title:[NSString stringWithFormat:
+												   @"Decompressing IPA failed. (Outdated launcher or incomplete download?)\nStatus Code: %d\nView app logs for more information.",
+												   decompError]
+							   error:nil];
+					return AppLog(@"Error trying to decompress IPA (Code %d)", decompError);
+				});
 			}
 			NSError* error = nil;
 
 			NSArray<NSString*>* payloadContents = [fm contentsOfDirectoryAtPath:payloadPath.path error:&error];
 			if (error) {
-				[Utils showError:root title:@"Retrieving contents failed" error:error];
-				[root updateState];
-				return AppLog(@"Error retrieving contents of directory: %@", error);
+				return dispatch_async(dispatch_get_main_queue(), ^{
+					[Utils showError:root title:@"Retrieving contents failed" error:error];
+					[root updateState];
+					AppLog(@"Error retrieving contents of directory: %@", error);
+				});
 			}
 			NSString* appBundleName = nil;
 			for (NSString* fileName in payloadContents) {
@@ -181,14 +184,18 @@ BOOL hasDoneUpdate = NO;
 			// Move it!
 			[fm moveItemAtURL:appFolderPath toURL:outputFolder error:&error];
 			if (error) {
-				[Utils showError:root title:@"Moving items failed" error:error];
-				[root updateState];
-				return AppLog(@"Error moving item from url: %@", error);
+				return dispatch_async(dispatch_get_main_queue(), ^{
+					[Utils showError:root title:@"Moving items failed" error:error];
+					[root updateState];
+					AppLog(@"Error moving item from url: %@", error);
+				});
 			}
 			LCAppInfo* finalNewApp = [[LCAppInfo alloc] initWithBundlePath:outputFolder.path];
 			if (finalNewApp == nil) {
-				[root updateState];
-				return AppLog(@"Error getting new app from LCAppInfo");
+				return dispatch_async(dispatch_get_main_queue(), ^{
+					[root updateState];
+					AppLog(@"Error getting new app from LCAppInfo");
+				});
 			}
 			finalNewApp.relativeBundlePath = appRelativePath;
 
