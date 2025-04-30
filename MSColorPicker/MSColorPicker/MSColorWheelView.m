@@ -25,6 +25,8 @@
 // THE SOFTWARE.
 
 #import "MSColorWheelView.h"
+#import <Metal/Metal.h>
+#import "src/Utils.h"
 #import "MSColorUtils.h"
 #import "src/Theming.h"
 
@@ -157,7 +159,14 @@
                             @"inputValue": @1};
     CIFilter* filter = [CIFilter filterWithName:@"CIHueSaturationValueGradient" withInputParameters:parameters];
     CIImage *outputImage = [filter outputImage];
-    CIContext *context = [CIContext contextWithOptions:nil];
+    CIContext *context;
+    if ([Utils isSandboxed]) {
+        context = [CIContext contextWithOptions:nil];
+    } else {
+        id<MTLDevice> device = MTLCreateSystemDefaultDevice(); // so apparently we need to create with Metal, yeah that sure wont go wrong, but it fixed crashes...
+                                                               // unfortunately though, it wont render the color wheel, ill have to fix that later
+        context = [CIContext contextWithMTLDevice:device options:nil];
+    }
     CGImageRef cgimg = [context createCGImage:outputImage fromRect:[outputImage extent]];
     self.layer.contents = (__bridge_transfer id)cgimg;
 }
