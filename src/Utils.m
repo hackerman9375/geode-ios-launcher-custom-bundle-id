@@ -16,6 +16,13 @@ NSString* cachedVersion = nil;
 
 extern NSUserDefaults* gcUserDefaults;
 
+// since iOS for whatever reason doesnt have this API
+// https://developer.apple.com/documentation/security/sectaskcopyvalueforentitlement(_:_:_:)
+// https://developer.apple.com/documentation/security/sectaskcreatefromself(_:)
+typedef struct __SecTask* SecTaskRef;
+extern CFTypeRef SecTaskCopyValueForEntitlement(SecTaskRef task, CFStringRef entitlement, CFErrorRef _Nullable* error) __attribute__((weak_import));
+extern SecTaskRef SecTaskCreateFromSelf(CFAllocatorRef allocator) __attribute__((weak_import));
+
 @implementation Utils
 + (NSString*)launcherBundleName {
 	return @"com.geode.launcher";
@@ -310,24 +317,33 @@ extern NSUserDefaults* gcUserDefaults;
 	return [[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.robtop.geometryjump"];
 }
 + (BOOL)isSandboxed {
-	// make sure we dont keep doing these read operations
 	if (checkedSandboxed)
 		return sandboxValue;
 	checkedSandboxed = YES;
-	NSFileManager* fm = [NSFileManager defaultManager];
-	NSError* err;
-	NSArray* dirs = [fm contentsOfDirectoryAtPath:@"/var" error:&err];
-	if (err) {
+	if (SecTaskCreateFromSelf == NULL || SecTaskCopyValueForEntitlement == NULL) {
 		AppLog(@"Sandboxed");
 		sandboxValue = YES;
 		return YES;
 	}
-	if (dirs.count == 0) {
+	SecTaskRef task = SecTaskCreateFromSelf(nil);
+	if (task == nil) {
 		AppLog(@"Sandboxed");
 		sandboxValue = YES;
 		return YES;
 	}
-	AppLog(@"Not Sandboxed");
+	CFTypeRef value = SecTaskCopyValueForEntitlement(task, CFSTR("com.apple.private.security.no-sandbox"), NULL);
+	if (value)
+		CFRelease(value);
+	CFRelease(task);
+	if ((value && CFBooleanGetValue(value) == true)) {
+		AppLog(@"Not Sandboxed");
+		sandboxValue = NO;
+		return NO;
+	} else {
+		AppLog(@"Sandboxed");
+		sandboxValue = YES;
+		return YES;
+	}
 	sandboxValue = NO;
 	return NO;
 }
