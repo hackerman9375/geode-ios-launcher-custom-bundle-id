@@ -10,11 +10,13 @@
 - PC (Windows, Linux) or Mac OS
 - Apple ID (Secondary / Throwaway Recommended)
 - USB Cable to connect your device (Lightning / USB C)
+- An internet connection
+- Full version of Geometry Dash from the [App Store](https://apps.apple.com/us/app/geometry-dash/id625334537)
 - IPA / TIPA file of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases) (only get the TIPA file if you want to use the jailbreak tweak)
 
-## Installing SideStore / AltStore
+## Installing SideStore
 > [!TIP]
-> **SideStore** is recommended to use over **AltStore**, because a PC is **not required** after the initial install.
+> After installing **SideStore**, a PC is **not required** after the initial install.
 > You can skip this step if you are using Sideloadly or TrollStore, but you may still need to follow the first step, especially if you have never sideloaded an app before.
 
 1. **Enabling Developer Mode (iOS 16+)**
@@ -28,15 +30,9 @@
 	- Follow the steps provided here: https://sidestore.io/#get-started
 	- SideStore is recommended if you do not want to refresh your apps while keeping your PC on.
 
-3. **Installing AltStore**
-	- If you plan on installing SideStore, skip this step. Otherwise follow these steps depending on what computer you have:
-    - Download and install [AltServer](https://altstore.io/), or [AltServer-Linux](https://github.com/NyaMisty/AltServer-Linux) for Linux.
-	- [Windows Guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows)
-	- [Mac OS Guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-macos)
-
 Now you can proceed with installing Geode! If you are not jailbroken, **install the IPA**. If you're jailbroken and plan to stay so, **install the TIPA** version.
 
-## Installing Geode through SideStore / AltStore
+## Installing Geode through SideStore
 > [!NOTE]
 > You will need to **refresh** both the store and Geode every week, otherwise you will not be able to run the app.
 
