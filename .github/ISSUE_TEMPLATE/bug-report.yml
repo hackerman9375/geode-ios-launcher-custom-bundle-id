@@ -1,0 +1,67 @@
+name: Bug Report
+description: File a bug report with the iOS launcher (not Geode Loader itself) where something is not working as expected.
+title: "[BUG] "
+labels: [ "bug" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for filing a bug report.
+
+        ## Important
+        - Please search existing issues to avoid creating duplicates.
+        - Ensure you are running the latest version of the launcher, in case the bug had been fixed already.
+        - For enhancement requests, please use the Feature Request template.
+        - Please fill out the template below to the best of your ability.
+  - type: checkboxes
+    attributes:
+      label: Launcher Issue
+      description: |
+        The Geode iOS Launcher repository is for issues of the *iOS Launcher*, not the ***Geode Loader itself*** or individual mods created by other developers.
+        When submitting a bug report, please make sure that the bug is *actually* related to the ***iOS Launcher*** and not related to the Geode Loader, or a mod.
+        Failing to do this will get your issue *closed without explanation*.
+      options:
+        - label: I confirm that this bug is NOT related to the geode loader and a mod but directly to the iOS Launcher itself.
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of the iOS Launcher were you using when this bug was encountered? If you do not know where to find this, open the settings and scroll to the "About" section. The version should be next to the "iOS Launcher" text.
+      placeholder: "Example: v0.5.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen? Attach screenshots here as necessary.
+      placeholder: Please be specific and concice with describing the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How do you reproduce this bug?
+      description: Please provide instructions that can be easily reproduced. Attach screenshots here as necessary.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please send any relevant app logs found in the "View Last App Logs" section of the Launcher. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant crash log
+      description: If the launcher had crashed, please send any relevant crash logs. This can be found in **Settings > Privacy & Security > Analytics & Improvements > Analytics Data > GeodeLauncher_PleaseDoNotShortenTheExecutableNameBecauseItIsUsedToReserveSpaceForOverwritingThankYou**
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: Any additional information you wish to provide. Please add anything which did not fit into the other sections here.
+      placeholder: "Example: This is likely caused by X because..."
+    validations:
+      required: false

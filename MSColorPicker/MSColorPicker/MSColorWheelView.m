@@ -165,6 +165,7 @@
     } else {
         id<MTLDevice> device = MTLCreateSystemDefaultDevice(); // so apparently we need to create with Metal, yeah that sure wont go wrong, but it fixed crashes...
                                                                // unfortunately though, it wont render the color wheel, ill have to fix that later
+                                                               // TODO: use UIImage instead for color wheel
         context = [CIContext contextWithMTLDevice:device options:nil];
     }
     CGImageRef cgimg = [context createCGImage:outputImage fromRect:[outputImage extent]];

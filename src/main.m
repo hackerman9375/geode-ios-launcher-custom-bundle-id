@@ -59,6 +59,8 @@ void UIAGuestHooksInit();
 @end
 
 static BOOL checkJITEnabled() {
+	if (access("/Users", R_OK) == 0)
+		return YES;
 	if ([gcUserDefaults boolForKey:@"JITLESS_REMOVEMEANDTHEUNDERSCORE"])
 		return NO;
 	// check if jailbroken
@@ -173,7 +175,11 @@ static void overwriteExecPath(NSString* bundlePath) {
 	// Make it RW and overwrite now
 	// | VM_PROT_COPY
 	kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)path, maxLen, false, PROT_READ | PROT_WRITE);
-	assert(ret == KERN_SUCCESS);
+	if (ret != KERN_SUCCESS) {
+		// thanks apple for introducing this ios 18.2 specific problem!
+		BOOL tpro_ret = os_thread_self_restrict_tpro_to_rw();
+		assert(tpro_ret);
+	}
 	bzero(path, maxLen);
 	strncpy(path, newPath, newLen);
 

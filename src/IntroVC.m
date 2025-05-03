@@ -23,7 +23,6 @@
 		if (_skipColor == NO) {
 			[Theming saveAccentColor:_accentColor];
 		}
-		// if ([Utils isJailbroken]) {
 		if (![Utils isSandboxed]) {
 			//_currentStep = InstallStepInstallMethod;
 			//[self showInstallMethodStep];
@@ -133,6 +132,14 @@
 								UIWindow* window = scene.windows.firstObject;
 								if (window != nil) {
 									[window.rootViewController presentViewController:alert animated:YES completion:nil];
+								}
+							});
+						} else if ([Utils isSandboxed]) {
+							dispatch_async(dispatch_get_main_queue(), ^{
+								NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", NSBundle.mainBundle.bundlePath];
+								if (!access(tsPath.UTF8String, F_OK)) {
+									// assume TrollStore
+									[Utils showNotice:self title:@"launcher.notice.ts-app-uri".loc];
 								}
 							});
 						}

@@ -72,6 +72,7 @@
 "launcher.notice.ts.install" = "You are using the TrollStore version of Geode! If you want to install Geometry Dash in a container, consider installing the IPA version instead.";
 "launcher.notice.mod-import" = "The mod '%@' has been imported!";
 "launcher.notice.mod-import.fail" = "The mod '%@' couldn't be imported";
+"launcher.notice.ts-app-uri" = "TrollStore Detected! If you haven't already, ensure that you have the \"URL Scheme Enabled\" setting enabled in TrollStore, otherwise the app will launch the Magnifier App rather than TrollStore to enable JIT.";
 
 "launcher.status.not-verified" = "Geometry Dash is not verified.\nYou need to verify that you installed the app.";
 "launcher.status.not-installed" = "Geode is not installed.";
