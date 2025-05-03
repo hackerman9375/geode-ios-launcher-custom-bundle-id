@@ -10,7 +10,7 @@
 - PC (Windows, Linux) or Mac OS
 - Apple ID (Secondary / Throwaway Recommended)
 - USB Cable to connect your device (Lightning / USB C)
-- Full version of Geometry DAsh installed
+- Full version of Geometry Dash installed
 - An internet connection
 
 ## Installing the Geode Launcher
