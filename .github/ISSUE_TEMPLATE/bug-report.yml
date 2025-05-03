@@ -53,7 +53,7 @@ body:
       description: Please send any relevant app logs found in the "View Last App Logs" section of the Launcher. This will be automatically formatted into code, so no need for backticks.
       render: shell
   - type: textarea
-    id: logs
+    id: crash
     attributes:
       label: Relevant crash log
       description: If the launcher had crashed, please send any relevant crash logs. This can be found in **Settings > Privacy & Security > Analytics & Improvements > Analytics Data > GeodeLauncher_PleaseDoNotShortenTheExecutableNameBecauseItIsUsedToReserveSpaceForOverwritingThankYou**
