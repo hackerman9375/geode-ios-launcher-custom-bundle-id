@@ -52,7 +52,7 @@ Tap the `+` button and tap either **Install IPA File** or **Install From URL**, 
 After going through the setup process, you may have seen the warning that **Just-In-Time** (JIT) compilation is required. This is true if you want to run Geode without being jailbroken, as by default, Apple restricts how apps can manage memory.
 
 > [!WARNING]
-> JIT also requires you to have **Wi-Fi** connection or **Airplane Mode** enabled on your iOS device if you're not jailbroken or don't have Trollstore. Cellular will **not work**.
+> JIT also requires you to have **Wi-Fi** connection or **Airplane Mode** enabled on your iOS device if you're not jailbroken or don't have Trollstore.
 
 There are a few ways to launch Geode with JIT, depending on both iOS version, and your use case.
 

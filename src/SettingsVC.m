@@ -101,7 +101,7 @@
 	case 6: // Credits
 		return [self.creditsArray count];
 	case 7: // Developer
-		return 6;
+		return 7;
 	default:
 		return 0;
 	}
@@ -376,25 +376,37 @@
 			textField.placeholder = @"--geode:safe-mode";
 			textField.text = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
 		} else if (indexPath.row == 1) {
+			UITextField* textField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 30)];
+			textField.textAlignment = NSTextAlignmentRight;
+			textField.delegate = self;
+			textField.returnKeyType = UIReturnKeyDone;
+			textField.autocorrectionType = UITextAutocorrectionTypeNo;
+			textField.keyboardType = UIKeyboardTypeURL;
+			textField.tag = 4;
+			cell.accessoryView = textField;
+			cell.textLabel.text = @"Last Nightly Date";
+			textField.placeholder = @"2022-20505025";
+			textField.text = [[Utils getPrefs] stringForKey:@"NIGHTLY_DATE"];
+		} else if (indexPath.row == 2) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"advanced.dev-mode".loc;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:NO];
 			return cellval1;
-		} else if (indexPath.row == 2) {
+		} else if (indexPath.row == 3) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"developer.completedsetup".loc;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"CompletedSetup"] tag:6 disable:NO];
 			return cellval1;
-		} else if (indexPath.row == 3) {
+		} else if (indexPath.row == 4) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"developer.webserver".loc;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"WEB_SERVER"] tag:12 disable:NO];
 			return cellval1;
-		} else if (indexPath.row == 4) {
+		} else if (indexPath.row == 5) {
 			cell.textLabel.text = @"developer.testbundleaccess".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 5) {
+		} else if (indexPath.row == 6) {
 			cell.textLabel.text = @"developer.importipa".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
@@ -792,11 +804,11 @@
 		}
 	} else if (indexPath.section == 7) {
 		switch (indexPath.row) {
-		case 4: { // Test GD Bundle Access
+		case 5: { // Test GD Bundle Access
 			[Utils showNotice:self title:[Utils getGDDocPath]];
 			break;
 		}
-		case 5: { // Import IPA
+		case 6: { // Import IPA
 			_isImportIPA = true;
 			UTType* type = [UTType typeWithIdentifier:@"com.apple.itunes.ipa"];
 			UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ type ] asCopy:YES];
@@ -924,6 +936,9 @@
 		break;
 	case 3: // launch args
 		[[Utils getPrefs] setValue:textField.text forKey:@"LAUNCH_ARGS"];
+		break;
+	case 4: // nightly date
+		[[Utils getPrefs] setValue:textField.text forKey:@"NIGHTLY_DATE"];
 		break;
 	}
 }

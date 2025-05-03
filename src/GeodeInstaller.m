@@ -9,6 +9,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 
 @implementation GeodeInstaller {
 	NSURLSessionDownloadTask* downloadTask;
+	NSString* updateDate;
 }
 - (void)startInstall:(RootViewController*)root ignoreRoot:(BOOL)ignoreRoot {
 	if (!ignoreRoot) {
@@ -41,12 +42,12 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 				if ([[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
 					NSString* published_at = jsonDict[@"published_at"];
 					if (published_at && [published_at isKindOfClass:[NSString class]]) {
-						[[Utils getPrefs] setObject:published_at forKey:@"NIGHTLY_DATE"];
+						updateDate = published_at;
 					}
 				} else {
 					NSString* tagName = jsonDict[@"tag_name"];
 					if (tagName && [tagName isKindOfClass:[NSString class]]) {
-						[Utils updateGeodeVersion:tagName];
+						updateDate = tagName;
 					}
 				}
 				if ([assets isKindOfClass:[NSArray class]]) {
@@ -304,6 +305,11 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 			}
 			tweakPath = geode_lib;
 		}
+	}
+	if ([[Utils getPrefs] boolForKey:@"USE_NIGHTLY"]) {
+		[[Utils getPrefs] setObject:updateDate forKey:@"NIGHTLY_DATE"];
+	} else {
+		[Utils updateGeodeVersion:updateDate];
 	}
 	[self decompress:url.path extractionPath:[[fm temporaryDirectory] path] completion:^(NSError* _Nullable decompError) {
 		if (decompError) {
