@@ -10,11 +10,7 @@
 - PC (Windows, Linux) or Mac OS
 - Apple ID (Secondary / Throwaway Recommended)
 - USB Cable to connect your device (Lightning / USB C)
-- Full version of Geometry Dash installed
-- An internet connection
-
-## Installing the Geode Launcher
-Before going further, download the latest release here: https://github.com/geode-sdk/ios-launcher/releases, if you are not **jailbroken** or don't plan on using the jailbroken version, download the latest **ipa** file. If you wish to use the tweak and have **TrollStore**, download the latest **tipa** file.
+- IPA / TIPA file of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases) (only get the TIPA file if you want to use the jailbreak tweak)
 
 ## Installing SideStore / AltStore
 > [!TIP]
