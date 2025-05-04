@@ -66,7 +66,7 @@ static bool searchAndPatch(char* name, char* base, char* signature, int length, 
 	// TODO: maybe add a condition for if the user really has dopamine, considering that I may need to look further into the address space
 	// but it crashes if I have it too big!? wacky
 	// for(int i=0; i < 0x100000; i++) {
-	for (int i = 0; i < 0x80000; i++) { // i+=4
+	for (int i = 0; i < 0x80000; i+=4) { // i+=4
 		if (base[i] == signature[0] && memcmp(base + i, signature, length) == 0) {
 			patchAddr = base + i;
 			break;
