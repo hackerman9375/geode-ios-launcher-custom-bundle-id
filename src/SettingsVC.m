@@ -95,7 +95,7 @@
 			return 0;
 		}
 	case 4: // Advanced
-		return 5;
+		return 6;
 	case 5: // About
 		return 4;
 	case 6: // Credits
@@ -293,15 +293,6 @@
 		break;
 	}
 	case 4:
-		/*if (indexPath.row == 0) {
-			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-			cellval1.textLabel.text = @"advanced.dev-mode".loc;
-			if (![[Utils getPrefs] boolForKey:@"NOT_AN_NPC"]) {
-				cellval1.textLabel.textColor = [UIColor systemGrayColor];
-			}
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"DEVELOPER_MODE"] tag:2 disable:![[Utils getPrefs] boolForKey:@"NOT_AN_NPC"]];
-			return cellval1;
-		} else*/
 		if (indexPath.row == 0) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils")];
@@ -316,12 +307,17 @@
 			cellval1.textLabel.text = @"advanced.use-nightly".loc;
 			return cellval1;
 		} else if (indexPath.row == 2) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.accessoryView = [self createSwitch:![[Utils getPrefs] boolForKey:@"DONT_WARN_JIT"] tag:13 disable:NO];
+			cellval1.textLabel.text = @"advanced.warn-launcher-jit".loc;
+			return cellval1;
+		} else if (indexPath.row == 3) {
 			cell.textLabel.text = @"advanced.view-app-logs".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 3) {
+		} else if (indexPath.row == 4) {
 			cell.textLabel.text = @"advanced.view-recent-logs".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 4) {
+		} else if (indexPath.row == 5) {
 			cell.textLabel.text = @"advanced.view-recent-crash".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		}
@@ -503,7 +499,8 @@
 	case 1:
 		return @"gameplay.footer".loc;
 	case 2:
-		// return @"jit.footer".loc;
+		if (![Utils isSandboxed])
+			return @"";
 		if (NSClassFromString(@"LCSharedUtils"))
 			return @"jit.footer.livecontainer".loc;
 		return [self getJITEnablerFooter];
@@ -629,7 +626,12 @@
 		case 0: {
 			if (NSClassFromString(@"LCSharedUtils"))
 				break;
-			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"jit.jit-enabler".loc message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+			UIAlertController* alert = [UIAlertController
+				alertControllerWithTitle:@"jit.jit-enabler".loc
+								 message:nil
+						  preferredStyle:[UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad ? UIAlertControllerStyleAlert : UIAlertControllerStyleActionSheet];
+			// no thanks not dealing with setting the view
+			// https://stackoverflow.com/questions/31577140/uialertcontroller-is-crashed-ipad
 			for (NSInteger i = 0; i < [self getJITEnablerOptions].count; i++) {
 				NSString* value = [self getJITEnablerOptions][i];
 				if (![value isEqualToString:@""]) {
@@ -782,16 +784,16 @@
 		}
 	} else if (indexPath.section == 4) {
 		switch (indexPath.row) {
-		case 2: { // View app logs
+		case 3: { // View app logs
 			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:[[LCPath docPath] URLByAppendingPathComponent:@"app.log"]] animated:YES];
 			break;
 		}
-		case 3: { // View geode logs
+		case 4: { // View geode logs
 			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[Utils docPath] stringByAppendingString:@"game/geode/logs/"]];
 			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:file] animated:YES];
 			break;
 		}
-		case 4: { // View recent crash
+		case 5: { // View recent crash
 			NSURL* file = [Utils pathToMostRecentLogInDirectory:[[Utils docPath] stringByAppendingString:@"game/geode/crashlogs/"]];
 			[[self navigationController] pushViewController:[[LogsViewController alloc] initWithFile:file] animated:YES];
 			break;
@@ -878,14 +880,15 @@
 		break;
 	case 11:
 		[Utils toggleKey:@"USE_NIGHTLY"];
-		[[Utils getPrefs] setBool:NO forKey:@"UPDATE_AUTOMATICALLY"];
-		[self.tableView reloadData];
 		break;
 	case 12:
 		if ([sender isOn]) {
 			[Utils showNotice:self title:@"developer.webserver.msg".loc];
 		}
 		[Utils toggleKey:@"WEB_SERVER"];
+		break;
+	case 13:
+		[Utils toggleKey:@"DONT_WARN_JIT"];
 		break;
 	}
 }

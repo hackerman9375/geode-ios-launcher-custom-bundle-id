@@ -2,6 +2,7 @@
 #import "LCUtils/GCSharedUtils.h"
 #import "LCUtils/LCUtils.h"
 #import "LCUtils/Shared.h"
+#import "LCUtils/utils.h"
 #import "RootViewController.h"
 #import "SettingsVC.h"
 #import "Theming.h"
@@ -226,19 +227,31 @@
 	[self.progressBar setHidden:YES];
 	[self.view addSubview:self.progressBar];
 
-	if ([self isLCTweakLoaded]) {
-		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+		if ([self isLCTweakLoaded]) {
 			[Utils showNotice:self title:@"In LiveContainer, please enable \"Launch with JIT\", \"Don't Inject TweakLoader\" & \"Don't Load TweakLoader\", otherwise Geode will "
 										 @"not launch properly. JIT-Less mode may NOT work on LiveContainer."];
-		});
-	} else if (![Utils isSandboxed]) {
-		if (![Utils getGDDocPath]) {
-			dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-				[Utils showNotice:self
-							title:@"Couldn't find Geometry Dash's documents directory! Please ensure that Geometry Dash is installed, otherwise Geode cannot not install."];
+		} else if (![Utils isSandboxed]) {
+			dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+				if (![Utils getGDDocPath]) {
+					[Utils showNotice:self
+								title:@"Couldn't find Geometry Dash's documents directory! Please ensure that Geometry Dash is installed, otherwise Geode cannot not install."];
+				}
 			});
+		} else if (!NSClassFromString(@"LCSharedUtils") && [Utils isSandboxed]) {
+			// i still am unsure what compels users to open with jit when its not needed *unless* you want to launch gd, so ill just warn them that they dont need to waste their
+			// time doing that!
+			int flags;
+			csops(getpid(), 0, &flags, sizeof(flags)); // im not sure if dopamine just changes PPL or runs every app as debugged but it doesn't for me so this works
+			if ((flags & CS_DEBUGGED) != 0) {
+				// mission failed successfully
+				AppLog(@"User tried running launcher with JIT but didn't know they had to press the launch button... Let's warn them about that.");
+				if (![[Utils getPrefs] boolForKey:@"DONT_WARN_JIT"]) {
+					[Utils showNotice:self title:@"jit.warning".loc];
+				}
+			}
 		}
-	}
+	});
 
 	// making sure it has right attributes
 	NSFileManager* fm = NSFileManager.defaultManager;
