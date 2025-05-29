@@ -19,6 +19,8 @@
 #include <mach-o/dyld.h>
 #import <objc/runtime.h>
 
+#define LOCAL_BUILD 0
+
 @interface RootViewController ()
 
 @property(nonatomic, strong) ProgressBar* progressBar;
@@ -310,12 +312,8 @@
 	*/
 }
 
-- (void)startWeb {
-}
-
 - (void)viewDidLayoutSubviews {
 	[super viewDidLayoutSubviews];
-	[self startWeb];
 	[self updateState];
 }
 
@@ -361,6 +359,12 @@
 	} else {
 		if (![VerifyInstall verifyGDAuthenticity])
 			return AppLog(@"GD not verified! Not installing!");
+		if (LOCAL_BUILD == 1) {
+			NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
+			downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"http://192.168.1.84:3000/Gratis.ipa"]];
+			[downloadTask resume];
+			return;
+		}
 		// this is all so unnecessary, just use import IPA if you're that desperate
 		NSData* b64Data = [[NSData alloc] initWithBase64EncodedString:@"__KEY_PART2__" options:0];
 		if (!b64Data) {
@@ -418,29 +422,42 @@
 - (void)signApp:(BOOL)force completionHandler:(void (^)(BOOL success, NSString* error))completionHandler {
 	if (![[Utils getPrefs] boolForKey:@"JITLESS"])
 		return completionHandler(YES, nil);
-	LCAppInfo* app = [[LCAppInfo alloc] initWithBundlePath:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app"].path];
-	[app patchExecAndSignIfNeedWithCompletionHandler:^(BOOL signSuccess, NSString* signError) {
-		if (signError)
-			return completionHandler(NO, signError);
-		[LCUtils signTweaks:[LCPath tweakPath] force:force progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
-			if (error != nil) {
-				AppLog(@"Detailed error for signing tweaks: %@", error);
-				return completionHandler(
-					NO, [NSString stringWithFormat:@"Couldn't sign tweaks. Please make sure that you have either patched %@, or imported a certificate in settings.",
-												   [LCUtils getStoreName]]);
+
+	if ([LCUtils certificateData]) {
+		[LCUtils validateCertificate:^(int status, NSDate* expirationDate, NSString* errorC) {
+			if (errorC) {
+				return [Utils showError:self title:[NSString stringWithFormat:@"launcher.error.sign.invalidcert".loc, errorC] error:nil];
 			}
-			[LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:force progressHandler:^(NSProgress* progress) {}
-				completion:^(NSError* error) {
+			if (status != 0) {
+				return [Utils showError:self title:@"launcher.error.sign.invalidcert2".loc error:nil];
+			}
+			LCAppInfo* app = [[LCAppInfo alloc] initWithBundlePath:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app"].path];
+			[app patchExecAndSignIfNeedWithCompletionHandler:^(BOOL signSuccess, NSString* signError) {
+				if (signError)
+					return completionHandler(NO, signError);
+				[LCUtils signTweaks:[LCPath tweakPath] force:force progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
 					if (error != nil) {
-						AppLog(@"Detailed error for signing mods: %@", error);
+						AppLog(@"Detailed error for signing tweaks: %@", error);
 						return completionHandler(
-							NO, [NSString stringWithFormat:@"Couldn't sign mods. Please make sure that you have either patched %@, or imported a certificate in settings.",
+							NO, [NSString stringWithFormat:@"Couldn't sign tweaks. Please make sure that you have either patched %@, or imported a certificate in settings.",
 														   [LCUtils getStoreName]]);
 					}
-					completionHandler(YES, nil);
+					[LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:force progressHandler:^(NSProgress* progress) {}
+						completion:^(NSError* error) {
+							if (error != nil) {
+								AppLog(@"Detailed error for signing mods: %@", error);
+								return completionHandler(
+									NO, [NSString stringWithFormat:@"Couldn't sign mods. Please make sure that you have either patched %@, or imported a certificate in settings.",
+																   [LCUtils getStoreName]]);
+							}
+							[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
+							[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+							completionHandler(YES, nil);
+						}];
 				}];
+			} progressHandler:^(NSProgress* signProgress) {} forceSign:force];
 		}];
-	} progressHandler:^(NSProgress* signProgress) {} forceSign:force];
+	}
 }
 
 - (void)launchGame {
@@ -463,38 +480,21 @@
 		[Utils tweakLaunch_withSafeMode:false];
 		return;
 	}
-	NSString* openURL = [NSString stringWithFormat:@"geode://launch"];
-	NSURL* url = [NSURL URLWithString:openURL];
-	if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
-		[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
-		return;
-	}
-	/*
-		[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
-		[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
-		[[Utils getPrefs] setBool:NO forKey:@"safemode"];
-		[self signApp:NO completionHandler:^(BOOL success, NSString *error){
-			if (!success) {
-				dispatch_async(dispatch_get_main_queue(), ^{
-					[Utils showError:self title:error error:nil];
-					[self updateState];
-				});
-				return;
-			}
-			if (![LCUtils launchToGuestApp]) {
-				dispatch_async(dispatch_get_main_queue(), ^{
-					NSFileManager *fm = [NSFileManager defaultManager];
-					[fm createFileAtPath:
-						[[LCPath docPath] URLByAppendingPathComponent:@"jitflag"].path
-						contents:[[NSData alloc] init]
-						attributes:@{}
-					];
-					 // get around NSUserDefaults because sometimes it works and doesnt work when relaunching...
-					[Utils showNotice:self title:@"Relaunch the app with JIT to start Geode!"];
-				});
-			}
-		}];
-		*/
+	[self signApp:NO completionHandler:^(BOOL success, NSString* error) {
+		if (!success) {
+			dispatch_async(dispatch_get_main_queue(), ^{
+				[Utils showError:self title:error error:nil];
+				[self updateState];
+			});
+			return;
+		}
+		NSString* openURL = [NSString stringWithFormat:@"%@://launch", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
+		NSURL* url = [NSURL URLWithString:openURL];
+		if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
+			[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
+			return;
+		}
+	}];
 }
 
 // download part because im too lazy to impl delegates in the other class
