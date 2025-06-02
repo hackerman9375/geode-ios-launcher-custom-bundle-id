@@ -1,4 +1,5 @@
 #import "AppDelegate.h"
+#import "IconView.h"
 #import "GeodeInstaller.h"
 // #import "src/components/DropdownView.h"
 #import "LogsView.h"
@@ -68,9 +69,19 @@
 		[self.tableView reloadData];
 		[Utils showNotice:self title:@"jitless.cert.success".loc];
 	}];
+
+	// why does landscape not allow closing? we will never know...
+	self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] 
+		initWithBarButtonSystemItem:UIBarButtonSystemItemClose
+		target:self
+		action:@selector(onDismiss)
+	];
 }
 - (void)viewDidLayoutSubviews {
 	[super viewDidLayoutSubviews];
+}
+- (void)onDismiss {
+    [self.navigationController dismissViewControllerAnimated:YES completion:nil];
 }
 
 #pragma mark - Table View Data Source
@@ -82,7 +93,7 @@
 - (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
 	switch (section) {
 	case 0: // General
-		return 6;
+		return 7;
 	case 1: // Gameplay
 		return 4;
 	case 2: // JIT
@@ -174,15 +185,18 @@
 			cellval1.textLabel.text = @"general.theme".loc;
 			return cellval1;
 		} else if (indexPath.row == 3) {
+            cell.textLabel.text = @"general.change-icon".loc;
+			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+        } else if (indexPath.row == 4) {
 			cell.textLabel.text = @"general.open-fm".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 4) {
+		} else if (indexPath.row == 5) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"general.enable-updates".loc;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"UPDATE_AUTOMATICALLY"] tag:0 disable:NO];
 			return cellval1;
-		} else if (indexPath.row == 5) {
+		} else if (indexPath.row == 6) {
 			cell.textLabel.text = @"general.check-updates".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
@@ -609,6 +623,14 @@
 			MSColorSelectionViewController* colorSelectionController = [[MSColorSelectionViewController alloc] init];
 			UINavigationController* navCtrl = [[UINavigationController alloc] initWithRootViewController:colorSelectionController];
 
+			// fix transparent issue
+			UINavigationBarAppearance* appearance = [[UINavigationBarAppearance alloc] init];
+			[appearance configureWithOpaqueBackground];
+			appearance.backgroundColor = [UIColor systemBackgroundColor];
+
+			navCtrl.navigationBar.standardAppearance = appearance;
+			navCtrl.navigationBar.scrollEdgeAppearance = appearance;
+
 			navCtrl.popoverPresentationController.delegate = self;
 			navCtrl.modalInPresentation = YES;
 			navCtrl.preferredContentSize = [colorSelectionController.view systemLayoutSizeFittingSize:UILayoutFittingCompressedSize];
@@ -617,11 +639,9 @@
 			colorSelectionController.delegate = self;
 			colorSelectionController.color = [Theming getAccentColor];
 
-			if (self.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact) {
-				UIBarButtonItem* doneBtn = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"color.done".loc, ) style:UIBarButtonItemStyleDone target:self
-																		   action:@selector(ms_dismissViewController:)];
-				colorSelectionController.navigationItem.rightBarButtonItem = doneBtn;
-			}
+			UIBarButtonItem* doneBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self
+																	   action:@selector(ms_dismissViewController:)];
+			colorSelectionController.navigationItem.rightBarButtonItem = doneBtn;
 			//[[self navigationController] pushViewController:colorSelectionController animated:YES];
 			[self presentViewController:navCtrl animated:YES completion:nil];
 			break;
@@ -633,7 +653,12 @@
 			[self.tableView reloadData];
 			break;
 		}
-		case 3: { // Open file manager
+        case 3: { // change icon
+            IconViewController *IconVC = [[IconViewController alloc] init];
+            [[self navigationController] pushViewController:IconVC animated:YES];
+            break;
+        }
+		case 4: { // Open file manager
 			NSString* openURL;
 			if (![Utils isSandboxed]) {
 				openURL = [NSString stringWithFormat:@"filza://%@", [[Utils getGDDocPath] stringByAppendingPathComponent:@"Documents"]];
@@ -646,7 +671,7 @@
 			}
 			break;
 		}
-		case 5: { // Check for updates
+		case 6: { // Check for updates
 			if ([VerifyInstall verifyGeodeInstalled]) {
 				[[GeodeInstaller alloc] checkUpdates:_root download:YES];
 				[self dismissViewControllerAnimated:YES completion:nil];

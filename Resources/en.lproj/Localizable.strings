@@ -52,7 +52,6 @@
 "color.green" = "Green";
 "color.blue" = "Blue";
 "color.brightness" = "Brightness";
-"color.done" = "Done";
 
 // Main Screen
 "launcher.launch" = "Launch";
@@ -112,6 +111,7 @@
 "general.theme.system" = "System";
 "general.theme.light" = "Light";
 "general.theme.dark" = "Dark";
+"general.change-icon" = "Change Icon";
 
 "gameplay" = "Gameplay";
 "gameplay.safe-mode" = "Launch in Safe Mode";
