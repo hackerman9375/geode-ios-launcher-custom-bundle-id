@@ -96,7 +96,7 @@ jobs:
       with:
         tag_name: nightly
         name: 'Development Release'
-        body: Geode CLI development release for commit ${{ github.sha }}.
+        body: Geode iOS development release for commit ${{ github.sha }}.
         files: |
           ./artifacts/*.ipa
           ./artifacts/*.tipa
