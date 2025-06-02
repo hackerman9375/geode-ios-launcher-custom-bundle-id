@@ -86,8 +86,8 @@ jobs:
 
     - name: Rename files
       run: |
-        mv artifacts/com.geode.launcher_${{ steps.ref.outputs.version }}.ipa artifacts/com.geode.launcher_${{ steps.ref.outputs.hash }}.ipa
-        mv artifacts/com.geode.launcher_${{ steps.ref.outputs.version }}.tipa artifacts/com.geode.launcher_${{ steps.ref.outputs.hash }}.tipa
+        mv artifacts/Geode Launcher/com.geode.launcher_${{ steps.ref.outputs.version }}.ipa artifacts/Geode Launcher/com.geode.launcher_${{ steps.ref.outputs.hash }}.ipa
+        mv artifacts/Geode Launcher/com.geode.launcher_${{ steps.ref.outputs.version }}.tipa artifacts/Geode Launcher/com.geode.launcher_${{ steps.ref.outputs.hash }}.tipa
 
     - name: Update Development Release
       uses: andelf/nightly-release@main
@@ -98,5 +98,5 @@ jobs:
         name: 'Development Release'
         body: Geode iOS development release for commit ${{ github.sha }}.
         files: |
-          ./artifacts/*.ipa
-          ./artifacts/*.tipa
+          ./artifacts/Geode Launcher/*.ipa
+          ./artifacts/Geode Launcher/*.tipa
