@@ -129,11 +129,10 @@ extern SecTaskRef SecTaskCreateFromSelf(CFAllocatorRef allocator) __attribute__(
 	}
 }
 + (NSString*)getGeodeLauncherURL {
-	// return @"https://api.github.com/repos/geode-sdk/ios-launcher/releases/latest";
-	return @"https://api.github.com/repos/geode-sdk/ios-launcher/releases";
+	return @"https://api.github.com/repos/geode-sdk/ios-launcher/releases/latest";
 }
 + (NSString*)getGeodeLauncherRedirect {
-	return @"https://github.com/geode-sdk/ios-launcher/releases";
+	return @"https://github.com/geode-sdk/ios-launcher/releases/latest";
 }
 
 // ai generated because i cant figure this out
