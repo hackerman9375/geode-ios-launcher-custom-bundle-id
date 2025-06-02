@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/github-script@v7
       with:
-        github-token: ${{ secrets.GEODE_BOT_PUSH_BIN_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           await github.rest.actions.createWorkflowDispatch({
             owner: 'geode-sdk',
