@@ -635,7 +635,7 @@ Class LCSharedUtilsClass = nil;
 		[fm removeItemAtURL:tmpDir error:nil];
 	}
 	[fm createDirectoryAtURL:tmpDir withIntermediateDirectories:YES attributes:nil error:nil];
-    // crashes around here? not sure, stack trace says soemthing about mutable array here
+	// crashes around here? not sure, stack trace says soemthing about mutable array here
 	NSMutableArray* tmpPaths = [NSMutableArray array];
 	NSArray* fileURLs = [fm contentsOfDirectoryAtURL:[tweakFolderUrl URLByAppendingPathComponent:@"unzipped"] includingPropertiesForKeys:nil options:0 error:nil];
 	for (NSURL* url in fileURLs) {

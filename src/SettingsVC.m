@@ -1,6 +1,6 @@
 #import "AppDelegate.h"
-#import "IconView.h"
 #import "GeodeInstaller.h"
+#import "IconView.h"
 // #import "src/components/DropdownView.h"
 #import "LogsView.h"
 #import "SettingsVC.h"
@@ -71,17 +71,13 @@
 	}];
 
 	// why does landscape not allow closing? we will never know...
-	self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] 
-		initWithBarButtonSystemItem:UIBarButtonSystemItemClose
-		target:self
-		action:@selector(onDismiss)
-	];
+	self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemClose target:self action:@selector(onDismiss)];
 }
 - (void)viewDidLayoutSubviews {
 	[super viewDidLayoutSubviews];
 }
 - (void)onDismiss {
-    [self.navigationController dismissViewControllerAnimated:YES completion:nil];
+	[self.navigationController dismissViewControllerAnimated:YES completion:nil];
 }
 
 #pragma mark - Table View Data Source
@@ -185,9 +181,9 @@
 			cellval1.textLabel.text = @"general.theme".loc;
 			return cellval1;
 		} else if (indexPath.row == 3) {
-            cell.textLabel.text = @"general.change-icon".loc;
+			cell.textLabel.text = @"general.change-icon".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-        } else if (indexPath.row == 4) {
+		} else if (indexPath.row == 4) {
 			cell.textLabel.text = @"general.open-fm".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
@@ -639,8 +635,7 @@
 			colorSelectionController.delegate = self;
 			colorSelectionController.color = [Theming getAccentColor];
 
-			UIBarButtonItem* doneBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self
-																	   action:@selector(ms_dismissViewController:)];
+			UIBarButtonItem* doneBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(ms_dismissViewController:)];
 			colorSelectionController.navigationItem.rightBarButtonItem = doneBtn;
 			//[[self navigationController] pushViewController:colorSelectionController animated:YES];
 			[self presentViewController:navCtrl animated:YES completion:nil];
@@ -653,11 +648,11 @@
 			[self.tableView reloadData];
 			break;
 		}
-        case 3: { // change icon
-            IconViewController *IconVC = [[IconViewController alloc] init];
-            [[self navigationController] pushViewController:IconVC animated:YES];
-            break;
-        }
+		case 3: { // change icon
+			IconViewController* IconVC = [[IconViewController alloc] init];
+			[[self navigationController] pushViewController:IconVC animated:YES];
+			break;
+		}
 		case 4: { // Open file manager
 			NSString* openURL;
 			if (![Utils isSandboxed]) {
