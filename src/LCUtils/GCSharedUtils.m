@@ -152,7 +152,7 @@ extern NSBundle* gcMainBundle;
 		NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", gcMainBundle.bundlePath];
 		if ((jitEnabler == 0 && !access(tsPath.UTF8String, F_OK)) || jitEnabler == 1) {
 			urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
-		} else if (self.certificatePassword) {
+		} else if (self.certificatePassword && [gcUserDefaults boolForKey:@"JITLESS"]) {
 			tries = 2;
 			urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
 		} else if ((jitEnabler == 0 && [application canOpenURL:[NSURL URLWithString:@"stikjit://"]]) || jitEnabler == 2) {
