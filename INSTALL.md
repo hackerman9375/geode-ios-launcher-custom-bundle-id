@@ -64,6 +64,14 @@ There are a few ways to launch Geode with JIT, depending on both iOS version, an
 2. Go back to Geode and tap the **Launch** button in the Geode app.
 3. Geode should launch in Geometry Dash!
 
+### For LiveContainer
+For LiveContainer, you **must** enable the following in the app settings for Geode:
+- `Launch with JIT`
+- `Don't Inject TweakLoader`
+- `Don't Load TweakLoader`
+
+This is for app settings **in LiveContainer**, not in Geode.
+
 ### For iOS 17.4+ and Later
 #### StikDebug
 > [!NOTE]

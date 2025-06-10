@@ -96,7 +96,7 @@ jobs:
       with:
         tag_name: v999999.9.9 # thanks cvolton
         name: 'Development Release'
-        body: Geode iOS development release for commit ${{ github.sha }}.
+        body: Geode iOS development release for commit ${{ github.sha }}. This is meant for developers. Please look below this release for the latest stable release.
         files: |
           ./artifacts/GeodeLauncher/*.ipa
           ./artifacts/GeodeLauncher/*.tipa
