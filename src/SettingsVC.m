@@ -24,7 +24,7 @@
 @property(nonatomic, assign) BOOL isImportIPA;
 @end
 
-#define JITLESS 0
+#define JITLESS 1
 
 @implementation SettingsVC
 - (void)viewDidLoad {
@@ -107,7 +107,8 @@
 		return 1;
 	case 3: // JIT-Less
 		if ([Utils isSandboxed]) {
-			if (JITLESS == 1) {
+
+   if (JITLESS == 1) {
 				return 6;
 			} else {
 				return 0; // 5;
