@@ -16,6 +16,8 @@
 #include <dlfcn.h>
 #include <spawn.h>
 
+#import "Patcher.h"
+
 @interface SettingsVC () <UIDocumentPickerDelegate>
 @property(nonatomic, strong) NSArray* creditsArray;
 @property(nonatomic, assign) BOOL isImportCert;
@@ -895,7 +897,10 @@
 	} else if (indexPath.section == 7) {
 		switch (indexPath.row) {
 		case 6: { // Test GD Bundle Access
-			[Utils showNotice:self title:[Utils getGDDocPath]];
+			//[Utils showNotice:self title:[Utils getGDDocPath]];
+			[Patcher patchGDBinary:[[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"GeometryJump"]
+								to:[[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"GeometryDa"]
+				withHandlerAddress:0x88d000];
 			break;
 		}
 		case 7: { // Import IPA

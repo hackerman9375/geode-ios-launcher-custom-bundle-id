@@ -408,7 +408,8 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	}
 	// safe mode
 	if (safeMode) {
-		setenv("LAUNCHARGS", "--geode:safe-mode", 1);
+		setenv("LAUNCHARGS", "--geode:use-common-handler-offset=0x88d000 --geode:safe-mode", 1);
+		// setenv("LAUNCHARGS", "--geode:0x8bf000")
 	}
 
 	// Setup directories

@@ -39,6 +39,8 @@
 + (void)increaseLaunchCount;
 + (void)tweakLaunch_withSafeMode:(BOOL)safemode;
 + (NSString*)colorToHex:(UIColor*)color;
++ (NSData*)getTweakData;
++ (NSArray<NSString*>*)strings:(NSData*)data;
 
 + (NSData*)encryptData:(NSData*)data withKey:(NSString*)key;
 + (NSData*)decryptData:(NSData*)data withKey:(NSString*)key;

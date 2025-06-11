@@ -53,6 +53,28 @@ extern SecTaskRef SecTaskCreateFromSelf(CFAllocatorRef allocator) __attribute__(
 	return nil;
 }
 
+// replicate unix "strings" because
++ (NSArray<NSString*>*)strings:(NSData*)data {
+	const uint8_t* bytes = data.bytes;
+	NSMutableArray<NSString*>* results = [NSMutableArray array];
+	NSMutableData* current = [NSMutableData data];
+	for (NSUInteger i = 0; i < data.length; i++) {
+		unsigned char byte = bytes[i];
+		if (byte >= 32 && byte <= 126) {
+			[current appendBytes:&byte length:1];
+		} else {
+			if (current.length >= 4) {
+				NSString* str = [[NSString alloc] initWithData:current encoding:NSASCIIStringEncoding];
+				if (str) {
+					[results addObject:str];
+				}
+			}
+			[current setLength:0];
+		}
+	}
+	return results;
+}
+
 + (NSString*)getGeodeVersion {
 	NSFileManager* fm = NSFileManager.defaultManager;
 	if (![Utils isSandboxed]) {
