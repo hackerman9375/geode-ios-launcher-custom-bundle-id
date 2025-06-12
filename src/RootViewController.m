@@ -360,6 +360,7 @@
 		if (![VerifyInstall verifyGDAuthenticity])
 			return AppLog(@"GD not verified! Not installing!");
 		if (LOCAL_BUILD == 1) {
+			AppLog(@"Downloading locally");
 			NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
 			downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"http://192.168.1.84:3000/Gratis.ipa"]];
 			[downloadTask resume];

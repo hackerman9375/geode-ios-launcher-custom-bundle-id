@@ -1,8 +1,8 @@
 #import "LCUtils/FoundationPrivate.h"
 #import "LCUtils/GCSharedUtils.h"
+#import "LCUtils/Shared.h"
 #import "LCUtils/UIKitPrivate.h"
 #import "LCUtils/utils.h"
-#import "LCUtils/Shared.h"
 #import "Utils.h"
 #import "components/LogUtils.h"
 #import <Foundation/Foundation.h>
@@ -409,11 +409,7 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	}
 	// safe mode
 	if (safeMode) {
-		//NSString* launchArgs = [NSString stringWithFormat:@"--geode:original-bytes-file=%@ --geode:use-common-handler-offset=0x88d000 --geode:safe-mode", [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"original_bytes.json"].path];
-		setenv("LAUNCHARGS", "--geode:use-common-handler-offset=0x87920d --geode:safe-mode", 1);
-        //0x88d000
-		//setenv("LAUNCHARGS", "--geode:use-common-handler-offset=0x3000 --geode:safe-mode", 1);
-		// setenv("LAUNCHARGS", "--geode:0x8bf000")
+		setenv("LAUNCHARGS", "--geode:use-common-handler-offset=88d000 --geode:safe-mode", 1);
 	}
 
 	// Setup directories

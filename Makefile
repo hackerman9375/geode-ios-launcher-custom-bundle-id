@@ -21,7 +21,7 @@ Geode_CFLAGS = -fobjc-arc -IGCDWebServer/GCDWebServer/Core -IGCDWebServer/GCDWeb
 #Geode_CCFLAGS = -std=c++20 -I./include
 #Geode_CXXFLAGS = -std=c++20 -I./include 
 #Geode_CCFLAGS = -std=c++17 -I./include
-#Geode_CXXFLAGS = -std=c++17 -I./include 
+Geode_CXXFLAGS = -std=c++17 -I./include 
 Geode_LIBRARIES = archive # thats dumb
 $(APPLICATION_NAME)_LDFLAGS = -e _GeodeMain -rpath @loader_path/Frameworks
 #$(APPLICATION_NAME)_LDFLAGS = -e _GeodeMain -rpath @loader_path/Frameworks -L./libs -lTulipHook -lstdc++

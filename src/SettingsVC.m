@@ -35,6 +35,7 @@
 		@{ @"name" : @"dankmeme01", @"url" : @"https://github.com/dankmeme01" },
 		@{ @"name" : @"Firee", @"url" : @"https://github.com/FireMario211" },
 		@{ @"name" : @"ninXout", @"url" : @"https://github.com/ninXout" },
+		@{ @"name" : @"alk", @"url" : @"https://github.com/altalk23" },
 		@{ @"name" : @"Duy Tran Khanh", @"url" : @"https://github.com/khanhduytran0" },
 		@{ @"name" : @"camila314", @"url" : @"https://github.com/camila314" },
 		@{ @"name" : @"TheSillyDoggo", @"url" : @"https://github.com/TheSillyDoggo" },
@@ -108,7 +109,7 @@
 	case 3: // JIT-Less
 		if ([Utils isSandboxed]) {
 
-   if (JITLESS == 1) {
+			if (JITLESS == 1) {
 				return 6;
 			} else {
 				return 0; // 5;
@@ -489,7 +490,8 @@
 		} else if (indexPath.row == 9) {
 			cell.textLabel.text = @"Copy Current Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
-            if ([[NSFileManager defaultManager] fileExistsAtPath:[[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
+			if ([[NSFileManager defaultManager]
+					fileExistsAtPath:[[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				cell.textLabel.textColor = [UIColor systemGrayColor];
 			}
 			cell.accessoryType = UITableViewCellAccessoryNone;
@@ -912,7 +914,7 @@
 		}
 	} else if (indexPath.section == 7) {
 		NSFileManager* fm = [NSFileManager defaultManager];
-		NSURL *bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
+		NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 		switch (indexPath.row) {
 		case 6: { // Test GD Bundle Access
 			[Utils showNotice:self title:[Utils getGDDocPath]];
@@ -934,7 +936,7 @@
 			}
 			break;
 		}
-        case 9: { // Copy Current Binary
+		case 9: { // Copy Current Binary
 			if ([fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				[Utils showError:self title:@"Binary already exists." error:nil];
 			} else {
@@ -952,9 +954,8 @@
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				[Utils showError:self title:@"Original Binary not found." error:nil];
 			} else {
-				if ([Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"]
-					to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
-					withHandlerAddress:0x87920d]) {
+				if ([Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
+						withHandlerAddress:0x88d000]) {
 					[Utils showNotice:self title:@"Patched!"];
 				} else {
 					[Utils showError:self title:@"Couldn't patch, look in logs" error:nil];

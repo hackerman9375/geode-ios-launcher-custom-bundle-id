@@ -9,7 +9,8 @@
 
 #include <dlfcn.h>
 // change to 0x1692, and max is 0x7fff
-#define TEXT_OFFSET 0x3000
+// #define TEXT_OFFSET 0x3000
+#define TEXT_OFFSET 0x57e9c
 #define TEXT_MAX 0x7fff
 #define INTERVENER_COUNT 4
 
@@ -74,69 +75,10 @@ void* findSymbolAddr(const char* targetMangledName) {
 	return nullptr;
 }
 
-// please ignore this, this will be moved to another file
-#include <string>
-#include <vector>
-using HandlerHandle = size_t;
-class CallingConvention;
-enum class AbstractTypeKind : uint8_t {
-	Primitive,
-	FloatingPoint,
-	Other,
-};
+#include "include/TulipHook.hpp"
+using namespace tulip;
 
-class AbstractType {
-	public:
-	size_t m_size;
-	AbstractTypeKind m_kind;
-
-	template <class Type> static AbstractType from();
-};
-class AbstractFunction {
-	template <class FunctionType> struct Generator {
-		static AbstractFunction generate() { return AbstractFunction(); }
-	};
-
-	template <class Return, class... Parameters> struct Generator<Return(Parameters...)> {
-		static AbstractFunction generate();
-	};
-
-	public:
-	AbstractType m_return;
-	std::vector<AbstractType> m_parameters;
-
-	template <class FunctionType> static AbstractFunction from() { return Generator<FunctionType>::generate(); }
-
-	template <class Return, class... Parameters> static AbstractFunction from(Return (*)(Parameters...));
-};
-class HandlerMetadata {
-	public:
-	std::shared_ptr<CallingConvention> m_convention;
-
-	AbstractFunction m_abstract;
-};
-struct GenerateTrampolineReturn {
-	// the trampoline bytes that are generated after reloc
-	std::vector<uint8_t> trampolineBytes;
-	// the code size of the trampoline, "usually" equal to the size of the bytes vector
-	size_t codeSize;
-	// the offset of the original bytes in the trampoline, the offset from the beginning the trampoline jumps to
-	size_t originalOffset;
-	// an error message if the generation failed
-	std::string errorMessage;
-};
-
-typedef GenerateTrampolineReturn (*generateTrampolineTemp)(void* address, void* trampoline, void const* originalBuffer, size_t targetSize, const HandlerMetadata& metadata);
 generateTrampolineTemp generateTrampoline;
-
-struct GenerateHandlerReturn {
-	// the handler bytes that are generated
-	std::vector<uint8_t> handlerBytes;
-	// the code size of the handler, "usually" equal to the size of the bytes vector
-	size_t codeSize;
-};
-
-typedef GenerateHandlerReturn (*generateHandlerTemp)(void* handler, size_t commonHandlerSpaceOffset);
 generateHandlerTemp generateHandler;
 
 static size_t codeCaveOffset = TEXT_OFFSET;
@@ -179,8 +121,7 @@ static NSMutableArray* _patchedFuncs = nil;
 		}
 		return NO;
 	}
-	AppLog(@"Loaded TulipHook (Handle: %#llx)", handle); /*
-	 generateTrampoline = (generateTrampolineTemp)dlsym(handle, "__ZN5tulip4hook18generateTrampolineEPvS1_PKvmRKNS0_15HandlerMetadataE");*/
+	AppLog(@"Loaded TulipHook (Handle: %#llx)", handle);
 	auto addr = findSymbolAddr("__ZN5tulip4hook18generateTrampolineEPvS1_PKvmRKNS0_15HandlerMetadataE");
 	if (!addr)
 		return NO;
@@ -211,15 +152,17 @@ for func in list:
 		return NO;
 	}
 	// safe guard so we dont override some needed bytes
-	if (codeCaveOffset >= TEXT_MAX) {
+	/*if (codeCaveOffset >= TEXT_MAX) {
 		AppLog(@"Cannot patch more than %#llx! (Current code cave offset: %#llx)", TEXT_MAX, codeCaveOffset);
 		return NO;
-	}
+	}*/
 	int funcIndex = [self.originalBytes count] + 1;
 
-	uint64_t target = textSect->addr + codeCaveOffset;
+	// uint64_t target = textSect->addr + codeCaveOffset;
+	uint64_t target = textSect->addr + TEXT_OFFSET;
 	uint64_t branch_pc = textSect->addr + addr + 12;
 	int64_t byte_offset = (int64_t)target - (int64_t)branch_pc;
+	// uint64_t byte_offset = (int64_t)(textSect->addr + codeCaveOffset) - (int64_t)(textSect->addr + addr + 4);
 	if (byte_offset % 4 != 0) {
 		AppLog(@"Unaligned branch offset %#llx", byte_offset);
 		return NO;
@@ -228,12 +171,10 @@ for func in list:
 	uint32_t codeCaveDelta = codeCaveOffset - TEXT_OFFSET;
 
 	uint32_t trampoline[4] = {
-		0x10000010, // adr x16, . (or adr x16, #0 because my assembler was being stupid so i have to manually)
-		// 0x50000010,												  // adr x16, pc + 8 (or adr x16, #8 because my assembler was being stupid so i have to manually)
+		0x10000010,												   // adr x16, . (or adr x16, #0 because my assembler was being stupid so i have to manually)
 		0xD2800000 | ((codeCaveDelta & 0xFFFF) << 5) | 15,		   // mov x15, #trampOffset
 		0xD2800000 | ((funcIndex & 0xFFFF) << 5) | 17,			   // mov x17, #index
 		0x14000000 | (((uint32_t)(byte_offset >> 2)) & 0x03FFFFFF) // b (delta)
-																   // 0x94000000 | (((uint64_t)(byte_offset >> 2)) & 0x03FFFFFF) // bl (delta)
 	};
 
 	NSData* original = [data subdataWithRange:NSMakeRange((NSUInteger)addr, sizeof(trampoline))];
@@ -251,7 +192,7 @@ for func in list:
 		codeCaveOffset += gen.trampolineBytes.size();
 		return YES;
 	}
-	return YES;
+	return NO;
 }
 
 + (NSArray<NSString*>*)getOffsetsFromData:(NSString*)data {
@@ -325,7 +266,7 @@ for func in list:
 	}
 	AppLog(@"Patching handler at %#llx...", TEXT_OFFSET);
 	if (generateHandler) {
-		GenerateHandlerReturn gen = generateHandler((void*)(textSect->addr + TEXT_OFFSET), handlerAddress);
+		GenerateHandlerReturn gen = generateHandler((void*)(textSect->addr + TEXT_OFFSET), (handlerAddress - TEXT_OFFSET));
 		if (gen.handlerBytes.empty()) {
 			AppLog(@"Handler generation from TulipHook failed. (Empty bytes)");
 			return NO;
@@ -340,8 +281,11 @@ for func in list:
 	// === PATCH STEP 2 ====
 	AppLog(@"Patching functions...");
 	for (NSString* geodeOffset in [Patcher getOffsetsFromData:[[NSString alloc] initWithData:[Utils getTweakData] encoding:NSASCIIStringEncoding]]) {
-		AppLog(@"Patching %@", geodeOffset);
-		[Patcher patchFunc:data strAddr:geodeOffset textSect:textSect];
+		if (![geodeOffset hasPrefix:@"0x"])
+			continue;
+		if ([Patcher patchFunc:data strAddr:geodeOffset textSect:textSect]) {
+			AppLog(@"Patched Function %@", geodeOffset);
+		};
 	}
 
 	/*AppLog(@"Patching last segment at %#llx...", (unsigned long long)codeCaveOffset);
@@ -412,7 +356,7 @@ for func in list:
 		AppLog(@"Couldn't patch binary: %@", error);
 		return NO;
 	}
-	AppLog(@"Patched Geometry Dash");
+	AppLog(@"Binary has been patched!");
 
 	NSMutableDictionary* jsonDict = [NSMutableDictionary dictionary];
 	for (NSString* key in self.originalBytes) {
