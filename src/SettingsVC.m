@@ -123,7 +123,7 @@
 	case 6: // Credits
 		return [self.creditsArray count];
 	case 7: // Developer
-		return 9;
+		return 12;
 	default:
 		return 0;
 	}
@@ -484,6 +484,21 @@
 			cell.accessoryType = UITableViewCellAccessoryNone;
 		} else if (indexPath.row == 8) {
 			cell.textLabel.text = @"App Reinstall".loc;
+			cell.textLabel.textColor = [Theming getAccentColor];
+			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (indexPath.row == 9) {
+			cell.textLabel.text = @"Copy Current Binary".loc;
+			cell.textLabel.textColor = [Theming getAccentColor];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:[[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
+				cell.textLabel.textColor = [UIColor systemGrayColor];
+			}
+			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (indexPath.row == 10) {
+			cell.textLabel.text = @"Patch Binary".loc;
+			cell.textLabel.textColor = [Theming getAccentColor];
+			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (indexPath.row == 11) {
+			cell.textLabel.text = @"Restore Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
 		}
@@ -896,12 +911,11 @@
 			[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
 		}
 	} else if (indexPath.section == 7) {
+		NSFileManager* fm = [NSFileManager defaultManager];
+		NSURL *bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 		switch (indexPath.row) {
 		case 6: { // Test GD Bundle Access
-			//[Utils showNotice:self title:[Utils getGDDocPath]];
-			[Patcher patchGDBinary:[[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"GeometryJump"]
-								to:[[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"GeometryDa"]
-				withHandlerAddress:0x88d000];
+			[Utils showNotice:self title:[Utils getGDDocPath]];
 			break;
 		}
 		case 7: { // Import IPA
@@ -917,6 +931,53 @@
 			NSURL* url = [NSURL URLWithString:[[NSUserDefaults standardUserDefaults] stringForKey:@"DEV_REINSTALL_ADDR"]];
 			if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
 				[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
+			}
+			break;
+		}
+        case 9: { // Copy Current Binary
+			if ([fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
+				[Utils showError:self title:@"Binary already exists." error:nil];
+			} else {
+				NSError* err;
+				[fm copyItemAtURL:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] toURL:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] error:&err];
+				if (err) {
+					[Utils showError:self title:@"Couldn't copy binary" error:err];
+				} else {
+					[Utils showNotice:self title:@"Binary copied!"];
+				}
+			}
+			break;
+		}
+		case 10: { // Patch
+			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
+				[Utils showError:self title:@"Original Binary not found." error:nil];
+			} else {
+				if ([Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"]
+					to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
+					withHandlerAddress:0x87920d]) {
+					[Utils showNotice:self title:@"Patched!"];
+				} else {
+					[Utils showError:self title:@"Couldn't patch, look in logs" error:nil];
+				}
+			}
+			break;
+		}
+		case 11: { // Restore
+			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
+				[Utils showError:self title:@"Original Binary not found." error:nil];
+			} else {
+				NSError* err;
+				[fm removeItemAtURL:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] error:&err];
+				if (err) {
+					[Utils showError:self title:@"Couldn't remove patched binary" error:err];
+					break;
+				}
+				[fm copyItemAtURL:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] toURL:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] error:&err];
+				if (err) {
+					[Utils showError:self title:@"Couldn't copy binary" error:err];
+				} else {
+					[Utils showNotice:self title:@"Original Binary restored!"];
+				}
 			}
 			break;
 		}

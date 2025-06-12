@@ -409,8 +409,10 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	}
 	// safe mode
 	if (safeMode) {
-		NSString* launchArgs = [NSString stringWithFormat:@"--geode:original-bytes-file=%@ --geode:use-common-handler-offset=0x88d000 --geode:safe-mode", [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"original_bytes.json"].path];
-		setenv("LAUNCHARGS", launchArgs.UTF8String, 1);
+		//NSString* launchArgs = [NSString stringWithFormat:@"--geode:original-bytes-file=%@ --geode:use-common-handler-offset=0x88d000 --geode:safe-mode", [[[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]] URLByAppendingPathComponent:@"original_bytes.json"].path];
+		setenv("LAUNCHARGS", "--geode:use-common-handler-offset=0x87920d --geode:safe-mode", 1);
+        //0x88d000
+		//setenv("LAUNCHARGS", "--geode:use-common-handler-offset=0x3000 --geode:safe-mode", 1);
 		// setenv("LAUNCHARGS", "--geode:0x8bf000")
 	}
 

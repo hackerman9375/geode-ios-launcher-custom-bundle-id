@@ -8,8 +8,10 @@
 #import <mach-o/loader.h>
 
 #include <dlfcn.h>
-
+// change to 0x1692, and max is 0x7fff
 #define TEXT_OFFSET 0x3000
+#define TEXT_MAX 0x7fff
+#define INTERVENER_COUNT 4
 
 #import <mach-o/dyld.h>
 #import <mach-o/loader.h>
@@ -63,7 +65,7 @@ void* findSymbolAddr(const char* targetMangledName) {
 			if (strcmp(name, targetMangledName) == 0) {
 				uintptr_t addr = symTable[i].n_value + slide;
 				// AppLog(@"found symbol %s @ %p", name, (void*)addr);
-				AppLog(@"Loaded TulipHook (ID: %lu, generateTrampoline: %p)", (unsigned long)idx, (void*)addr);
+				AppLog(@"Loaded TulipHook (ID: %lu, func: %p)", (unsigned long)idx, (void*)addr);
 				return (void*)addr;
 			}
 		}
@@ -127,6 +129,16 @@ struct GenerateTrampolineReturn {
 typedef GenerateTrampolineReturn (*generateTrampolineTemp)(void* address, void* trampoline, void const* originalBuffer, size_t targetSize, const HandlerMetadata& metadata);
 generateTrampolineTemp generateTrampoline;
 
+struct GenerateHandlerReturn {
+	// the handler bytes that are generated
+	std::vector<uint8_t> handlerBytes;
+	// the code size of the handler, "usually" equal to the size of the bytes vector
+	size_t codeSize;
+};
+
+typedef GenerateHandlerReturn (*generateHandlerTemp)(void* handler, size_t commonHandlerSpaceOffset);
+generateHandlerTemp generateHandler;
+
 static size_t codeCaveOffset = TEXT_OFFSET;
 
 @implementation Patcher
@@ -172,38 +184,73 @@ static NSMutableArray* _patchedFuncs = nil;
 	auto addr = findSymbolAddr("__ZN5tulip4hook18generateTrampolineEPvS1_PKvmRKNS0_15HandlerMetadataE");
 	if (!addr)
 		return NO;
+	auto addr2 = findSymbolAddr("__ZN5tulip4hook15generateHandlerEPvm");
+	if (!addr2)
+		return NO;
 	generateTrampoline = reinterpret_cast<generateTrampolineTemp>(addr);
+	generateHandler = reinterpret_cast<generateHandlerTemp>(addr2);
 	return YES;
 }
+
+/*
+codeCave = 0x3000
+patch(codeCave, commonHandlerBytes)
+codeCave += commonHandlerBytes.size
+for func in list:
+  res = trampolineGen(codeCave, func)
+  patch(codeCave, res.bytes, res.size)
+  codeCave += res.size
+for func in list:
+  patch(func.addr, intervenerBytes)
+*/
 
 + (BOOL)patchFunc:(NSMutableData*)data strAddr:(NSString*)strAddr textSect:(struct section_64*)textSect {
 	uint64_t addr = strtoull([strAddr UTF8String], NULL, 0);
 	if (self.originalBytes[strAddr] != nil) {
-		AppLog(@"Function at %#llx already patched", addr);
+		AppLog(@"Function at %#llx already patched!", addr);
 		return NO;
 	}
-	NSData* original = [data subdataWithRange:NSMakeRange((NSUInteger)addr, 12)];
-	self.originalBytes[strAddr] = original;
+	// safe guard so we dont override some needed bytes
+	if (codeCaveOffset >= TEXT_MAX) {
+		AppLog(@"Cannot patch more than %#llx! (Current code cave offset: %#llx)", TEXT_MAX, codeCaveOffset);
+		return NO;
+	}
 	int funcIndex = [self.originalBytes count] + 1;
 
 	uint64_t target = textSect->addr + codeCaveOffset;
-	uint64_t branch_pc = textSect->addr + addr + 8;
+	uint64_t branch_pc = textSect->addr + addr + 12;
 	int64_t byte_offset = (int64_t)target - (int64_t)branch_pc;
 	if (byte_offset % 4 != 0) {
 		AppLog(@"Unaligned branch offset %#llx", byte_offset);
 		return NO;
 	}
 
-	uint32_t trampoline[3] = {
-		0x10000010,												      // adr x16, . (or adr x16, #0 because my assembler was being stupid so i have to manually)
-		// 0x50000010,											      // adr x16, pc + 8 (or adr x16, #8 because my assembler was being stupid so i have to manually)
-		0xD2800000 | ((funcIndex & 0xFFFF) << 5) | 0x11,		      // mov x17, #index
-		0x14000000 | (((uint32_t)(byte_offset >> 2)) & 0x03FFFFFF)    // b (delta)
-		// 0x94000000 | (((uint64_t)(byte_offset >> 2)) & 0x03FFFFFF) // bl (delta)
-	};
-	[data replaceBytesInRange:NSMakeRange(addr, sizeof(trampoline)) withBytes:trampoline];
+	uint32_t codeCaveDelta = codeCaveOffset - TEXT_OFFSET;
 
-	codeCaveOffset += sizeof(trampoline);
+	uint32_t trampoline[4] = {
+		0x10000010, // adr x16, . (or adr x16, #0 because my assembler was being stupid so i have to manually)
+		// 0x50000010,												  // adr x16, pc + 8 (or adr x16, #8 because my assembler was being stupid so i have to manually)
+		0xD2800000 | ((codeCaveDelta & 0xFFFF) << 5) | 15,		   // mov x15, #trampOffset
+		0xD2800000 | ((funcIndex & 0xFFFF) << 5) | 17,			   // mov x17, #index
+		0x14000000 | (((uint32_t)(byte_offset >> 2)) & 0x03FFFFFF) // b (delta)
+																   // 0x94000000 | (((uint64_t)(byte_offset >> 2)) & 0x03FFFFFF) // bl (delta)
+	};
+
+	NSData* original = [data subdataWithRange:NSMakeRange((NSUInteger)addr, sizeof(trampoline))];
+	self.originalBytes[strAddr] = original;
+
+	if (generateTrampoline) {
+		GenerateTrampolineReturn gen = generateTrampoline((void*)(textSect->addr + addr), (void*)(textSect->addr + codeCaveOffset), original.bytes, original.length, {});
+		if (!gen.errorMessage.empty()) {
+			AppLog(@"Trampoline gen from TulipHook failed: %s", gen.errorMessage.c_str());
+			return NO;
+		}
+		[data replaceBytesInRange:NSMakeRange(codeCaveOffset, gen.trampolineBytes.size()) withBytes:gen.trampolineBytes.data()];
+		[data replaceBytesInRange:NSMakeRange(addr, sizeof(trampoline)) withBytes:trampoline];
+		//[self.patchedFuncs addObject:@(addr)];
+		codeCaveOffset += gen.trampolineBytes.size();
+		return YES;
+	}
 	return YES;
 }
 
@@ -228,6 +275,8 @@ static NSMutableArray* _patchedFuncs = nil;
 // handler addr being that textHandlerStorage
 + (BOOL)patchGDBinary:(NSURL*)from to:(NSURL*)to withHandlerAddress:(uint64_t)handlerAddress {
 	AppLog(@"Patching Binary...");
+	if (![Patcher loadTulipHook])
+		return NO;
 	NSError* error;
 	NSMutableData* data = [NSMutableData dataWithContentsOfURL:from options:0 error:&error];
 	if (!data || error) {
@@ -245,9 +294,6 @@ static NSMutableArray* _patchedFuncs = nil;
 	}
 
 	// === PATCH STEP 1 ====
-
-	AppLog(@"Patching functions...");
-
 	struct section_64* textSect = NULL; // we really only need __text, since gd doesnt really use __TEXT
 	struct linkedit_data_command const* func_start = NULL;
 	struct load_command* command = (struct load_command*)imageHeaderPtr;
@@ -277,21 +323,34 @@ static NSMutableArray* _patchedFuncs = nil;
 		AppLog(@"Couldn't find LC_FUNCTION_STARTS cmd.");
 		return NO;
 	}
+	AppLog(@"Patching handler at %#llx...", TEXT_OFFSET);
+	if (generateHandler) {
+		GenerateHandlerReturn gen = generateHandler((void*)(textSect->addr + TEXT_OFFSET), handlerAddress);
+		if (gen.handlerBytes.empty()) {
+			AppLog(@"Handler generation from TulipHook failed. (Empty bytes)");
+			return NO;
+		}
+		[data replaceBytesInRange:NSMakeRange(codeCaveOffset, gen.codeSize) withBytes:gen.handlerBytes.data()];
+		codeCaveOffset += gen.codeSize;
+	} else {
+		AppLog(@"Couldn't patch! generateHandler function is null!");
+		return NO;
+	}
 
+	// === PATCH STEP 2 ====
+	AppLog(@"Patching functions...");
 	for (NSString* geodeOffset in [Patcher getOffsetsFromData:[[NSString alloc] initWithData:[Utils getTweakData] encoding:NSASCIIStringEncoding]]) {
 		AppLog(@"Patching %@", geodeOffset);
 		[Patcher patchFunc:data strAddr:geodeOffset textSect:textSect];
 	}
 
-	// === PATCH STEP 2 ====
-	AppLog(@"Patching last segment at %#llx...", (unsigned long long)codeCaveOffset);
+	/*AppLog(@"Patching last segment at %#llx...", (unsigned long long)codeCaveOffset);
 	NSMutableData* textArea = [NSMutableData data];
 	// yes for some reason pushing is str/stp on armv8, unsure what was wrong with it originally but ok!
 	const uint8_t pushInst[][4] = {
 		{ 0xe0, 0x07, 0xbf, 0xa9 }, // stp x0, x1, [sp, #-16]!
 		{ 0xe2, 0x0f, 0xbf, 0xa9 }, // stp x2, x3, [sp, #-16]!
 		{ 0xe4, 0x17, 0xbf, 0xa9 }, // stp x4, x5, [sp, #-16]!
-		{ 0xe6, 0x1f, 0xbf, 0xa9 }, // stp x6, x7, [sp, #-16]!
 		{ 0xe6, 0x1f, 0xbf, 0xa9 }, // stp x6, x7, [sp, #-16]!
 		{ 0xe0, 0x07, 0xbf, 0x6d }, // stp d0, d1, [sp, #-16]!
 		{ 0xe2, 0x0f, 0xbf, 0x6d }, // stp d2, d3, [sp, #-16]!
@@ -337,16 +396,16 @@ static NSMutableArray* _patchedFuncs = nil;
 
 	uint64_t ldelta = literalPos - ldrPos;
 	int64_t bit = ldelta >> 2;
-	if (bit < -(1 << 18) || bit >= (1 << 18)) {
+	if (bit < -(1 << 17) || bit >= (1 << 17)) {
 		AppLog(@"Literal too far! %lld", bit);
-		// return NO;
+		return NO;
 	}
 	uint32_t ldrInsn = 0x58000000 | (((uint32_t)bit & 0x7FFFF) << 5) | 2; // 2 is x2
 	[textArea replaceBytesInRange:NSMakeRange(ldrPos, 4) withBytes:&ldrInsn length:4];
 
-	[textArea appendBytes:&handlerAddress length:8];
+	//[textArea appendBytes:&handlerAddress length:8];
 	[data replaceBytesInRange:NSMakeRange(codeCaveOffset, textArea.length) withBytes:textArea.bytes];
-	AppLog(@"Patched text Area with %lu bytes!", (unsigned long)textArea.length);
+	AppLog(@"Patched text Area with %lu bytes!", (unsigned long)textArea.length);*/
 
 	[data writeToURL:to options:NSDataWritingAtomic error:&error];
 	if (error) {
