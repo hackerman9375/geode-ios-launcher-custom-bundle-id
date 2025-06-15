@@ -901,6 +901,17 @@
 		case 7: { // Import IPA
 			_isImportIPA = true;
 			UTType* type = [UTType typeWithIdentifier:@"com.apple.itunes.ipa"];
+			if (!type) {
+				type = [UTType typeWithFilenameExtension:@"ipa"];
+			}
+			if (!type) {
+				type = [UTType typeWithIdentifier:@"public.data"];
+			}
+			if (!type) {
+				// what is going on apple
+				AppLog(@"Couldn't find any valid UTType. Not opening to prevent crashing.");
+				break;
+			}
 			UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ type ] asCopy:YES];
 			picker.delegate = self;
 			picker.allowsMultipleSelection = NO;
