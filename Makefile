@@ -24,10 +24,10 @@ Geode_CFLAGS = -fobjc-arc -IGCDWebServer/GCDWebServer/Core -IGCDWebServer/GCDWeb
 Geode_CXXFLAGS = -std=c++17 -I./include 
 Geode_LIBRARIES = archive # thats dumb
 $(APPLICATION_NAME)_LDFLAGS = -e _GeodeMain -rpath @loader_path/Frameworks
-#$(APPLICATION_NAME)_LDFLAGS = -e _GeodeMain -rpath @loader_path/Frameworks -L./libs -lTulipHook -lstdc++
+#$(APPLICATION_NAME)_LDFLAGS = -e _GeodeMain -rpath @loader_path/Frameworks -L./libs -lLIEF -lstdc++
 
 include $(THEOS_MAKE_PATH)/application.mk
-SUBPROJECTS += ZSign TweakLoader WebServerLib TestJITLess AltStoreTweak
+SUBPROJECTS += ZSign TweakLoader WebServerLib TestJITLess
 include $(THEOS_MAKE_PATH)/aggregate.mk
 
 
