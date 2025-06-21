@@ -408,8 +408,16 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 		setenv("LAUNCHARGS", launchArgs.UTF8String, 1);
 	}
 	// safe mode
-	if (safeMode) {
-		setenv("LAUNCHARGS", "--geode:use-common-handler-offset=88d000 --geode:safe-mode", 1);
+	if ([gcUserDefaults boolForKey:@"JITLESS"] || [gcUserDefaults boolForKey:@"FORCE_PATCHING"]) {
+		if (safeMode) {
+			setenv("LAUNCHARGS", "--geode:use-common-handler-offset=88d000 --geode:safe-mode", 1);
+		} else {
+			setenv("LAUNCHARGS", "--geode:use-common-handler-offset=88d000", 1);
+		}
+	} else {
+		if (safeMode) {
+			setenv("LAUNCHARGS", "--geode:safe-mode", 1);
+		}
 	}
 
 	// Setup directories

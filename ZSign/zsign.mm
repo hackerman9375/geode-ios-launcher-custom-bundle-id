@@ -195,8 +195,17 @@ int checkCert(NSData *prov,
 
 
     if (!ocsp) {
-        ZLog::Warn("Not testing the OCSP url, expiration date will not be shown.");
-        completionHandler(0, [NSDate now], nil);
+        ZLog::Warn("Not testing the OCSP url, instead getting based on expiration");
+        ASN1_TIME *expirationDateAsn1 = X509_get_notAfter(cert);
+        NSString *fullDateString = [NSString stringWithFormat:@"20%s", expirationDateAsn1->data];
+
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        formatter.dateFormat = @"yyyyMMddHHmmss'Z'";
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+        formatter.locale = NSLocale.currentLocale;
+        NSDate *expirationDate = [formatter dateFromString:fullDateString];
+        completionHandler(0, expirationDate, nil);
+        //completionHandler(0, [NSDate now], nil);
         return 1;
     }
 

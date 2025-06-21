@@ -28,4 +28,13 @@ namespace tulip {
 	};
 
 	typedef GenerateHandlerReturn (*generateHandlerTemp)(void* handler, size_t commonHandlerSpaceOffset);
+
+	struct RelocaledBytesReturn {
+		std::vector<uint8_t> bytes;
+		size_t offset;
+		std::string error;
+	};
+	typedef RelocaledBytesReturn (*getRelocatedBytesDef)(int64_t original, int64_t relocated, std::vector<uint8_t> const& originalBuffer);
+	typedef std::vector<uint8_t> (*getCommonHandlerBytesDef)(int64_t handler, ptrdiff_t spaceOffset);
+	typedef std::vector<uint8_t> (*getCommonIntervenerBytesDef)(int64_t original, int64_t handler, size_t unique, ptrdiff_t relocOffset);
 }

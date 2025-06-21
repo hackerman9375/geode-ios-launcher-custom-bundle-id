@@ -41,6 +41,5 @@ endif
 
 before-all::
 	@sh ./download_openssl.sh
-	@sh ./download_tulip.sh
 
 # make package FINALPACKAGE=1 STRIP=0 TROLLSTORE=1
