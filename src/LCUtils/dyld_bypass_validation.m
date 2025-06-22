@@ -118,10 +118,10 @@ static void* hooked_mmap(void* addr, size_t len, int prot, int flags, int fd, of
 static int hooked___fcntl(int fildes, int cmd, void* param) {
 	if (cmd == F_ADDFILESIGS_RETURN) {
 		if (access("/Users", F_OK) != 0) {
-            // attempt to attach code signature on iOS only as the binaries may have been signed
-            // on macOS, attaching on unsigned binaries without CS_DEBUGGED will crash
-            orig_fcntl(fildes, cmd, param);
-        }
+			// attempt to attach code signature on iOS only as the binaries may have been signed
+			// on macOS, attaching on unsigned binaries without CS_DEBUGGED will crash
+			orig_fcntl(fildes, cmd, param);
+		}
 		fsignatures_t* fsig = (fsignatures_t*)param;
 		// called to check that cert covers file.. so we'll make it cover everything ;)
 		fsig->fs_file_start = 0xFFFFFFFF;
