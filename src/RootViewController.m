@@ -20,7 +20,7 @@
 #include <mach-o/dyld.h>
 #include <objc/runtime.h>
 
-#define LOCAL_BUILD 1
+#define LOCAL_BUILD 0
 
 @interface RootViewController ()
 
@@ -362,8 +362,7 @@
 		if (LOCAL_BUILD == 1) {
 			AppLog(@"Downloading locally");
 			NSURLSession* session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:nil];
-			// downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"http://192.168.1.84:3000/Gratis.ipa"]];
-			downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"http://192.168.1.22:3000/Geometry-2.207.ipa"]];
+			downloadTask = [session downloadTaskWithURL:[NSURL URLWithString:@"http://192.168.1.84:3000/Gratis.ipa"]];
 			[downloadTask resume];
 			return;
 		}
