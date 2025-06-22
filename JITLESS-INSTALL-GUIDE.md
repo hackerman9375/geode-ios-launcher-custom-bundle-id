@@ -10,14 +10,14 @@ This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but i
 > Only SideStore is supported for JIT-less as it is the only sideloader that exposes the certificate. AltStore and Sideloadly will not work.
 
 > [!TIP]
-> If you have never installed SideStore before, follow the [iOS 17.4+ (SideStore)](./MODERN-IOS-INSTALL.md) guide until the **Post Installation** section, then come back to this guide.
+> If you have never installed SideStore before, follow the first prerequisites, then follow the [iOS 17.4+ (SideStore)](./MODERN-IOS-INSTALL.md) guide until the **Post Installation** section, then come back to this guide.
 
 - **PC** (Windows, Linux and Mac OS)
 - **USB Cable** to connect your device (Lightning / USB C)
 - **Apple ID** (Secondary / Throwaway Recommended)
 - **Full version of Geometry Dash installed**
 - **An internet connection**
-- **SideStore** (if you have SideStore 0.6.0 or above, install the nightly version of SideStore by going to the app settings and enabling the beta updates. If you are on a version below 0.6.0, get [this version](./screenshots/SideStore-0.6.2-pr.959+4534534.ipa))
+- **SideStore** (if you have SideStore 0.6.0 or above, install the nightly version of SideStore by going to the app settings and enabling the beta updates. If you are on a version below 0.6.0, get [this version](https://github.com/geode-sdk/ios-launcher/raw/refs/heads/main/screenshots/SideStore-0.6.2-pr.959+4534534.ipa))
 - **IPA file** of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases)
 
 ## Apple Developer Certificate Method
