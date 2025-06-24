@@ -22,7 +22,7 @@ This guide is for devices that are compatible with TrollStore (and optionally a 
 - Jailbreak tweak (optional, you need to be jailbroken)
 
 ## Installing TrollStore
-Check the table from https://ios.cfw.guide/installing-trollstore/ to install TrollStore depending on your iOS version and your device's chipset (you can find it by searching "iPhone/iPad (your phone/tablet's model) chipset")
+Check out the table on the [iOS CFW Guide](https://ios.cfw.guide/installing-trollstore/) to find the correct method to install TrollStore based on your iOS version and your device's chipset. Check the table on [this page](https://thinglabs.io/what-chip-does-each-iphone-model-use) to see which chipset your device uses.
 
 ## Installing Geode through TrollStore
 Tap the `+` button and tap either **Install IPA File** or **Install From URL**, depending if you manually downloaded the IPA or the TIPA file. After either selecting the IPA or the TIPA file for the Geode app, or providing the URL, the Geode app should appear on your home screen!
