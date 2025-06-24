@@ -2,12 +2,11 @@
 
 > [!WARNING]
 > For this installation guide, it is **required** to have a computer with Administrator access, as this guide will require installing software on your computer to sideload Geode, and to obtain a pairing file for **JIT**. Additionally, **JIT** is a **__requirement__** to run Geode.
-
-> [!WARNING]
-> This guide assumes you will be installing SideStore. Using Enterprise Certificates to install SideStore **will not work**, as a PC is required to sideload SideStore.
+> \
+> This guide assumes you will be installing SideStore. Using enterprise certificates to install SideStore **will not work**, as the usage of a PC is required to sideload SideStore.
 
 ## Prerequisites
-- PC (Windows, Mac OS, Linux) or Mac OS
+- PC (Windows, Mac, Linux)
 - Apple ID (Secondary / Throwaway Recommended)
 - USB Cable to connect your device (Lightning / USB C)
 - Full version of Geometry Dash installed

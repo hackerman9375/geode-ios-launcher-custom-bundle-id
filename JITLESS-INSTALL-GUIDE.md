@@ -12,7 +12,7 @@ This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but i
 > [!TIP]
 > If you have never installed SideStore before, follow the first prerequisites, then follow the [iOS 17.4+ (SideStore)](./MODERN-IOS-INSTALL.md) guide until the **Post Installation** section, then come back to this guide.
 
-- **PC** (Windows, Linux and Mac OS)
+- **PC** (Windows, Mac, Linux)
 - **USB Cable** to connect your device (Lightning / USB C)
 - **Apple ID** (Secondary / Throwaway Recommended)
 - **Full version of Geometry Dash installed**
@@ -23,8 +23,7 @@ This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but i
 ## Apple Developer Certificate Method
 > [!WARNING]
 > Only use this method **if you're willing to pay** for an Apple developer certificate.
-
-> [!WARNING]
+> \
 > When you get an Apple developer certificate, **make sure to ask your provider to give your certificate the `get-task-allow` entitlement.** (Usually called "Developer" or "Distribution" certificate)
 
 - **Full version of Geometry Dash installed**
