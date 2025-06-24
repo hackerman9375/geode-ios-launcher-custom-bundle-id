@@ -146,11 +146,12 @@
 		[fm copyItemAtPath:execPath toPath:backupPath error:&err];
 		[fm removeItemAtPath:execPath error:&err];
 		[fm moveItemAtPath:backupPath toPath:execPath error:&err];
-		if (err) {
+        AppLog(@"Interact error: %@", err);
+		/*if (err) {
 			AppLog(@"Interact Error: %@", err);
 			completetionHandler(NO, @"Couldn't interact with execPath or backupPath. Look in logs for more details.");
 			return;
-		}
+		}*/
 	}
 
 	if (needPatch) {
