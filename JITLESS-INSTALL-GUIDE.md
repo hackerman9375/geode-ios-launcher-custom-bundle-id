@@ -36,6 +36,9 @@ This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but i
 A new section has been added to the Geode launcher's settings for JIT-less. Here's how to use it:
 
 ## Import Apple Developer Certificate
+> [!TIP]
+> To get the certificate files (**.p12** and **.mobileprovision**) of your Signulous certificate, follow [this guide](/SIGNULOUS-CERTIFICATE-FILE-GUIDE.md)
+
 - Press **"Enable JIT-Less"**
 - Press **"Import Certificate Manually"**
 - Choose the **.p12** and **.mobileprovision** file of the certificate you used to sign the Geode launcher
