@@ -393,28 +393,28 @@ for func in list:
 
 // ai because im too lazy to do this
 + (NSString *)hexStringWithSpaces:(NSData*)data includeSpaces:(BOOL)includeSpaces {
-    const unsigned char *dataBuffer = (const unsigned char *)[data bytes];
-    if (!dataBuffer) {
-        return [NSString string];
-    }
-    
-    NSUInteger          dataLength  = [data length];
-    // Each byte is two hex chars, plus optional space (except after last byte)
-    NSUInteger          stringSize  = dataLength * 2 + (includeSpaces ? dataLength - 1 : 0);
-    NSMutableString    *hexString   = [NSMutableString stringWithCapacity:stringSize];
-    
-    for (NSUInteger i = 0; i < dataLength; ++i) {
-        if (includeSpaces && i > 0) {
-            [hexString appendString:@" "];
-        }
-        [hexString appendFormat:@"%02X", dataBuffer[i]];
-    }
-    
-    return [hexString copy];
+	const unsigned char *dataBuffer = (const unsigned char *)[data bytes];
+	if (!dataBuffer) {
+		return [NSString string];
+	}
+
+	NSUInteger dataLength  = [data length];
+	// Each byte is two hex chars, plus optional space (except after last byte)
+	NSUInteger stringSize  = dataLength * 2 + (includeSpaces ? dataLength - 1 : 0);
+	NSMutableString *hexString   = [NSMutableString stringWithCapacity:stringSize];
+
+	for (NSUInteger i = 0; i < dataLength; ++i) {
+		if (includeSpaces && i > 0) {
+			[hexString appendString:@" "];
+		}
+		[hexString appendFormat:@"%02X", dataBuffer[i]];
+	}
+
+	return [hexString copy];
 }
 
 + (void)startUnzip:(void (^)(NSString* doForce))completionHandler {
-    return completionHandler(nil);
+	return completionHandler(nil);
 	NSFileManager* fm = [NSFileManager defaultManager];
 	NSError* error;
 	BOOL isDir = NO;
@@ -460,7 +460,7 @@ for func in list:
 			}
 		}
 	}
-    completionHandler(forceSign);
+	completionHandler(forceSign);
 }
 
 // handler addr being that textHandlerStorage
@@ -479,213 +479,210 @@ for func in list:
 	}
 	NSString *forceSign = nil;
 
-	[Patcher startUnzip:^(NSString *doForce) {
-	    NSError* error;
-        AppLog(@"Patching Binary...");
-        if (![Patcher loadTulipHook])
-            return completionHandler(NO, @"Couldn't load TulipHook");
-        NSMutableData* data = [NSMutableData dataWithContentsOfURL:from options:0 error:&error];
-        if (!data || error) {
-            AppLog(@"Couldn't read binary: %@", error);
-            return completionHandler(NO, @"Couldn't read binary");
-        }
-        uint8_t* base = (uint8_t*)data.mutableBytes;
-        struct mach_header_64* header = (struct mach_header_64*)base;
-        uint8_t* imageHeaderPtr = (uint8_t*)header + sizeof(struct mach_header_64);
-        if (data.length < sizeof(struct mach_header_64) || (header->magic != MH_MAGIC && header->magic != MH_MAGIC_64)) {
-            AppLog(@"Couldn't patch! Binary is not 64-bit Mach-O.");
-            return completionHandler(NO, @"Binary is not 64-bit Mach-O.");
-        }
+	AppLog(@"Patching Binary...");
+	if (![Patcher loadTulipHook])
+		return completionHandler(NO, @"Couldn't load TulipHook");
+	NSMutableData* data = [NSMutableData dataWithContentsOfURL:from options:0 error:&error];
+	if (!data || error) {
+		AppLog(@"Couldn't read binary: %@", error);
+		return completionHandler(NO, @"Couldn't read binary");
+	}
+	uint8_t* base = (uint8_t*)data.mutableBytes;
+	struct mach_header_64* header = (struct mach_header_64*)base;
+	uint8_t* imageHeaderPtr = (uint8_t*)header + sizeof(struct mach_header_64);
+	if (data.length < sizeof(struct mach_header_64) || (header->magic != MH_MAGIC && header->magic != MH_MAGIC_64)) {
+		AppLog(@"Couldn't patch! Binary is not 64-bit Mach-O.");
+		return completionHandler(NO, @"Binary is not 64-bit Mach-O.");
+	}
 
-        AppLog(@"Writing new executable region...");
-        if (!appendNewSection(data, 0x4000)) {
-            AppLog(@"Something went wrong when writing a new executable region.");
-            return completionHandler(NO, @"Couldn't write new RX region.");
-        }
+	AppLog(@"Writing new executable region...");
+	if (!appendNewSection(data, 0x4000)) {
+		AppLog(@"Something went wrong when writing a new executable region.");
+		return completionHandler(NO, @"Couldn't write new RX region.");
+	}
 
-        // === PATCH STEP 1 ====
-        struct segment_command_64* textSeg = NULL;
-        struct section_64* textSect = NULL;
-        struct section_64* customSect = NULL;
-        struct linkedit_data_command const* func_start = NULL; // is this necessary
-        struct load_command* command = (struct load_command*)imageHeaderPtr;
-        for (int i = 0; i < header->ncmds; i++) {
-            if (command->cmd == LC_SEGMENT_64) {
-                struct segment_command_64* seg = (struct segment_command_64*)command;
-                if (strcmp(seg->segname, "__TEXT") == 0) {
-                    textSeg = seg;
-                    struct section_64* sect = (struct section_64*)(seg + 1);
-                    for (int x = 0; x < seg->nsects; x++) {
-                        if (strcmp(sect[x].sectname, "__text") == 0) {
-                            textSect = &sect[x];
-                            // break;
-                        } else if (strcmp(sect[x].sectname, "__mysect") == 0) {
-                            customSect = &sect[x];
-                        }
-                    }
-                } else if (strcmp(seg->segname, "__CUSTOM") == 0) {
-                    struct section_64* sect = (struct section_64*)(seg + 1);
-                    for (int x = 0; x < seg->nsects; x++) {
-                        if (strcmp(sect[x].sectname, "__custom") == 0) {
-                            customSect = &sect[x];
-                            CAVE_OFFSET = customSect->addr;
-                            codeCaveOffset = CAVE_OFFSET;
-                            break;
-                        }
-                    }
-                }
-            } else if (command->cmd == LC_FUNCTION_STARTS) {
-                func_start = (struct linkedit_data_command const*)command; // load command of function start
-            }
-            // void* -> char*
-            command = (struct load_command*)((char*)command + command->cmdsize);
-        }
-        if (!textSeg) {
-            AppLog(@"Couldn't find __TEXT segment.");
-            return completionHandler(NO, @"Couldn't find __TEXT segment (Binary corrupted?)");
-        }
-        if (!textSect) {
-            AppLog(@"Couldn't find __text section.");
-            return completionHandler(NO, @"Couldn't find __text segment (Binary corrupted?)");
-        }
-        if (!customSect) {
-            AppLog(@"Couldn't find __custom section.");
-            return completionHandler(NO, @"Couldn't find __custom segment (Creating RX region failed?)");
-        }
-        if (func_start == NULL || func_start->datasize == 0) {
-            AppLog(@"Couldn't find LC_FUNCTION_STARTS cmd.");
-            return completionHandler(NO, @"Couldn't find LC_FUNCTION_STARTS segment (Binary corrupted?)");
-        }
+	// === PATCH STEP 1 ====
+	struct segment_command_64* textSeg = NULL;
+	struct section_64* textSect = NULL;
+	struct section_64* customSect = NULL;
+	struct linkedit_data_command const* func_start = NULL; // is this necessary
+	struct load_command* command = (struct load_command*)imageHeaderPtr;
+	for (int i = 0; i < header->ncmds; i++) {
+		if (command->cmd == LC_SEGMENT_64) {
+			struct segment_command_64* seg = (struct segment_command_64*)command;
+			if (strcmp(seg->segname, "__TEXT") == 0) {
+				textSeg = seg;
+				struct section_64* sect = (struct section_64*)(seg + 1);
+				for (int x = 0; x < seg->nsects; x++) {
+					if (strcmp(sect[x].sectname, "__text") == 0) {
+						textSect = &sect[x];
+						// break;
+					} else if (strcmp(sect[x].sectname, "__mysect") == 0) {
+						customSect = &sect[x];
+					}
+				}
+			} else if (strcmp(seg->segname, "__CUSTOM") == 0) {
+				struct section_64* sect = (struct section_64*)(seg + 1);
+				for (int x = 0; x < seg->nsects; x++) {
+					if (strcmp(sect[x].sectname, "__custom") == 0) {
+						customSect = &sect[x];
+						CAVE_OFFSET = customSect->addr;
+						codeCaveOffset = CAVE_OFFSET;
+						break;
+					}
+				}
+			}
+		} else if (command->cmd == LC_FUNCTION_STARTS) {
+			func_start = (struct linkedit_data_command const*)command; // load command of function start
+		}
+		// void* -> char*
+		command = (struct load_command*)((char*)command + command->cmdsize);
+	}
+	if (!textSeg) {
+		AppLog(@"Couldn't find __TEXT segment.");
+		return completionHandler(NO, @"Couldn't find __TEXT segment (Binary corrupted?)");
+	}
+	if (!textSect) {
+		AppLog(@"Couldn't find __text section.");
+		return completionHandler(NO, @"Couldn't find __text segment (Binary corrupted?)");
+	}
+	if (!customSect) {
+		AppLog(@"Couldn't find __custom section.");
+		return completionHandler(NO, @"Couldn't find __custom segment (Creating RX region failed?)");
+	}
+	if (func_start == NULL || func_start->datasize == 0) {
+		AppLog(@"Couldn't find LC_FUNCTION_STARTS cmd.");
+		return completionHandler(NO, @"Couldn't find LC_FUNCTION_STARTS segment (Binary corrupted?)");
+	}
 
-        AppLog(@"Patching handler at %#llx...", CAVE_OFFSET);
-        if (getCommonHandlerBytes) {
-            // textSect->addr + TEXT_OFFSET, handlerAddress - TEXT_OFFSET
-            std::vector<uint8_t> bytes = getCommonHandlerBytes(customSect->addr, (handlerAddress - (customSect->addr - textSeg->vmaddr)));
-            if (bytes.size() == 0) {
-                AppLog(@"Handler generation from TulipHook failed. (Empty bytes)");
-                return completionHandler(NO, @"TulipHook failed to generate handler bytes (Empty bytes)");
-            }
-            //[data replaceBytesInRange:NSMakeRange(codeCaveOffset, bytes.size()) withBytes:bytes.data()];
-            [data replaceBytesInRange:NSMakeRange(customSect->offset, bytes.size()) withBytes:bytes.data()];
-            // codeCaveOffset += bytes.size();
-            codeCaveOffset = bytes.size();
-        } else {
-            AppLog(@"Couldn't patch! getCommonHandlerBytes function is null!");
-            return completionHandler(NO, @"TulipHook failed find getCommonHandlerBytes");
-        }
+	AppLog(@"Patching handler at %#llx...", CAVE_OFFSET);
+	if (getCommonHandlerBytes) {
+		// textSect->addr + TEXT_OFFSET, handlerAddress - TEXT_OFFSET
+		std::vector<uint8_t> bytes = getCommonHandlerBytes(customSect->addr, (handlerAddress - (customSect->addr - textSeg->vmaddr)));
+		if (bytes.size() == 0) {
+			AppLog(@"Handler generation from TulipHook failed. (Empty bytes)");
+			return completionHandler(NO, @"TulipHook failed to generate handler bytes (Empty bytes)");
+		}
+		//[data replaceBytesInRange:NSMakeRange(codeCaveOffset, bytes.size()) withBytes:bytes.data()];
+		[data replaceBytesInRange:NSMakeRange(customSect->offset, bytes.size()) withBytes:bytes.data()];
+		// codeCaveOffset += bytes.size();
+		codeCaveOffset = bytes.size();
+	} else {
+		AppLog(@"Couldn't patch! getCommonHandlerBytes function is null!");
+		return completionHandler(NO, @"TulipHook failed find getCommonHandlerBytes");
+	}
 
-        // === PATCH STEP 2 ====
-		NSString* unzipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/unzipped"].path;
-		NSURL* savedJSONURL = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/save/geode/mods/geode.loader/saved.json"];
-		NSData* savedJSONData = [NSData dataWithContentsOfURL:savedJSONURL options:0 error:&error];
-		NSDictionary* savedJSONDict;
-		BOOL canParseJSON = NO;
-		NSMutableArray<NSString*>* modEnabledDict = [NSMutableArray new];
-		if (!error) {
-			savedJSONDict = [NSJSONSerialization JSONObjectWithData:savedJSONData options:kNilOptions error:&error];
-			if (!error && savedJSONDict && [savedJSONDict isKindOfClass:[NSDictionary class]]) {
-				canParseJSON = YES;
-				for (NSString *key in savedJSONDict.allKeys) {
-					if ([key hasPrefix:@"should-load-"]) {
-						BOOL value = [savedJSONDict[key] boolValue];
-						if (value) {
-							[modEnabledDict addObject:[NSString stringWithFormat:@"%@.ios.dylib", [key substringFromIndex:12]]];
-						}
+	// === PATCH STEP 2 ====
+	NSString* unzipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/unzipped"].path;
+	NSURL* savedJSONURL = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/save/geode/mods/geode.loader/saved.json"];
+	NSData* savedJSONData = [NSData dataWithContentsOfURL:savedJSONURL options:0 error:&error];
+	NSDictionary* savedJSONDict;
+	BOOL canParseJSON = NO;
+	NSMutableArray<NSString*>* modEnabledDict = [NSMutableArray new];
+	if (!error) {
+		savedJSONDict = [NSJSONSerialization JSONObjectWithData:savedJSONData options:kNilOptions error:&error];
+		if (!error && savedJSONDict && [savedJSONDict isKindOfClass:[NSDictionary class]]) {
+			canParseJSON = YES;
+			for (NSString *key in savedJSONDict.allKeys) {
+				if ([key hasPrefix:@"should-load-"]) {
+					BOOL value = [savedJSONDict[key] boolValue];
+					if (value) {
+						[modEnabledDict addObject:[NSString stringWithFormat:@"%@.ios.dylib", [key substringFromIndex:12]]];
 					}
 				}
 			}
 		}
+	}
 
-        NSArray* modsDir = [fm contentsOfDirectoryAtPath:unzipModsPath error:&error];
-        if (error) {
-            AppLog(@"Couldn't read unzipped directory: %@", error);
-            error = nil;
-        }
-        NSMutableArray<NSString*>* modDict = [NSMutableArray new];
-        NSString* geodePath = [Utils getTweakDir];
-        if (geodePath) {
-            [modDict addObject:geodePath];
-        }
-		if (canParseJSON) {
-			AppLog(@"saved.json parsed!");
-			for (NSString* modId in modsDir) {
-				NSString* modPath = [unzipModsPath stringByAppendingPathComponent:modId];
-				BOOL isDir;
-				if (![fm fileExistsAtPath:modPath isDirectory:&isDir] || !isDir) continue;
-				NSArray* modDir = [fm contentsOfDirectoryAtPath:modPath error:&error];
-				if (error) continue;
-				for (NSString* file in modDir) {
-					if ([file hasSuffix:@"ios.dylib"]) {
-						if ([modEnabledDict containsObject:file]) {
-							[modDict addObject:[modPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", file]]];
-						}
+	NSArray* modsDir = [fm contentsOfDirectoryAtPath:unzipModsPath error:&error];
+	if (error) {
+		AppLog(@"Couldn't read unzipped directory: %@", error);
+		error = nil;
+	}
+	NSMutableArray<NSString*>* modDict = [NSMutableArray new];
+	NSString* geodePath = [Utils getTweakDir];
+	if (geodePath) {
+		[modDict addObject:geodePath];
+	}
+	if (canParseJSON) {
+		AppLog(@"saved.json parsed!");
+		for (NSString* modId in modsDir) {
+			NSString* modPath = [unzipModsPath stringByAppendingPathComponent:modId];
+			BOOL isDir;
+			if (![fm fileExistsAtPath:modPath isDirectory:&isDir] || !isDir) continue;
+			NSArray* modDir = [fm contentsOfDirectoryAtPath:modPath error:&error];
+			if (error) continue;
+			for (NSString* file in modDir) {
+				if ([file hasSuffix:@"ios.dylib"]) {
+					if ([modEnabledDict containsObject:file]) {
+						[modDict addObject:[modPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", file]]];
 					}
 				}
 			}
 		}
-        for (int i = 0; i < modDict.count; i++) {
-            AppLog(@"Patching functions... (%i/%i)", (i + 1), modDict.count);
-            NSData* mdata = [NSData dataWithContentsOfFile:[modDict objectAtIndex:i] options:0 error:nil];
-            if (mdata == nil) continue;
-            NSString* dataString = [[NSString alloc] initWithData:mdata encoding:NSASCIIStringEncoding];
-            for (NSString* offset in [Patcher getHookOffsetsFromData:dataString]) {
-                if (![offset hasPrefix:@"0x"])
-                    continue;
-                if ([Patcher patchFunc:data strAddr:offset textSect:textSect customSect:customSect]) {
-                    AppLogDebug(@"Patched Function %@", offset);
-                };
-            }
-            for (NSString* offset in [Patcher getStaticHookOffsetsFromData:dataString]) {
-                if ([Patcher patchFunc:data strAddr:offset textSect:textSect customSect:customSect]) {
-                    AppLogDebug(@"Patched Function %@", offset);
-                };
-            }
-            NSArray<NSTextCheckingResult*>* staticMatches = [Patcher getStaticPatchesOffsetsFromData:dataString];
-            for (NSTextCheckingResult* match in staticMatches) {
-                NSString *sizeString = [dataString substringWithRange:[match rangeAtIndex:1]];
-                NSUInteger patchSize = [sizeString integerValue];
-                NSData *patchData = [[dataString substringWithRange:[match rangeAtIndex:2]] dataUsingEncoding:NSISOLatin1StringEncoding];
-                
-                NSString *strAddr = [NSString stringWithFormat:@"0x%@", [dataString substringWithRange:[match rangeAtIndex:3]]];
-                NSUInteger addr = strtoull([strAddr UTF8String], NULL, 0);
+	}
+	for (int i = 0; i < modDict.count; i++) {
+		AppLog(@"Patching functions... (%i/%i)", (i + 1), modDict.count);
+		NSData* mdata = [NSData dataWithContentsOfFile:[modDict objectAtIndex:i] options:0 error:nil];
+		if (mdata == nil) continue;
+		NSString* dataString = [[NSString alloc] initWithData:mdata encoding:NSASCIIStringEncoding];
+		for (NSString* offset in [Patcher getHookOffsetsFromData:dataString]) {
+			if (![offset hasPrefix:@"0x"])
+				continue;
+			if ([Patcher patchFunc:data strAddr:offset textSect:textSect customSect:customSect]) {
+				AppLogDebug(@"Patched Function %@", offset);
+			};
+		}
+		for (NSString* offset in [Patcher getStaticHookOffsetsFromData:dataString]) {
+			if ([Patcher patchFunc:data strAddr:offset textSect:textSect customSect:customSect]) {
+				AppLogDebug(@"Patched Function %@", offset);
+			};
+		}
+		NSArray<NSTextCheckingResult*>* staticMatches = [Patcher getStaticPatchesOffsetsFromData:dataString];
+		for (NSTextCheckingResult* match in staticMatches) {
+			NSString *sizeString = [dataString substringWithRange:[match rangeAtIndex:1]];
+			NSUInteger patchSize = [sizeString integerValue];
+			NSData *patchData = [[dataString substringWithRange:[match rangeAtIndex:2]] dataUsingEncoding:NSISOLatin1StringEncoding];
+			
+			NSString *strAddr = [NSString stringWithFormat:@"0x%@", [dataString substringWithRange:[match rangeAtIndex:3]]];
+			NSUInteger addr = strtoull([strAddr UTF8String], NULL, 0);
 
-                [data replaceBytesInRange:NSMakeRange(addr, patchSize) withBytes:patchData.bytes];
-                AppLogDebug(@"Patched Offset %#llx with %i bytes (%@)", addr, patchSize, [Patcher hexStringWithSpaces:patchData includeSpaces:YES]);
-            }
-        }
-        NSString* patchChecksum = [[Utils getPrefs] stringForKey:@"PATCH_CHECKSUM"];
-        NSArray* keys = [self.originalBytes allKeys];
-        NSString* hash = [Utils sha256sumWithString:[keys componentsJoinedByString:@","]];
-        if (patchChecksum != nil) {
-            if (![patchChecksum isEqualToString:hash]) {
-                AppLog(@"Hash mismatch (%@ vs %@), now writing to binary...", patchChecksum, hash)
-                [[Utils getPrefs] setObject:hash forKey:@"PATCH_CHECKSUM"];
-            } else {
-                //AppLog(@"Binary already patched, skipping...");
-                if (!force) {
-                    AppLog(@"Binary already patched, skipping...");
-                    return completionHandler(YES, nil);
-                }
-            }
-        } else {
-            AppLog(@"Got hash %@, now writing to binary...", hash)
-            [[Utils getPrefs] setObject:hash forKey:@"PATCH_CHECKSUM"];
-        }
+			[data replaceBytesInRange:NSMakeRange(addr, patchSize) withBytes:patchData.bytes];
+			AppLogDebug(@"Patched Offset %#llx with %i bytes (%@)", addr, patchSize, [Patcher hexStringWithSpaces:patchData includeSpaces:YES]);
+		}
+	}
+	NSString* patchChecksum = [[Utils getPrefs] stringForKey:@"PATCH_CHECKSUM"];
+	NSArray* keys = [self.originalBytes allKeys];
+	NSString* hash = [Utils sha256sumWithString:[keys componentsJoinedByString:@","]];
+	if (patchChecksum != nil) {
+		if (![patchChecksum isEqualToString:hash]) {
+			AppLog(@"Hash mismatch (%@ vs %@), now writing to binary...", patchChecksum, hash)
+			[[Utils getPrefs] setObject:hash forKey:@"PATCH_CHECKSUM"];
+		} else {
+			//AppLog(@"Binary already patched, skipping...");
+			if (!force) {
+				AppLog(@"Binary already patched, skipping...");
+				return completionHandler(YES, nil);
+			}
+		}
+	} else {
+		AppLog(@"Got hash %@, now writing to binary...", hash)
+		[[Utils getPrefs] setObject:hash forKey:@"PATCH_CHECKSUM"];
+	}
 
-        struct mach_header_64* headerNew = (struct mach_header_64*)(uint8_t*)data.mutableBytes;
-        if (data.length < sizeof(struct mach_header_64) || (headerNew->magic != MH_MAGIC && headerNew->magic != MH_MAGIC_64)) {
-            // okay how would this realistically happen
-            AppLog(@"Couldn't patch! Binary wasn't properly patched as a 64-bit Mach-O.");
-            return completionHandler(NO, @"Patched binary wasn't properly patched as a proper Mach-O binary");
-        }
+	struct mach_header_64* headerNew = (struct mach_header_64*)(uint8_t*)data.mutableBytes;
+	if (data.length < sizeof(struct mach_header_64) || (headerNew->magic != MH_MAGIC && headerNew->magic != MH_MAGIC_64)) {
+		// okay how would this realistically happen
+		AppLog(@"Couldn't patch! Binary wasn't properly patched as a 64-bit Mach-O.");
+		return completionHandler(NO, @"Patched binary wasn't properly patched as a proper Mach-O binary");
+	}
 
-        [data writeToURL:to options:NSDataWritingAtomic error:&error];
-        if (error) {
-            AppLog(@"Couldn't patch binary: %@", error);
-            return completionHandler(NO, [NSString stringWithFormat:@"Patch failed: %@", error.localizedDescription]);
-        }
-        AppLog(@"Binary has been patched!");
-        return completionHandler(YES, forceSign);
-    }];
+	[data writeToURL:to options:NSDataWritingAtomic error:&error];
+	if (error) {
+		AppLog(@"Couldn't patch binary: %@", error);
+		return completionHandler(NO, [NSString stringWithFormat:@"Patch failed: %@", error.localizedDescription]);
+	}
+	AppLog(@"Binary has been patched!");
+	return completionHandler(YES, forceSign);
 }
 @end

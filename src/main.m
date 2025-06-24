@@ -24,7 +24,6 @@
 #include <sys/mman.h>
 
 static int (*appMain)(int, char**);
-static const char* dyldImageName;
 NSUserDefaults* gcUserDefaults;
 NSUserDefaults* gcSharedDefaults;
 NSString* gcAppGroupPath;
@@ -35,6 +34,81 @@ NSDictionary* guestAppInfo;
 BOOL usingLiveContainer;
 
 void NUDGuestHooksInit();
+bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** origFunction, void* hookFunction) {
+	uint32_t* baseAddr = dlsym(RTLD_DEFAULT, functionName);
+	assert(baseAddr != 0);
+	/*
+	 arm64e
+	 1ad450b90  e10300aa   mov     x1, x0
+	 1ad450b94  487b2090   adrp    x8, dyld4::gAPIs
+	 1ad450b98  000140f9   ldr     x0, [x8]  {dyld4::gAPIs} may contain offset
+	 1ad450b9c  100040f9   ldr     x16, [x0]
+	 1ad450ba0  f10300aa   mov     x17, x0
+	 1ad450ba4  517fecf2   movk    x17, #0x63fa, lsl #0x30
+	 1ad450ba8  301ac1da   autda   x16, x17
+	 1ad450bac  114780d2   mov     x17, #0x238
+	 1ad450bb0  1002118b   add     x16, x16, x17
+	 1ad450bb4  020240f9   ldr     x2, [x16]
+	 1ad450bb8  e30310aa   mov     x3, x16
+	 1ad450bbc  f00303aa   mov     x16, x3
+	 1ad450bc0  7085f3f2   movk    x16, #0x9c2b, lsl #0x30
+	 1ad450bc4  50081fd7   braa    x2, x16
+
+	 arm64
+	 00000001ac934c80         mov        x1, x0
+	 00000001ac934c84         adrp       x8, #0x1f462d000
+	 00000001ac934c88         ldr        x0, [x8, #0xf88]                            ; __ZN5dyld45gDyldE
+	 00000001ac934c8c         ldr        x8, [x0]
+	 00000001ac934c90         ldr        x2, [x8, #0x258]
+	 00000001ac934c94         br         x2
+	 */
+	uint32_t* adrpInstPtr = baseAddr + adrpOffset;
+	assert ((*adrpInstPtr & 0x9f000000) == 0x90000000);
+	uint32_t immlo = (*adrpInstPtr & 0x60000000) >> 29;
+	uint32_t immhi = (*adrpInstPtr & 0xFFFFE0) >> 5;
+	int64_t imm = (((int64_t)((immhi << 2) | immlo)) << 43) >> 31;
+
+	void* gdyldPtr = (void*)(((uint64_t)baseAddr & 0xfffffffffffff000) + imm);
+
+	uint32_t* ldrInstPtr1 = baseAddr + adrpOffset + 1;
+	// check if the instruction is ldr Unsigned offset
+	assert((*ldrInstPtr1 & 0xBFC00000) == 0xB9400000);
+	uint32_t size = (*ldrInstPtr1 & 0xC0000000) >> 30;
+	uint32_t imm12 = (*ldrInstPtr1 & 0x3FFC00) >> 10;
+	gdyldPtr += (imm12 << size);
+
+	assert(gdyldPtr != 0);
+	assert(*(void**)gdyldPtr != 0);
+	void* vtablePtr = **(void***)gdyldPtr;
+
+	void* vtableFunctionPtr = 0;
+	uint32_t* movInstPtr = baseAddr + adrpOffset + 6;
+
+	if((*movInstPtr & 0x7F800000) == 0x52800000) {
+		// arm64e, mov imm + add + ldr
+		uint32_t imm16 = (*movInstPtr & 0x1FFFE0) >> 5;
+		vtableFunctionPtr = vtablePtr + imm16;
+	} else if ((*movInstPtr & 0xFFE00C00) == 0xF8400C00) {
+		// arm64e, ldr immediate Pre-index 64bit
+		uint32_t imm9 = (*movInstPtr & 0x1FF000) >> 12;
+		vtableFunctionPtr = vtablePtr + imm9;
+	} else {
+		// arm64
+		uint32_t* ldrInstPtr2 = baseAddr + adrpOffset + 3;
+		assert((*ldrInstPtr2 & 0xBFC00000) == 0xB9400000);
+		uint32_t size2 = (*ldrInstPtr2 & 0xC0000000) >> 30;
+		uint32_t imm12_2 = (*ldrInstPtr2 & 0x3FFC00) >> 10;
+		vtableFunctionPtr = vtablePtr + (imm12_2 << size2);
+	}
+
+
+	kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)vtableFunctionPtr, sizeof(uintptr_t), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
+	assert(ret == KERN_SUCCESS);
+	*origFunction = (void*)*(void**)vtableFunctionPtr;
+	*(uint64_t*)vtableFunctionPtr = (uint64_t)hookFunction;
+	builtin_vm_protect(mach_task_self(), (mach_vm_address_t)vtableFunctionPtr, sizeof(uintptr_t), false, PROT_READ);
+	return true;
+}
 
 void UIAGuestHooksInit();
 
@@ -73,11 +147,6 @@ static BOOL checkJITEnabled() {
 	int flags;
 	csops(getpid(), 0, &flags, sizeof(flags));
 	return (flags & CS_DEBUGGED) != 0;
-}
-
-static uint64_t rnd64(uint64_t v, uint64_t r) {
-	r--;
-	return (v + r) & ~r;
 }
 
 static void overwriteMainCFBundle() {
@@ -129,75 +198,39 @@ static void overwriteMainNSBundle(NSBundle* newBundle) {
 	assert(![NSBundle.mainBundle.executablePath isEqualToString:oldPath]);
 }
 
-static void overwriteExecPath_handler(int signum, siginfo_t* siginfo, void* context) {
-	struct __darwin_ucontext* ucontext = (struct __darwin_ucontext*)context;
+int hook__NSGetExecutablePath_overwriteExecPath(char*** dyldApiInstancePtr, char* newPath, uint32_t* bufsize) {
+    assert(dyldApiInstancePtr != 0);
+    char** dyldConfig = dyldApiInstancePtr[1];
+    assert(dyldConfig != 0);
+    
+    char** mainExecutablePathPtr = 0;
+    // mainExecutablePath is at 0x10 for iOS 15~18.3.2, 0x20 for iOS 18.4+
+    if(dyldConfig[2] != 0 && dyldConfig[2][0] == '/') {
+        mainExecutablePathPtr = dyldConfig + 2;
+    } else if (dyldConfig[4] != 0 && dyldConfig[4][0] == '/') {
+        mainExecutablePathPtr = dyldConfig + 4;
+    } else {
+        assert(mainExecutablePathPtr != 0);
+    }
 
-	// x19: size pointer
-	// x20: output buffer
-	// x21: executable_path
+    kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)mainExecutablePathPtr, sizeof(mainExecutablePathPtr), false, PROT_READ | PROT_WRITE);
+    if(ret != KERN_SUCCESS) {
+        BOOL tpro_ret = os_thread_self_restrict_tpro_to_rw();
+        assert(tpro_ret);
+    }
+    *mainExecutablePathPtr = newPath;
 
-	// Ensure we're not getting SIGSEGV twice
-	static uint32_t fakeSize = 0;
-	assert(ucontext->uc_mcontext->__ss.__x[19] == 0);
-	ucontext->uc_mcontext->__ss.__x[19] = (uint64_t)&fakeSize;
-
-	char* path = (char*)ucontext->uc_mcontext->__ss.__x[21];
-	char* newPath = (char*)dyldImageName;
-	size_t maxLen = rnd64(strlen(path), 8);
-	size_t newLen = strlen(newPath);
-	// Check if it's long enough...
-	assert(maxLen >= newLen);
-
-	// if we don't have TPRO, we will use the old way
-	if (!os_thread_self_restrict_tpro_to_rw()) {
-		// Make it RW and overwrite now
-		kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)path, maxLen, false, PROT_READ | PROT_WRITE);
-		if (ret != KERN_SUCCESS) {
-			ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)path, maxLen, false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
-		}
-		assert(ret == KERN_SUCCESS);
-	}
-
-	bzero(path, maxLen);
-	strncpy(path, newPath, newLen);
+    return 0;
 }
-static void overwriteExecPath(NSString* bundlePath) {
-	// Silly workaround: we have set our executable name 100 characters long, now just overwrite its path with our fake executable file
-	char* path = (char*)dyldImageName;
-	const char* newPath = [bundlePath stringByAppendingPathComponent:@"Geode"].UTF8String;
-	size_t maxLen = rnd64(strlen(path), 8);
-	size_t newLen = strlen(newPath);
 
-	// Check if it's long enough...
-	assert(maxLen >= newLen);
-	// Create an empty file so dyld could resolve its path properly
-	close(open(newPath, O_CREAT | S_IRUSR | S_IWUSR));
-
-	// Make it RW and overwrite now
-	// | VM_PROT_COPY
-	kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)path, maxLen, false, PROT_READ | PROT_WRITE);
-	if (ret != KERN_SUCCESS) {
-		// thanks apple for introducing this ios 18.2 specific problem!
-		BOOL tpro_ret = os_thread_self_restrict_tpro_to_rw();
-		assert(tpro_ret);
-	}
-	bzero(path, maxLen);
-	strncpy(path, newPath, newLen);
-
-	// dyld4 stores executable path in a different place
-	// https://github.com/apple-oss-distributions/dyld/blob/ce1cc2088ef390df1c48a1648075bbd51c5bbc6a/dyld/DyldAPIs.cpp#L802
-	char currPath[PATH_MAX];
-	uint32_t len = PATH_MAX;
-	_NSGetExecutablePath(currPath, &len);
-	if (strncmp(currPath, newPath, newLen)) {
-		struct sigaction sa, saOld;
-		sa.sa_sigaction = overwriteExecPath_handler;
-		sa.sa_flags = SA_SIGINFO;
-		sigaction(SIGSEGV, &sa, &saOld);
-		// Jump to overwriteExecPath_handler()
-		_NSGetExecutablePath((char*)0x41414141, NULL);
-		sigaction(SIGSEGV, &saOld, NULL);
-	}
+static void overwriteExecPath(const char *newExecPath) {
+	// dyld4 stores executable path in a different place (iOS 15.0 +)
+    // https://github.com/apple-oss-distributions/dyld/blob/ce1cc2088ef390df1c48a1648075bbd51c5bbc6a/dyld/DyldAPIs.cpp#L802
+	int (*orig__NSGetExecutablePath)(void* dyldPtr, char* buf, uint32_t* bufsize);
+	performHookDyldApi("_NSGetExecutablePath", 2, (void**)&orig__NSGetExecutablePath, hook__NSGetExecutablePath_overwriteExecPath);
+	_NSGetExecutablePath((char*)newExecPath, NULL);
+	// put the original function back
+	performHookDyldApi("_NSGetExecutablePath", 2, (void**)&orig__NSGetExecutablePath, orig__NSGetExecutablePath);
 }
 
 static void* getAppEntryPoint(void* handle, uint32_t imageIndex) {
@@ -320,23 +353,16 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	// Locate dyld image name address
 	const char** path = _CFGetProcessPath();
 	const char* oldPath = *path;
-	for (uint32_t i = 0; i < _dyld_image_count(); i++) {
-		const char* name = _dyld_get_image_name(i);
-		if (!strcmp(name, oldPath)) {
-			dyldImageName = name;
-			break;
-		}
-	}
 
 	// Overwrite @executable_path
-	const char* appExecPath = appBundle.executablePath.UTF8String;
+	const char* appExecPath = appBundle.executablePath.fileSystemRepresentation;
 	*path = appExecPath;
 
 	if (!usingLiveContainer) {
 		AppLog(@"[invokeAppMain] Overwriting exec path...");
 		// the dumbest solution that caused me a headache, simply dont call the function!
 		// i accidentally figured that out
-		overwriteExecPath(appBundle.bundlePath);
+		overwriteExecPath(appExecPath);
 	} else {
 		AppLog(@"[invokeAppMain] Skip overwriteExecPath (LC)");
 	}
@@ -465,7 +491,8 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	// Preload executable to bypass RT_NOLOAD
 	uint32_t appIndex = _dyld_image_count();
 	appMainImageIndex = appIndex;
-	void* appHandle = dlopen(*path, RTLD_LAZY | RTLD_GLOBAL | RTLD_FIRST);
+
+	void* appHandle = dlopen(appExecPath, RTLD_LAZY | RTLD_GLOBAL | RTLD_FIRST);
 	appExecutableHandle = appHandle;
 	const char* dlerr = dlerror();
 

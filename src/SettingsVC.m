@@ -1,4 +1,5 @@
 #import "AppDelegate.h"
+#include "src/LCUtils/unarchive.h"
 #import "GeodeInstaller.h"
 #import "IconView.h"
 // #import "src/components/DropdownView.h"
@@ -904,8 +905,15 @@
 		NSFileManager* fm = [NSFileManager defaultManager];
 		NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 		switch (indexPath.row) {
-		case 7: { // Test GD Bundle Access
+		case 7: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
 			[Utils showNotice:self title:[Utils getGDDocPath]];
+			/*NSFileManager* fm = [NSFileManager defaultManager];
+			NSString *fileToExtract = [[LCPath tweakFolder] URLByAppendingPathComponent:@"test"].path;
+			NSString *extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"testing.zip"].path;
+			AppLog(@"Starting compression of %@ to %@", fileToExtract, extractionPath);
+			[[NSFileManager defaultManager] createFileAtPath:extractionPath contents:nil attributes:nil];
+			int res = compress(fileToExtract, extractionPath, nil);
+			AppLog(@"res: %@", res);*/
 			break;
 		}
 		case 8: { // Import IPA
@@ -968,7 +976,7 @@
 			}
 			break;
 		}
-		case 12: { // Restore
+		case 12: { // Restore Binary
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				break;
 			} else {
@@ -1056,6 +1064,26 @@
 					AppLog(@"Icon set successfully.");
 				}
 			}];
+		} else {
+			NSFileManager* fm = [NSFileManager defaultManager];
+			NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
+			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
+				AppLog(@"Not restoring binary.");
+			} else {
+				NSError* err;
+				[fm removeItemAtURL:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] error:&err];
+				if (err) {
+					AppLog(@"Couldn't remove patched binary: %@", err);
+				} else {
+					[fm copyItemAtURL:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] toURL:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] error:&err];
+					if (err) {
+						AppLog(@"Couldn't copy binary: %@", err);
+					} else {
+						[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
+						AppLog(@"Restored original binary.");
+					}
+				}
+			}
 		}
 		[self.tableView reloadData];
 		break;

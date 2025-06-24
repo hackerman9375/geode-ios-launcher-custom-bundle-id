@@ -1,5 +1,6 @@
 @import CommonCrypto;
 
+#import "src/components/LogUtils.h"
 #import "LCAppInfo.h"
 #import "LCUtils.h"
 #import "Shared.h"
@@ -146,7 +147,8 @@
 		[fm removeItemAtPath:execPath error:&err];
 		[fm moveItemAtPath:backupPath toPath:execPath error:&err];
 		if (err) {
-			completetionHandler(NO, @"Couldn't interact with execPath or backupPath");
+			AppLog(@"Interact Error: %@", err);
+			completetionHandler(NO, @"Couldn't interact with execPath or backupPath. Look in logs for more details.");
 			return;
 		}
 	}
