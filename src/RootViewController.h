@@ -16,5 +16,6 @@
 - (void)progressText:(NSString*)text;
 - (void)barProgress:(CGFloat)value;
 - (void)signApp:(BOOL)force completionHandler:(void (^)(BOOL success, NSString* error))completionHandler;
+- (void)signAppWithSafeMode:(void (^)(BOOL success, NSString* error))completionHandler;
 - (void)refreshTheme;
 @end

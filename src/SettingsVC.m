@@ -1,7 +1,8 @@
 #import "AppDelegate.h"
-#include "src/LCUtils/unarchive.h"
 #import "GeodeInstaller.h"
 #import "IconView.h"
+#import "src/JITLessVC.h"
+#include "src/LCUtils/unarchive.h"
 // #import "src/components/DropdownView.h"
 #import "LogsView.h"
 #import "SettingsVC.h"
@@ -24,8 +25,6 @@
 @property(nonatomic, assign) BOOL isImportCert;
 @property(nonatomic, assign) BOOL isImportIPA;
 @end
-
-#define JITLESS 1
 
 @implementation SettingsVC
 - (void)viewDidLoad {
@@ -113,11 +112,7 @@
 		return 1;
 	case 3: // JIT-Less
 		if ([Utils isSandboxed]) {
-			if (JITLESS == 1) {
-				return 5;
-			} else {
-				return 0;
-			}
+			return 6;
 		} else {
 			return 0;
 		}
@@ -269,7 +264,6 @@
 			textField.delegate = self;
 			textField.returnKeyType = UIReturnKeyDone;
 			textField.autocorrectionType = UITextAutocorrectionTypeNo;
-			textField.keyboardType = UIKeyboardTypeURL;
 			textField.tag = 1;
 			cell.accessoryView = textField;
 			cell.textLabel.text = @"jit.jit-udid".loc;
@@ -289,6 +283,9 @@
 			return cellval1;
 			// TODO: check if signed on enterprise cert, if so then remove all of these because therell be another option for them
 		} else if (indexPath.row == 1) {
+			cell.textLabel.text = @"jitless.diag".loc;
+			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+		} else if (indexPath.row == 2) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"jitless.certstatus".loc;
 			if ([LCUtils certificateData]) {
@@ -321,7 +318,7 @@
 				cellval1.detailTextLabel.text = @"jitless.certstatus.notimport".loc;
 			}
 			return cellval1;
-		} else if (indexPath.row == 2) {
+		} else if (indexPath.row == 3) {
 			if (![LCUtils isAppGroupAltStoreLike]) {
 				if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
 					cell.textLabel.text = @"Remove Certificate";
@@ -342,11 +339,11 @@
 				cell.textLabel.textColor = [Theming getAccentColor];
 			}
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 3) {
+		} else if (indexPath.row == 4) {
 			cell.textLabel.text = @"Test JIT-Less Mode";
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 4) {
+		} else if (indexPath.row == 5) {
 			cell.textLabel.text = @"Force Resign";
 			if (![[Utils getPrefs] boolForKey:@"JITLESS"]) {
 				cell.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -431,7 +428,6 @@
 			textField.delegate = self;
 			textField.returnKeyType = UIReturnKeyDone;
 			textField.autocorrectionType = UITextAutocorrectionTypeNo;
-			textField.keyboardType = UIKeyboardTypeURL;
 			textField.tag = 3;
 			cell.accessoryView = textField;
 			cell.textLabel.text = @"developer.launchargs".loc;
@@ -443,7 +439,6 @@
 			textField.delegate = self;
 			textField.returnKeyType = UIReturnKeyDone;
 			textField.autocorrectionType = UITextAutocorrectionTypeNo;
-			textField.keyboardType = UIKeyboardTypeURL;
 			textField.tag = 4;
 			cell.accessoryView = textField;
 			cell.textLabel.text = @"Last Nightly Date";
@@ -455,7 +450,6 @@
 			textField.delegate = self;
 			textField.returnKeyType = UIReturnKeyDone;
 			textField.autocorrectionType = UITextAutocorrectionTypeNo;
-			textField.keyboardType = UIKeyboardTypeURL;
 			textField.tag = 2;
 			cell.accessoryView = textField;
 			cell.textLabel.text = @"Reinstall URL";
@@ -479,21 +473,26 @@
 		} else if (indexPath.row == 6) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"Force Patching".loc;
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FORCE_PATCHING"] tag:15 disable:NO];
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FORCE_PATCHING"] tag:14 disable:NO];
 			return cellval1;
 		} else if (indexPath.row == 7) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.textLabel.text = @"Don't patch on Safe Mode".loc;
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"DONT_PATCH_SAFEMODE"] tag:15 disable:NO];
+			return cellval1;
+		} else if (indexPath.row == 8) {
 			cell.textLabel.text = @"developer.testbundleaccess".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 8) {
+		} else if (indexPath.row == 9) {
 			cell.textLabel.text = @"developer.importipa".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 9) {
+		} else if (indexPath.row == 10) {
 			cell.textLabel.text = @"App Reinstall".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 10) {
+		} else if (indexPath.row == 11) {
 			cell.textLabel.text = @"Copy Current Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			if ([[NSFileManager defaultManager]
@@ -503,11 +502,11 @@
 			} else {
 				cell.accessoryType = UITableViewCellAccessoryNone;
 			}
-		} else if (indexPath.row == 11) {
+		} else if (indexPath.row == 12) {
 			cell.textLabel.text = @"Patch Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 12) {
+		} else if (indexPath.row == 13) {
 			cell.textLabel.text = @"Restore Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			if (![[NSFileManager defaultManager]
@@ -517,7 +516,7 @@
 			} else {
 				cell.accessoryType = UITableViewCellAccessoryNone;
 			}
-		} else if (indexPath.row == 13) {
+		} else if (indexPath.row == 14) {
 			cell.textLabel.text = @"Clear App Logs".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
@@ -550,7 +549,7 @@
 			return @"";
 		}
 	case 3:
-		if ([Utils isSandboxed] && JITLESS == 1) {
+		if ([Utils isSandboxed]) {
 			return @"jitless".loc;
 		} else {
 			return @"";
@@ -620,7 +619,7 @@
 			return @"jit.footer.livecontainer".loc;
 		return [self getJITEnablerFooter];
 	case 3:
-		if (![Utils isSandboxed] || JITLESS == 0)
+		if (![Utils isSandboxed])
 			return @"";
 		return @"jitless.footer".loc;
 	case 6:
@@ -704,6 +703,10 @@
 				[Utils tweakLaunch_withSafeMode:true];
 				break;
 			}
+			if (!_root.launchButton.enabled) {
+				[Utils showError:self title:@"The game is already launching! Please wait." error:nil];
+				break;
+			}
 			if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] || NSClassFromString(@"LCSharedUtils")) {
 				[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 				[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
@@ -716,12 +719,31 @@
 					[Utils showNotice:self title:@"launcher.relaunch-notice".loc];
 				}
 			} else {
-				NSString* openURL = [NSString stringWithFormat:@"%@://safe-mode", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
-				NSURL* url = [NSURL URLWithString:openURL];
-				if ([[UIApplication sharedApplication] canOpenURL:url]) {
+				if (![[Utils getPrefs] boolForKey:@"DONT_PATCH_SAFEMODE"] && [[Utils getPrefs] boolForKey:@"JITLESS"]) {
 					[_root.launchButton setEnabled:NO];
-					[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-					[self dismissViewControllerAnimated:YES completion:nil];
+					[_root signAppWithSafeMode:^(BOOL success, NSString *error) {
+						dispatch_async(dispatch_get_main_queue(), ^{
+							if (!success) {
+								[Utils showError:self title:error error:nil];
+								[_root.launchButton setEnabled:YES];
+								return;
+							}
+							NSString* openURL = [NSString stringWithFormat:@"%@://safe-mode", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
+							NSURL* url = [NSURL URLWithString:openURL];
+							if ([[UIApplication sharedApplication] canOpenURL:url]) {
+								[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+								[self dismissViewControllerAnimated:YES completion:nil];
+							}
+						});
+					}];
+				} else {
+					NSString* openURL = [NSString stringWithFormat:@"%@://safe-mode", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
+					NSURL* url = [NSURL URLWithString:openURL];
+					if ([[UIApplication sharedApplication] canOpenURL:url]) {
+						[_root.launchButton setEnabled:NO];
+						[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+						[self dismissViewControllerAnimated:YES completion:nil];
+					}
 				}
 			}
 			break;
@@ -770,7 +792,12 @@
 	} else if (indexPath.section == 3) {
 		NSFileManager* fm = [NSFileManager defaultManager];
 		switch (indexPath.row) {
-		case 2: { // Patch / Import
+		case 1: { // JIT-Less diagnose
+			JITLessVC* view = [[JITLessVC alloc] init];
+			[[self navigationController] pushViewController:view animated:YES];
+			break;
+		}
+		case 3: { // Patch / Import
 			if (![LCUtils isAppGroupAltStoreLike]) {
 				if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
 					UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Warning" message:@"Are you sure you want to remove your certificate?"
@@ -828,7 +855,7 @@
 			}
 			break;
 		}
-		case 3: { // Test JIT-Less
+		case 4: { // Test JIT-Less
 			if (![LCUtils isAppGroupAltStoreLike] && ![[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
 				[Utils showError:self title:@"You did not sideload this app with AltStore or SideStore! Or you didn't import a certificate." error:nil];
 				break;
@@ -864,7 +891,7 @@
 			}
 			break;
 		}
-		case 4: { // Force Resign
+		case 5: { // Force Resign
 			if (![[Utils getPrefs] boolForKey:@"JITLESS"])
 				break;
 			return [_root signApp:YES completionHandler:^(BOOL success, NSString* error) {
@@ -905,8 +932,8 @@
 		NSFileManager* fm = [NSFileManager defaultManager];
 		NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 		switch (indexPath.row) {
-		case 7: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
-			[Utils showNotice:self title:[Utils getGDDocPath]];
+		case 8: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
+			//[Utils showNotice:self title:[Utils getGDDocPath]];
 			/*NSFileManager* fm = [NSFileManager defaultManager];
 			NSString *fileToExtract = [[LCPath tweakFolder] URLByAppendingPathComponent:@"test"].path;
 			NSString *extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"testing.zip"].path;
@@ -916,7 +943,7 @@
 			AppLog(@"res: %@", res);*/
 			break;
 		}
-		case 8: { // Import IPA
+		case 9: { // Import IPA
 			_isImportIPA = true;
 			UTType* type = [UTType typeWithIdentifier:@"com.apple.itunes.ipa"];
 			if (!type) {
@@ -936,14 +963,14 @@
 			[self presentViewController:picker animated:YES completion:nil];
 			break;
 		}
-		case 9: { // TS App Reinstall
+		case 10: { // TS App Reinstall
 			NSURL* url = [NSURL URLWithString:[[NSUserDefaults standardUserDefaults] stringForKey:@"DEV_REINSTALL_ADDR"]];
 			if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
 				[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
 			}
 			break;
 		}
-		case 10: { // Copy Current Binary
+		case 11: { // Copy Current Binary
 			if ([fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				break;
 			} else {
@@ -958,25 +985,26 @@
 			}
 			break;
 		}
-		case 11: { // Patch
+		case 12: { // Patch
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				[Utils showError:self title:@"Original Binary not found." error:nil];
 			} else {
 				[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
 					withHandlerAddress:0x88d000
-								 force:YES completionHandler:^(BOOL success, NSString* error) {
-									 dispatch_async(dispatch_get_main_queue(), ^{
-										 if (success) {
-											 [Utils showNotice:self title:@"Patched!"];
-										 } else {
-											 [Utils showError:self title:error error:nil];
-										 }
-									 });
-								 }];
+								 force:YES
+						  withSafeMode:NO completionHandler:^(BOOL success, NSString* error) {
+							  dispatch_async(dispatch_get_main_queue(), ^{
+								  if (success) {
+									  [Utils showNotice:self title:@"Patched!"];
+								  } else {
+									  [Utils showError:self title:error error:nil];
+								  }
+							  });
+						  }];
 			}
 			break;
 		}
-		case 12: { // Restore Binary
+		case 13: { // Restore Binary
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				break;
 			} else {
@@ -996,7 +1024,7 @@
 			}
 			break;
 		}
-		case 13: { // Clear App Log
+		case 14: { // Clear App Log
 			[LogUtils clearLogs:YES];
 			[Utils showNotice:self title:@"App Logs Cleared!"];
 			break;
@@ -1103,10 +1131,10 @@
 		[Utils toggleKey:@"DONT_WARN_JIT"];
 		break;
 	case 14:
-		[Utils toggleKey:@"JITLESS_OCSP"];
+		[Utils toggleKey:@"FORCE_PATCHING"];
 		break;
 	case 15:
-		[Utils toggleKey:@"FORCE_PATCHING"];
+		[Utils toggleKey:@"DONT_PATCH_SAFEMODE"];
 		break;
 	}
 }

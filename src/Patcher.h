@@ -10,6 +10,7 @@
 					to:(NSURL*)to
 	withHandlerAddress:(uint64_t)handlerAddress
 				 force:(BOOL)force
+		  withSafeMode:(BOOL)safeMode
 	 completionHandler:(void (^)(BOOL success, NSString* error))completionHandler;
 
 @end

@@ -5,6 +5,8 @@
 "common.cancel" = "Cancel";
 "common.notice" = "Notice";
 "common.error" = "Error";
+"common.found" = "Found";
+"common.notfound" = "Not Found";
 
 // Intro
 "intro.s1.title" = "Welcome to Geode!";
@@ -146,6 +148,7 @@
 
 "jitless" = "JIT-Less";
 "jitless.enable" = "Enable JIT-Less";
+"jitless.diag" = "JIT-Less Diagnose";
 "jitless.footer" = "JIT-less allows you to use Geode without enabling JIT! You will need to import a certificate.";
 "jitless.certstatus" = "Certificate Status";
 "jitless.certstatus.valid" = "Valid (%ld days)";
@@ -191,3 +194,6 @@
 // Logs 
 "logs.error" = "%@ could not be read.";
 "logs.share-error" = "There is no file you can share!";
+
+// JIT-less diag
+"jitlessdiag.found" = "Found";

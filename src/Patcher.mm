@@ -11,9 +11,7 @@
 
 #include <dlfcn.h>
 // change to 0x1692, and max is 0x7fff
-#define TEXT_OFFSET 0x8050
-// #define TEXT_OFFSET 0x8a8000
-#define TEXT_MAX 0x10000
+#define CAVE_MAX 0x10000
 // used to be 0x4000
 
 #import <mach-o/dyld.h>
@@ -106,7 +104,7 @@ BOOL appendNewSection(NSMutableData* data, uint32_t sect_size) {
 	NSUInteger origSize = data.length;
 	const char* segNameC = "__CUSTOM";
 	const char* sectNameC = "__custom";
-	uint64_t sectSize = TEXT_MAX;
+	uint64_t sectSize = CAVE_MAX;
 
 	uint8_t* buf = (uint8_t*)data.mutableBytes;
 	struct mach_header_64* header = (struct mach_header_64*)buf;
@@ -306,8 +304,8 @@ for func in list:
 		return NO;
 	}
 	// safe guard so we dont override some needed bytes
-	if (codeCaveOffset >= TEXT_MAX) {
-		AppLogWarn(@"Cannot patch more than %#llx! (Current code cave offset: %#llx)", TEXT_MAX, codeCaveOffset);
+	if (codeCaveOffset >= CAVE_MAX) {
+		AppLogWarn(@"Cannot patch more than %#llx! (Current code cave offset: %#llx)", CAVE_MAX, codeCaveOffset);
 		return NO;
 	}
 	int funcIndex = [self.originalBytes count] + 1;
@@ -327,7 +325,6 @@ for func in list:
 			return NO;
 		}
 		[data replaceBytesInRange:NSMakeRange(customSect->offset + codeCaveOffset, gen.bytes.size()) withBytes:gen.bytes.data()];
-		// std::vector<uint8_t> intervenerBytes = getCommonIntervenerBytes((textSect->addr + addr), (textSect->addr + TEXT_OFFSET), funcIndex, (codeCaveOffset - TEXT_OFFSET));
 		std::vector<uint8_t> intervenerBytes = getCommonIntervenerBytes((textSect->addr + addr), (customSect->addr + textSect->offset), funcIndex, codeCaveOffset);
 		if (intervenerBytes.size() > 0) {
 			[data replaceBytesInRange:NSMakeRange(addr, intervenerBytes.size()) withBytes:intervenerBytes.data()];
@@ -464,7 +461,7 @@ for func in list:
 }
 
 // handler addr being that textHandlerStorage
-+ (void)patchGDBinary:(NSURL*)from to:(NSURL*)to withHandlerAddress:(uint64_t)handlerAddress force:(BOOL)force completionHandler:(void (^)(BOOL success, NSString* error))completionHandler {
++ (void)patchGDBinary:(NSURL*)from to:(NSURL*)to withHandlerAddress:(uint64_t)handlerAddress force:(BOOL)force withSafeMode:(BOOL)safeMode completionHandler:(void (^)(BOOL success, NSString* error))completionHandler {
 	NSFileManager* fm = [NSFileManager defaultManager];
 	NSError* error;
 	self.originalBytes = [NSMutableDictionary dictionary];
@@ -477,7 +474,6 @@ for func in list:
 	if (![fm fileExistsAtPath:from.path]) {
 		return completionHandler(NO, @"Couldn't find original binary.");
 	}
-	NSString *forceSign = nil;
 
 	AppLog(@"Patching Binary...");
 	if (![Patcher loadTulipHook])
@@ -557,7 +553,6 @@ for func in list:
 
 	AppLog(@"Patching handler at %#llx...", CAVE_OFFSET);
 	if (getCommonHandlerBytes) {
-		// textSect->addr + TEXT_OFFSET, handlerAddress - TEXT_OFFSET
 		std::vector<uint8_t> bytes = getCommonHandlerBytes(customSect->addr, (handlerAddress - (customSect->addr - textSeg->vmaddr)));
 		if (bytes.size() == 0) {
 			AppLog(@"Handler generation from TulipHook failed. (Empty bytes)");
@@ -574,12 +569,13 @@ for func in list:
 
 	// === PATCH STEP 2 ====
 	NSString* unzipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/unzipped"].path;
+	NSString* zipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/mods"].path;
 	NSURL* savedJSONURL = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/save/geode/mods/geode.loader/saved.json"];
 	NSData* savedJSONData = [NSData dataWithContentsOfURL:savedJSONURL options:0 error:&error];
 	NSDictionary* savedJSONDict;
 	BOOL canParseJSON = NO;
 	NSMutableArray<NSString*>* modEnabledDict = [NSMutableArray new];
-	if (!error) {
+	if (!error && !safeMode) {
 		savedJSONDict = [NSJSONSerialization JSONObjectWithData:savedJSONData options:kNilOptions error:&error];
 		if (!error && savedJSONDict && [savedJSONDict isKindOfClass:[NSDictionary class]]) {
 			canParseJSON = YES;
@@ -587,7 +583,10 @@ for func in list:
 				if ([key hasPrefix:@"should-load-"]) {
 					BOOL value = [savedJSONDict[key] boolValue];
 					if (value) {
-						[modEnabledDict addObject:[NSString stringWithFormat:@"%@.ios.dylib", [key substringFromIndex:12]]];
+                        NSString *modID = [key substringFromIndex:12];
+                        if ([fm fileExistsAtPath:[zipModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.geode", modID]]]) {
+                            [modEnabledDict addObject:[NSString stringWithFormat:@"%@.ios.dylib", modID]];
+                        }
 					}
 				}
 			}
@@ -604,7 +603,7 @@ for func in list:
 	if (geodePath) {
 		[modDict addObject:geodePath];
 	}
-	if (canParseJSON) {
+	if (canParseJSON && !safeMode) {
 		AppLog(@"saved.json parsed!");
 		for (NSString* modId in modsDir) {
 			NSString* modPath = [unzipModsPath stringByAppendingPathComponent:modId];
@@ -659,7 +658,6 @@ for func in list:
 			AppLog(@"Hash mismatch (%@ vs %@), now writing to binary...", patchChecksum, hash)
 			[[Utils getPrefs] setObject:hash forKey:@"PATCH_CHECKSUM"];
 		} else {
-			//AppLog(@"Binary already patched, skipping...");
 			if (!force) {
 				AppLog(@"Binary already patched, skipping...");
 				return completionHandler(YES, nil);
@@ -683,6 +681,6 @@ for func in list:
 		return completionHandler(NO, [NSString stringWithFormat:@"Patch failed: %@", error.localizedDescription]);
 	}
 	AppLog(@"Binary has been patched!");
-	return completionHandler(YES, forceSign);
+	return completionHandler(YES, @"force");
 }
 @end

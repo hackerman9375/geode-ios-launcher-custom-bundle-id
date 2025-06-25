@@ -63,7 +63,7 @@ bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** or
 	 00000001ac934c94         br         x2
 	 */
 	uint32_t* adrpInstPtr = baseAddr + adrpOffset;
-	assert ((*adrpInstPtr & 0x9f000000) == 0x90000000);
+	assert((*adrpInstPtr & 0x9f000000) == 0x90000000);
 	uint32_t immlo = (*adrpInstPtr & 0x60000000) >> 29;
 	uint32_t immhi = (*adrpInstPtr & 0xFFFFE0) >> 5;
 	int64_t imm = (((int64_t)((immhi << 2) | immlo)) << 43) >> 31;
@@ -84,7 +84,7 @@ bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** or
 	void* vtableFunctionPtr = 0;
 	uint32_t* movInstPtr = baseAddr + adrpOffset + 6;
 
-	if((*movInstPtr & 0x7F800000) == 0x52800000) {
+	if ((*movInstPtr & 0x7F800000) == 0x52800000) {
 		// arm64e, mov imm + add + ldr
 		uint32_t imm16 = (*movInstPtr & 0x1FFFE0) >> 5;
 		vtableFunctionPtr = vtablePtr + imm16;
@@ -100,7 +100,6 @@ bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** or
 		uint32_t imm12_2 = (*ldrInstPtr2 & 0x3FFC00) >> 10;
 		vtableFunctionPtr = vtablePtr + (imm12_2 << size2);
 	}
-
 
 	kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)vtableFunctionPtr, sizeof(uintptr_t), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
 	assert(ret == KERN_SUCCESS);
@@ -199,33 +198,33 @@ static void overwriteMainNSBundle(NSBundle* newBundle) {
 }
 
 int hook__NSGetExecutablePath_overwriteExecPath(char*** dyldApiInstancePtr, char* newPath, uint32_t* bufsize) {
-    assert(dyldApiInstancePtr != 0);
-    char** dyldConfig = dyldApiInstancePtr[1];
-    assert(dyldConfig != 0);
-    
-    char** mainExecutablePathPtr = 0;
-    // mainExecutablePath is at 0x10 for iOS 15~18.3.2, 0x20 for iOS 18.4+
-    if(dyldConfig[2] != 0 && dyldConfig[2][0] == '/') {
-        mainExecutablePathPtr = dyldConfig + 2;
-    } else if (dyldConfig[4] != 0 && dyldConfig[4][0] == '/') {
-        mainExecutablePathPtr = dyldConfig + 4;
-    } else {
-        assert(mainExecutablePathPtr != 0);
-    }
+	assert(dyldApiInstancePtr != 0);
+	char** dyldConfig = dyldApiInstancePtr[1];
+	assert(dyldConfig != 0);
 
-    kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)mainExecutablePathPtr, sizeof(mainExecutablePathPtr), false, PROT_READ | PROT_WRITE);
-    if(ret != KERN_SUCCESS) {
-        BOOL tpro_ret = os_thread_self_restrict_tpro_to_rw();
-        assert(tpro_ret);
-    }
-    *mainExecutablePathPtr = newPath;
+	char** mainExecutablePathPtr = 0;
+	// mainExecutablePath is at 0x10 for iOS 15~18.3.2, 0x20 for iOS 18.4+
+	if (dyldConfig[2] != 0 && dyldConfig[2][0] == '/') {
+		mainExecutablePathPtr = dyldConfig + 2;
+	} else if (dyldConfig[4] != 0 && dyldConfig[4][0] == '/') {
+		mainExecutablePathPtr = dyldConfig + 4;
+	} else {
+		assert(mainExecutablePathPtr != 0);
+	}
 
-    return 0;
+	kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)mainExecutablePathPtr, sizeof(mainExecutablePathPtr), false, PROT_READ | PROT_WRITE);
+	if (ret != KERN_SUCCESS) {
+		BOOL tpro_ret = os_thread_self_restrict_tpro_to_rw();
+		assert(tpro_ret);
+	}
+	*mainExecutablePathPtr = newPath;
+
+	return 0;
 }
 
-static void overwriteExecPath(const char *newExecPath) {
+static void overwriteExecPath(const char* newExecPath) {
 	// dyld4 stores executable path in a different place (iOS 15.0 +)
-    // https://github.com/apple-oss-distributions/dyld/blob/ce1cc2088ef390df1c48a1648075bbd51c5bbc6a/dyld/DyldAPIs.cpp#L802
+	// https://github.com/apple-oss-distributions/dyld/blob/ce1cc2088ef390df1c48a1648075bbd51c5bbc6a/dyld/DyldAPIs.cpp#L802
 	int (*orig__NSGetExecutablePath)(void* dyldPtr, char* buf, uint32_t* bufsize);
 	performHookDyldApi("_NSGetExecutablePath", 2, (void**)&orig__NSGetExecutablePath, hook__NSGetExecutablePath_overwriteExecPath);
 	_NSGetExecutablePath((char*)newExecPath, NULL);
