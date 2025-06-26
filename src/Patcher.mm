@@ -631,8 +631,17 @@ for func in list:
 			}
 		}
 		for (NSString* modId in modsDir) {
-			if ([modEnabledDict containsObject:modId] && ![modConflictDict containsObject:modId]) {
-				[modDict addObject:[unzipModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", modId]]];
+			NSString* modPath = [unzipModsPath stringByAppendingPathComponent:modId];
+			BOOL isDir;
+			if (![fm fileExistsAtPath:modPath isDirectory:&isDir] || !isDir) continue;
+			NSArray* modDir = [fm contentsOfDirectoryAtPath:modPath error:&error];
+			if (error) continue;
+			for (NSString* file in modDir) {
+				if ([file hasSuffix:@"ios.dylib"]) {
+					if ([modEnabledDict containsObject:file] && ![modConflictDict containsObject:file]) {
+						[modDict addObject:[modPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", file]]];
+					}
+				}
 			}
 		}
 	}
