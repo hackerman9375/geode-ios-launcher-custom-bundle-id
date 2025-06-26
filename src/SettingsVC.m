@@ -807,7 +807,6 @@
 						[NSUD setObject:nil forKey:@"LCCertificatePassword"];
 						[NSUD setObject:nil forKey:@"LCCertificateData"];
 						[NSUD setBool:NO forKey:@"LCCertificateImported"];
-						[fm removeItemAtURL:[[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"] error:nil];
 						[self.tableView reloadData];
 						[Utils showNotice:self title:@"Certificate removed."];
 					}];
@@ -825,10 +824,20 @@
 				// https://developer.apple.com/documentation/uniformtypeidentifiers/uttype-swift.struct/pkcs12
 				// public.x509-certificate
 				UTType* type = [UTType typeWithIdentifier:@"com.rsa.pkcs-12"];
-				UTType* type2 = [UTType typeWithIdentifier:@"com.apple.mobileprovision"];
-				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ type, type2 ] asCopy:YES];
+				if (!type) {
+					type = [UTType typeWithFilenameExtension:@"p12"];
+				}
+				if (!type) {
+					type = [UTType typeWithIdentifier:@"public.data"];
+				}
+				if (!type) {
+					// what is going on apple
+					AppLog(@"Couldn't find any valid UTType. Not opening to prevent crashing.");
+					break;
+				}
+				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ type ] asCopy:YES];
 				picker.delegate = self;
-				picker.allowsMultipleSelection = YES;
+				picker.allowsMultipleSelection = NO;
 				[self presentViewController:picker animated:YES completion:nil];
 			} else {
 				NSString* storeName = [LCUtils getStoreName];
@@ -933,14 +942,14 @@
 		NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 		switch (indexPath.row) {
 		case 8: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
-			//[Utils showNotice:self title:[Utils getGDDocPath]];
+			[Utils showNotice:self title:[Utils getGDDocPath]];
 			/*NSFileManager* fm = [NSFileManager defaultManager];
-			NSString *fileToExtract = [[LCPath tweakFolder] URLByAppendingPathComponent:@"test"].path;
-			NSString *extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"testing.zip"].path;
+			NSString *fileToExtract = [[LCPath bundlePath] URLByAppendingPathComponent:@"PirataWarning.app"].path;
+			NSString *extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"PirataWarning.ipa"].path;
 			AppLog(@"Starting compression of %@ to %@", fileToExtract, extractionPath);
 			[[NSFileManager defaultManager] createFileAtPath:extractionPath contents:nil attributes:nil];
 			int res = compress(fileToExtract, extractionPath, nil);
-			AppLog(@"res: %@", res);*/
+			AppLog(@"res: %i", res);*/
 			break;
 		}
 		case 9: { // Import IPA
@@ -1217,13 +1226,8 @@
 - (void)documentPicker:(UIDocumentPickerViewController*)controller didPickDocumentsAtURLs:(nonnull NSArray<NSURL*>*)urls {
 	if (_isImportCert) {
 		_isImportCert = NO;
-		if (urls.count != 2)
-			return [Utils showError:self title:@"2 files must be selected! (p12 & mobileprovision)" error:nil];
-		NSString* extension1 = urls.firstObject.pathExtension;
-		NSString* extension2 = urls.lastObject.pathExtension;
-		if ([extension1 isEqualToString:extension2])
-			return [Utils showError:self title:@"You must only select 2 different files! Both the certificate (.p12) and the mobile provision profile! (.mobileprovision)"
-							  error:nil];
+		if (urls.count != 1)
+			return [Utils showError:self title:@"You must select a p12 certificate!" error:nil];
 		AppLog(@"Selected URLs: %@", urls);
 		UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Input the password of the Certificate." message:@"This will be used for signing."
 																preferredStyle:UIAlertControllerStyleAlert];
@@ -1232,28 +1236,8 @@
 			textField.secureTextEntry = YES;
 		}];
 		UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-			NSError* err;
-			NSURL* provisionURL;
-			if (![extension1 isEqualToString:@"p12"]) {
-				provisionURL = urls.firstObject;
-			} else {
-				provisionURL = urls.lastObject;
-			}
-			NSURL* newURL = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
-			if ([[NSFileManager defaultManager] fileExistsAtPath:newURL.path]) {
-				[[NSFileManager defaultManager] removeItemAtURL:newURL error:&err];
-				if (err)
-					return [Utils showError:self title:@"Couldn't remove mobile provision from documents" error:err];
-			}
-			[[NSFileManager defaultManager] moveItemAtURL:provisionURL toURL:newURL error:&err];
-			if (err)
-				return [Utils showError:self title:@"Couldn't move mobile provision to documents" error:err]; // when would this error realistically happen
 			UITextField* field = alert.textFields.firstObject;
-			if ([extension1 isEqualToString:@"p12"]) {
-				[self certPass:field.text url:urls.firstObject];
-			} else {
-				[self certPass:field.text url:urls.lastObject];
-			}
+			[self certPass:field.text url:urls.firstObject];
 		}];
 
 		UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];

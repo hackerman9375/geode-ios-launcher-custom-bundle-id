@@ -34,6 +34,7 @@ make package FINALPACKAGE=1 STRIP=0
 
 ## Libraries
 - [LiveContainer](https://github.com/khanhduytran0/LiveContainer) - Made the launcher possible!
+- Feather's [Zsign](https://github.com/khcrysalis/Zsign-Package) fork - For signing the app and mods for allowing the launcher to load JIT-less! (Originally made by [zhlynn](https://github.com/zhlynn/zsign), but forked for [Feather](https://github.com/khcrysalis/Feather))
 - [MSColorPicker](https://github.com/sgl0v/MSColorPicker) - Helper for Color Picking
 - [GCDWebServer](https://github.com/swisspol/GCDWebServer) - For the web debug panel!
 
