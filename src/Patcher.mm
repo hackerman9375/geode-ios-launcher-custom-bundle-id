@@ -569,12 +569,26 @@ for func in list:
 
 	// === PATCH STEP 2 ====
 	NSString* unzipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/unzipped"].path;
+	NSString* unzipBinModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/unzipped/binaries"].path;
 	NSString* zipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/mods"].path;
 	NSURL* savedJSONURL = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/save/geode/mods/geode.loader/saved.json"];
 	NSData* savedJSONData = [NSData dataWithContentsOfURL:savedJSONURL options:0 error:&error];
 	NSDictionary* savedJSONDict;
 	BOOL canParseJSON = NO;
 	NSMutableArray<NSString*>* modEnabledDict = [NSMutableArray new];
+
+	NSArray* modsDir = [fm contentsOfDirectoryAtPath:unzipModsPath error:&error];
+	if (error) {
+		AppLog(@"Couldn't read unzipped directory: %@", error);
+		error = nil;
+	}
+	NSArray* modsBinDir = [fm contentsOfDirectoryAtPath:unzipBinModsPath error:&error];
+	if (error) {
+		AppLog(@"Couldn't read unzipped/binaries directory: %@", error);
+		error = nil;
+	}
+
+
 	if (!error && !safeMode) {
 		savedJSONDict = [NSJSONSerialization JSONObjectWithData:savedJSONData options:kNilOptions error:&error];
 		if (!error && savedJSONDict && [savedJSONDict isKindOfClass:[NSDictionary class]]) {
@@ -583,20 +597,24 @@ for func in list:
 				if ([key hasPrefix:@"should-load-"]) {
 					BOOL value = [savedJSONDict[key] boolValue];
 					if (value) {
-                        NSString *modID = [key substringFromIndex:12];
-                        if ([fm fileExistsAtPath:[zipModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.geode", modID]]]) {
-                            [modEnabledDict addObject:[NSString stringWithFormat:@"%@.ios.dylib", modID]];
-                        }
+						NSString *modID = [key substringFromIndex:12];
+						if ([fm fileExistsAtPath:[zipModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.geode", modID]]]) {
+							[modEnabledDict addObject:[NSString stringWithFormat:@"%@.ios.dylib", modID]];
+						}
+					}
+				}
+			}
+			for (NSString *file in modsBinDir) {
+				NSString *modID = [file stringByDeletingPathExtension];
+				NSString *key = [NSString stringWithFormat:@"should-load-%@", modID];
+				if (!savedJSONDict[key]) {
+					AppLog(@"%@ doesn't exist in saved.json, but exists in the bin directory, assuming true", modID);
+					if (![modEnabledDict containsObject:file]) {
+						[modEnabledDict addObject:file];
 					}
 				}
 			}
 		}
-	}
-
-	NSArray* modsDir = [fm contentsOfDirectoryAtPath:unzipModsPath error:&error];
-	if (error) {
-		AppLog(@"Couldn't read unzipped directory: %@", error);
-		error = nil;
 	}
 	NSMutableArray<NSString*>* modDict = [NSMutableArray new];
 	NSString* geodePath = [Utils getTweakDir];
@@ -605,18 +623,16 @@ for func in list:
 	}
 	if (canParseJSON && !safeMode) {
 		AppLog(@"saved.json parsed!");
+		NSMutableArray<NSString*>* modConflictDict = [NSMutableArray new];
+		for (NSString* modId in modsBinDir) {
+			if ([modEnabledDict containsObject:modId]) {
+				[modDict addObject:[unzipBinModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", modId]]];
+				[modConflictDict addObject:modId];
+			}
+		}
 		for (NSString* modId in modsDir) {
-			NSString* modPath = [unzipModsPath stringByAppendingPathComponent:modId];
-			BOOL isDir;
-			if (![fm fileExistsAtPath:modPath isDirectory:&isDir] || !isDir) continue;
-			NSArray* modDir = [fm contentsOfDirectoryAtPath:modPath error:&error];
-			if (error) continue;
-			for (NSString* file in modDir) {
-				if ([file hasSuffix:@"ios.dylib"]) {
-					if ([modEnabledDict containsObject:file]) {
-						[modDict addObject:[modPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", file]]];
-					}
-				}
+			if ([modEnabledDict containsObject:modId] && ![modConflictDict containsObject:modId]) {
+				[modDict addObject:[unzipModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", modId]]];
 			}
 		}
 	}
