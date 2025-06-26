@@ -790,7 +790,6 @@
 		}
 		}
 	} else if (indexPath.section == 3) {
-		NSFileManager* fm = [NSFileManager defaultManager];
 		switch (indexPath.row) {
 		case 1: { // JIT-Less diagnose
 			JITLessVC* view = [[JITLessVC alloc] init];
