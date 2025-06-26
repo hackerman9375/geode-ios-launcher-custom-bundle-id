@@ -721,7 +721,7 @@
 			} else {
 				if (![[Utils getPrefs] boolForKey:@"DONT_PATCH_SAFEMODE"] && [[Utils getPrefs] boolForKey:@"JITLESS"]) {
 					[_root.launchButton setEnabled:NO];
-					[_root signAppWithSafeMode:^(BOOL success, NSString *error) {
+					[_root signAppWithSafeMode:^(BOOL success, NSString* error) {
 						dispatch_async(dispatch_get_main_queue(), ^{
 							if (!success) {
 								[Utils showError:self title:error error:nil];

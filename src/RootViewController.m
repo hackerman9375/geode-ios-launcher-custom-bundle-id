@@ -461,11 +461,9 @@
 										 if (error != nil) {
 											 AppLog(@"Detailed error for signing mods: %@", error);
 											 return completionHandler(
-												 NO,
-												 [NSString
-													 stringWithFormat:
-														 @"Couldn't sign mods. Please make sure that you have either patched %@, or imported a certificate in settings.",
-														 [LCUtils getStoreName]]);
+												 NO, [NSString stringWithFormat:
+																   @"Couldn't sign mods. Please make sure that you have either patched %@, or imported a certificate in settings.",
+																   [LCUtils getStoreName]]);
 										 }
 										 completionHandler(YES, nil);
 									 }];
@@ -483,7 +481,6 @@
 		return completionHandler(YES, nil);
 	}
 }
-
 
 - (void)signApp:(BOOL)forceSign completionHandler:(void (^)(BOOL success, NSString* error))completionHandler {
 	if (![[Utils getPrefs] boolForKey:@"JITLESS"] && ![[Utils getPrefs] boolForKey:@"FORCE_PATCHING"])
@@ -526,20 +523,21 @@
 															   @"Couldn't sign tweaks. Please make sure that you have either patched %@, or imported a certificate in settings.",
 															   [LCUtils getStoreName]]);
 										 }
-										 [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:force
+
+										 [LCUtils signModsNew:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:force
 											 progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
-												 if (error != nil) {
-													 AppLog(@"Detailed error for signing mods: %@", error);
-													 return completionHandler(
-														 NO,
-														 [NSString
-															 stringWithFormat:
-																 @"Couldn't sign mods. Please make sure that you have either patched %@, or imported a certificate in settings.",
-																 [LCUtils getStoreName]]);
-												 }
-												 [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
-												 [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
-												 completionHandler(YES, nil);
+												 [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:force
+													 progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
+														 if (error != nil) {
+															 AppLog(@"Detailed error for signing mods: %@", error);
+															 return completionHandler(NO, [NSString stringWithFormat:@"Couldn't sign mods. Please make sure that you have either "
+																													 @"patched %@, or imported a certificate in settings.",
+																													 [LCUtils getStoreName]]);
+														 }
+														 [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
+														 [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+														 completionHandler(YES, nil);
+													 }];
 											 }];
 									 }];
 								 } progressHandler:^(NSProgress* signProgress) {} forceSign:force];
@@ -553,8 +551,9 @@
 				 });
 			 }];
 	} else {
-		[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] withHandlerAddress:0x88d000 force:NO
-		  withSafeMode:NO completionHandler:^(BOOL success, NSString* error) { completionHandler(success, error); }];
+		[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] withHandlerAddress:0x88d000
+						 force:NO
+				  withSafeMode:NO completionHandler:^(BOOL success, NSString* error) { completionHandler(success, error); }];
 	}
 }
 - (void)launchGame {

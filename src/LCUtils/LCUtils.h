@@ -47,4 +47,5 @@ void refreshFile(NSString* execPath);
 + (void)signFilesInFolder:(NSURL*)url onProgressCreated:(void (^)(NSProgress* progress))onProgressCreated completion:(void (^)(NSString* error))completion;
 + (void)signTweaks:(NSURL*)tweakFolderUrl force:(BOOL)force progressHandler:(void (^)(NSProgress* progress))progressHandler completion:(void (^)(NSError* error))completion;
 + (void)signMods:(NSURL*)geodeUrl force:(BOOL)force progressHandler:(void (^)(NSProgress* progress))progressHandler completion:(void (^)(NSError* error))completion;
++ (void)signModsNew:(NSURL*)geodeUrl force:(BOOL)force progressHandler:(void (^)(NSProgress* progress))progressHandler completion:(void (^)(NSError* error))completion;
 @end

@@ -618,4 +618,118 @@ Class LCSharedUtilsClass = nil;
 		completion(nil);
 	}];
 }
++ (void)signModsNew:(NSURL*)tweakFolderUrl force:(BOOL)force progressHandler:(void (^)(NSProgress* progress))progressHandler completion:(void (^)(NSError* error))completion {
+	if (![self certificatePassword]) {
+		completion([NSError errorWithDomain:@"CertificatePasswordMissing" code:0 userInfo:nil]);
+		return;
+	}
+	NSFileManager* fm = [NSFileManager defaultManager];
+	BOOL isDir = NO;
+	if (![fm fileExistsAtPath:tweakFolderUrl.path isDirectory:&isDir] || !isDir) {
+		completion(nil); // assume we haven't installed geode yet
+		// completion([NSError errorWithDomain:@"InvalidModFolder" code:0 userInfo:nil]);
+		return;
+	}
+	if (force) {
+		[fm removeItemAtURL:[tweakFolderUrl URLByAppendingPathComponent:@"ModInfo.plist"] error:nil];
+	}
+	NSMutableDictionary* tweakSignInfo = [NSMutableDictionary dictionaryWithContentsOfURL:[tweakFolderUrl URLByAppendingPathComponent:@"ModInfo.plist"]];
+	BOOL signNeeded = force;
+	if (!force) {
+		NSMutableDictionary* tweakFileINodeRecord = [NSMutableDictionary dictionaryWithDictionary:[tweakSignInfo objectForKey:@"files"]];
+		NSArray* fileURLs = [fm contentsOfDirectoryAtURL:[tweakFolderUrl URLByAppendingPathComponent:@"unzipped/binaries"] includingPropertiesForKeys:nil options:0 error:nil];
+		if (fileURLs) {
+			for (NSURL* url in fileURLs) {
+				NSError* error = nil;
+				NSDictionary* attributes = [fm attributesOfItemAtPath:url.path error:&error];
+				if (error)
+					continue;
+				NSString* fileType = attributes[NSFileType];
+				if (![fileType isEqualToString:NSFileTypeDirectory])
+					continue;
+				NSArray* modContents = [fm contentsOfDirectoryAtURL:url includingPropertiesForKeys:nil options:0 error:nil];
+				for (NSURL* fileURL in modContents) {
+					NSDictionary* attributes = [fm attributesOfItemAtPath:fileURL.path error:&error];
+					if (error)
+						continue;
+					NSString* fileType = attributes[NSFileType];
+					if (![fileType isEqualToString:NSFileTypeDirectory] && ![fileType isEqualToString:NSFileTypeRegular])
+						continue;
+					if ([fileType isEqualToString:NSFileTypeRegular] && ![[fileURL lastPathComponent] hasSuffix:@".ios.dylib"])
+						continue;
+					if ([[fileURL lastPathComponent] isEqualToString:@"ModInfo.plist"])
+						continue;
+
+					NSNumber* inodeNumber = [fm attributesOfItemAtPath:fileURL.path error:nil][NSFileSystemNumber];
+					if ([tweakFileINodeRecord objectForKey:fileURL.lastPathComponent] != inodeNumber || checkCodeSignature([fileURL.path UTF8String])) {
+						signNeeded = YES;
+						break;
+					}
+					if (![self modifiedAtDifferent:fileURL.path
+										 geodePath:[tweakFolderUrl URLByAppendingPathComponent:[NSString stringWithFormat:@"mods/%@.geode",
+																														  [[[url lastPathComponent] stringByDeletingPathExtension]
+																															  stringByDeletingPathExtension]]]
+													   .path]) {
+						signNeeded = YES;
+						break;
+					}
+
+					AppLog(@"%@", [fileURL lastPathComponent]);
+				}
+			}
+		}
+	} else {
+		signNeeded = YES;
+	}
+	if (!signNeeded)
+		return completion(nil);
+	NSURL* tmpDir = [[fm temporaryDirectory] URLByAppendingPathComponent:@"ModTmp.app"];
+	if ([fm fileExistsAtPath:tmpDir.path]) {
+		[fm removeItemAtURL:tmpDir error:nil];
+	}
+	[fm createDirectoryAtURL:tmpDir withIntermediateDirectories:YES attributes:nil error:nil];
+	NSMutableArray<NSURL*>* tmpPaths = [NSMutableArray array];
+	NSArray* fileURLs = [fm contentsOfDirectoryAtURL:[tweakFolderUrl URLByAppendingPathComponent:@"unzipped/binaries"] includingPropertiesForKeys:nil options:0 error:nil];
+	for (NSURL* fileURL in fileURLs) {
+		NSError* error = nil;
+		NSDictionary* attributes = [fm attributesOfItemAtPath:fileURL.path error:&error];
+		if (error)
+			continue;
+		if ([attributes[NSFileType] isEqualToString:NSFileTypeRegular] && [[fileURL lastPathComponent] hasSuffix:@"ios.dylib"]) {
+			NSURL* tmpPath = [tmpDir URLByAppendingPathComponent:fileURL.lastPathComponent];
+			if (tmpPath) {
+				[tmpPaths addObject:tmpPath];
+				[fm copyItemAtURL:fileURL toURL:tmpPath error:nil];
+			}
+		}
+	}
+	if ([tmpPaths count] == 0) {
+		[fm removeItemAtURL:tmpDir error:nil];
+		return completion(nil);
+	}
+	[self signFilesInFolder:tmpDir onProgressCreated:progressHandler completion:^(NSString* error) {
+		if (error)
+			return completion([NSError errorWithDomain:error code:0 userInfo:nil]);
+		NSMutableDictionary* newTweakSignInfo = [NSMutableDictionary dictionary];
+		NSMutableArray* fileInodes = [NSMutableArray array];
+		for (NSURL* tmpFile in tmpPaths) {
+			// NSURL *toPath = [tweakFolderUrl URLByAppendingPathComponent:tmpFile.lastPathComponent];
+			NSURL* toPath = [tweakFolderUrl URLByAppendingPathComponent:[NSString stringWithFormat:@"unzipped/binaries/%@", tmpFile.lastPathComponent]];
+			AppLog(@"Signing %@", tmpFile.lastPathComponent);
+			if ([fm fileExistsAtPath:toPath.path]) {
+				[fm removeItemAtURL:toPath error:nil];
+			}
+			[fm moveItemAtURL:tmpFile toURL:toPath error:nil];
+			NSNumber* inodeNumber = [fm attributesOfItemAtPath:toPath.path error:nil][NSFileSystemNumber];
+			if (inodeNumber) {
+				[fileInodes addObject:inodeNumber];
+				[newTweakSignInfo setObject:inodeNumber forKey:tmpFile.lastPathComponent];
+			}
+		}
+		[fm removeItemAtURL:tmpDir error:nil];
+		[newTweakSignInfo writeToURL:[tweakFolderUrl URLByAppendingPathComponent:@"ModInfo.plist"] atomically:YES];
+		completion(nil);
+	}];
+}
+
 @end
