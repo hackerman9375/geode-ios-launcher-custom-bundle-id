@@ -24,7 +24,7 @@ This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but i
 > [!WARNING]
 > Only use this method **if you're willing to pay** for an Apple developer certificate.
 > \
-> When you get an Apple developer certificate, **make sure to ask your provider to give your certificate the `get-task-allow` entitlement.** (Usually called "Developer" or "Distribution" certificate)
+> When you get an Apple developer certificate, **make sure to ask your provider to give your certificate the `get-task-allow` entitlement.** (Usually called "Developer" certificate)
 
 - **Full version of Geometry Dash installed**
 - **An internet connection**
