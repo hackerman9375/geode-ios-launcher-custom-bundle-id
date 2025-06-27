@@ -36,11 +36,11 @@ A new section has been added to the Geode launcher's settings for JIT-less. Here
 
 ## Import Apple Developer Certificate
 > [!TIP]
-> To get the certificate files (**.p12** and **.mobileprovision**) of your Signulous certificate, follow [this guide](/SIGNULOUS-CERTIFICATE-FILE-GUIDE.md)
+> To get the certificate file (**.p12**) of your Signulous certificate, follow [this guide](/SIGNULOUS-CERTIFICATE-FILE-GUIDE.md)
 
 - Press **"Enable JIT-Less"**
 - Press **"Import Certificate Manually"**
-- Choose the **.p12** and **.mobileprovision** file of the certificate you used to sign the Geode launcher
+- Choose the **.p12** file of the certificate you used to sign the Geode launcher
 - Input the password of your certificate **(make sure to input the password correctly, or Geode will fail to do the signing process)**
 - Press **"Test JIT-Less Mode"** to test if JIT-less mode works properly 
 
