@@ -1,4 +1,4 @@
-# Getting Certificate Files from Signulous
+# Getting Certificate File from Signulous
 
 > [!WARNING]
 > If the site that helps you get the Signulous certificate file tells you to not download it directly to your device, and you're using a different browser, **temporarily switch to Safari**.
