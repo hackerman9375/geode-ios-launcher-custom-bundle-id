@@ -1,9 +1,9 @@
 # Getting Certificate Files from Signulous
 
 > [!WARNING]
-> If the site that helps you get the Signulous certificate files says not to download them directly to your device, and you're using a different browser, **temporarily switch to Safari**.
+> If the site that helps you get the Signulous certificate file tells you to not download it directly to your device, and you're using a different browser, **temporarily switch to Safari**.
 
-By default, Signulous does not give you the **.p12** file of your certificate. Here is how you can get them:
+By default, Signulous does not give you the **.p12** file of your certificate. Here is how you can get it:
 
 - Go to [this page](https://www.udidregistrations.com/check-order)
 - Paste **your device's UDID or PayPal transaction ID** (You can go to [this page](https://udid.tech/) and follow the instructions to get your device's UDID)
