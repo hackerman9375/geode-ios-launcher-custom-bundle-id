@@ -165,15 +165,16 @@ static NSString* certPassword = nil;
 			[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
 				withHandlerAddress:0x88d000
 							 force:NO
-					  withSafeMode:NO completionHandler:^(BOOL success, NSString* error) {
-						  [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:NO progressHandler:^(NSProgress* progress) {}
-							  completion:^(NSError* error) {
-								  if (error != nil) {
-									  AppLog(@"Detailed error for signing mods: %@", error);
-								  }
-								  [LCUtils launchToGuestApp];
-							  }];
-					  }];
+					  withSafeMode:NO
+				  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) {
+					  [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:NO progressHandler:^(NSProgress* progress) {}
+						  completion:^(NSError* error) {
+							  if (error != nil) {
+								  AppLog(@"Detailed error for signing mods: %@", error);
+							  }
+							  [LCUtils launchToGuestApp];
+						  }];
+				  }];
 		} else {
 			AppLog(@"Launching Geometry Dash");
 			if (![LCUtils launchToGuestApp]) {

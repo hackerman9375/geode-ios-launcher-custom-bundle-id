@@ -168,7 +168,7 @@ extern NSBundle* gcMainBundle;
 	UIApplication* application = [NSClassFromString(@"UIApplication") sharedApplication];
 	NSString* urlScheme;
 	int tries = 1;
-	if (NSClassFromString(@"LCSharedUtils")) {
+	if (NSClassFromString(@"LCSharedUtils") && ![gcUserDefaults boolForKey:@"JITLESS"]) {
 		// urlScheme = @"livecontainer://livecontainer-launch?bundle-name=%@.app";
 	} else {
 		NSInteger jitEnabler = [gcUserDefaults integerForKey:@"JIT_ENABLER"];
@@ -180,6 +180,10 @@ extern NSBundle* gcMainBundle;
 		} else if (self.certificatePassword && [gcUserDefaults boolForKey:@"JITLESS"]) {
 			tries = 2;
 			urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
+			if (NSClassFromString(@"LCSharedUtils")) {
+				// but... what about if the user installs multiple geode!?!?!?! sorry... ill deal with that later!
+				urlScheme = @"livecontainer://livecontainer-launch?bundle-name=com.geode.launcher.app";
+			}
 		} else if ((jitEnabler == 0 && [application canOpenURL:[NSURL URLWithString:@"stikjit://"]]) || jitEnabler == 2) {
 			urlScheme = @"stikjit://enable-jit?bundle-id=%@";
 		} else if ((jitEnabler == 0 && [application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) || jitEnabler == 5) {

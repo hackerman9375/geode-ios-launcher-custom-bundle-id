@@ -23,6 +23,16 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 
+// since theos sdk apparently doesnt have this
+// thanks to https://github.com/theos/theos/issues/493
+int __isOSVersionAtLeast(int major, int minor, int patch) {
+	NSOperatingSystemVersion version;
+	version.majorVersion = major;
+	version.minorVersion = minor;
+	version.patchVersion = patch;
+	return [[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version];
+}
+
 static int (*appMain)(int, char**);
 NSUserDefaults* gcUserDefaults;
 NSUserDefaults* gcSharedDefaults;
@@ -137,6 +147,9 @@ static BOOL checkJITEnabled() {
 		return YES;
 	if ([gcUserDefaults boolForKey:@"JITLESS"])
 		return NO;
+	if (@available(iOS 26.0, *)) {
+		return NO;
+	}
 	// check if jailbroken
 	if (access("/var/mobile", R_OK) == 0) {
 		return YES;
@@ -419,12 +432,6 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 		}
 	}
 
-	BOOL fixBlackscreen2 = [gcUserDefaults boolForKey:@"FIX_BLACKSCREEN"];
-	if (fixBlackscreen2) {
-		dlopen("/System/Library/Frameworks/UIKit.framework/UIKit", RTLD_GLOBAL);
-		NSLog(@"[LC] Fix BlackScreen2 %@", [NSClassFromString(@"UIScreen") mainScreen]);
-	}
-
 	setenv("CFFIXED_USER_HOME", newHomePath.UTF8String, 1);
 	setenv("HOME", newHomePath.UTF8String, 1);
 	setenv("TMPDIR", newTmpPath.UTF8String, 1);
@@ -470,6 +477,15 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	// Overwrite CFBundle
 	overwriteMainCFBundle();
 
+	if (!appBundle.executablePath) {
+		return @"Couldn't find app executable path. Try force resign in settings or delete the .app file in the Applications directory.";
+	}
+
+	if ([gcUserDefaults boolForKey:@"FIX_BLACKSCREEN"]) {
+		dlopen("/System/Library/Frameworks/UIKit.framework/UIKit", RTLD_GLOBAL);
+		NSLog(@"[LC] Fix BlackScreen2 %@", [NSClassFromString(@"UIScreen") mainScreen]);
+	}
+
 	// Overwrite executable info
 	NSMutableArray<NSString*>* objcArgv = NSProcessInfo.processInfo.arguments.mutableCopy;
 	objcArgv[0] = appBundle.executablePath;
@@ -480,12 +496,10 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	AppLog(@"[invokeAppMain] Init guest hooks...");
 	// hook NSUserDefault before running libraries' initializers
 	NUDGuestHooksInit();
-
-	// UIAGuestHooksInit();
-
-	if ([gcUserDefaults boolForKey:@"LCCertificateImported"]) {
-		// SecItemGuestHooksInit();
-	}
+	// SecItemGuestHooksInit();
+	// NSFMGuestHooksInit();
+	// initDead10ccFix();
+	//  UIAGuestHooksInit();
 
 	// Preload executable to bypass RT_NOLOAD
 	uint32_t appIndex = _dyld_image_count();

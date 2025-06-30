@@ -11,6 +11,7 @@
 	withHandlerAddress:(uint64_t)handlerAddress
 				 force:(BOOL)force
 		  withSafeMode:(BOOL)safeMode
+	  withEntitlements:(BOOL)entitlements
 	 completionHandler:(void (^)(BOOL success, NSString* error))completionHandler;
 
 @end

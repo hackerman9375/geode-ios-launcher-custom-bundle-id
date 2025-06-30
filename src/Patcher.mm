@@ -100,7 +100,7 @@ static uint64_t align(uint64_t size, uint64_t align) {
 // https://alexomara.com/blog/adding-a-segment-to-an-existing-macos-mach-o-binary/ (mainly this, thanks to the python script!)
 // this function creates a new segment and section (rx), and it's main purpose is to allow for an rx area for our code cave, since ios doesnt like us touching the __TEXT seg
 // originally i wanted to extend __text or create a section in __TEXT, but found that headache inducing so i just decided to make a new segment instead, plus its better because i dont have to shift EVERYTHING after that section, load command tables were stupid to handle
-BOOL appendNewSection(NSMutableData* data, uint32_t sect_size) {
+BOOL appendNewSection(NSMutableData* data) {
 	NSUInteger origSize = data.length;
 	const char* segNameC = "__CUSTOM";
 	const char* sectNameC = "__custom";
@@ -227,6 +227,180 @@ BOOL appendNewSection(NSMutableData* data, uint32_t sect_size) {
 	free(dead);
 	[out appendBytes:buf + linkFileOff length:origSize - linkFileOff];
 	[data setData:out];
+	return YES;
+}
+
+// i wanted to import it from zsign but i kept getting "macro redefined!!!" so i just copy pasted
+typedef struct {
+	uint32_t magic;
+	// The length of the superblob, which includes any nested blobs.
+	uint32_t length;
+	// The number of nested blobs in this blob.
+	uint32_t count;
+	// The blob indices for the nested blobs.
+} CS_SuperBlob;
+
+typedef struct {
+	uint32_t type;
+	// the offset of the nested blob within the superblob
+	uint32_t offset;
+} CS_BlobIndex;
+
+typedef struct {
+	uint32_t magic;					/* magic number */
+	uint32_t length;				/* total length of blob */
+} CS_GenericBlob;
+
+#define CSMAGIC_EMBEDDED_SIGNATURE 0xfade0cc0
+#define CSSLOT_CODEDIRECTORY 0x00000000
+#define CSSLOT_ENTITLEMENTS 0x00000005
+#define CSMAGIC_CODEDIRECTORY 0xfade0c02
+#define CSMAGIC_ENTITLEMENT 0xfade7171
+
+static uint32_t swap32(uint32_t val) {
+    return CFSwapInt32HostToBig(val);
+}
+
+BOOL addEntitlements(NSMutableData* data, NSData* entitlementsData) {
+	uint8_t* buf = (uint8_t*)data.mutableBytes;
+	struct mach_header_64* header = (struct mach_header_64*)buf;
+
+	uint8_t* lcPtr = buf + sizeof(*header);
+	struct linkedit_data_command* codeSignCmd = NULL;
+	uint32_t codeSignCmdIndex = 0;
+
+	uint8_t* searchPtr = lcPtr;
+	for (uint32_t i = 0; i < header->ncmds; i++) {
+		struct load_command* lc = (struct load_command*)searchPtr;
+		if (lc->cmd == LC_CODE_SIGNATURE) {
+			codeSignCmd = (struct linkedit_data_command*)searchPtr;
+			codeSignCmdIndex = i;
+			break;
+		}
+		searchPtr += lc->cmdsize;
+	}
+
+	uint32_t entitlementsSize = (uint32_t)entitlementsData.length;
+	uint32_t entitlementsBlobSize = sizeof(CS_GenericBlob) + entitlementsSize;
+	entitlementsBlobSize = align(entitlementsBlobSize, 8);
+
+	uint32_t codeDirSize = 44; // min size
+	codeDirSize = align(codeDirSize, 8);
+
+	uint32_t superBlobSize = sizeof(CS_SuperBlob) + (2 * sizeof(CS_BlobIndex)) + codeDirSize + entitlementsBlobSize;
+	superBlobSize = align(superBlobSize, 16);
+
+	NSUInteger originalSize = data.length;
+
+	if (codeSignCmd) {
+		NSUInteger removeStart = codeSignCmd->dataoff;
+		NSUInteger removeSize = codeSignCmd->datasize;
+		
+		NSMutableData* newData = [NSMutableData dataWithBytes:buf length:removeStart];
+		if (originalSize > removeStart + removeSize) {
+			[newData appendBytes:buf + removeStart + removeSize 
+						  length:originalSize - removeStart - removeSize];
+		}
+		[data setData:newData];
+		buf = (uint8_t*)data.mutableBytes;
+		header = (struct mach_header_64*)buf;
+		
+		codeSignCmd = (struct linkedit_data_command*)(buf + sizeof(*header));
+		searchPtr = (uint8_t*)codeSignCmd;
+		for (uint32_t i = 0; i < codeSignCmdIndex; i++) {
+			struct load_command* lc = (struct load_command*)searchPtr;
+			searchPtr += lc->cmdsize;
+		}
+		codeSignCmd = (struct linkedit_data_command*)searchPtr;
+	} else {
+		struct linkedit_data_command newCodeSignCmd;
+		memset(&newCodeSignCmd, 0, sizeof(newCodeSignCmd));
+		newCodeSignCmd.cmd = LC_CODE_SIGNATURE;
+		newCodeSignCmd.cmdsize = sizeof(newCodeSignCmd);
+		
+		NSMutableData* headerData = [NSMutableData data];
+		[headerData appendBytes:buf length:sizeof(*header)];
+		
+		lcPtr = buf + sizeof(*header);
+		for (uint32_t i = 0; i < header->ncmds; i++) {
+			struct load_command* lc = (struct load_command*)lcPtr;
+			[headerData appendBytes:lcPtr length:lc->cmdsize];
+			lcPtr += lc->cmdsize;
+		}
+		
+		[headerData appendBytes:&newCodeSignCmd length:sizeof(newCodeSignCmd)];
+		
+		NSUInteger headerSize = sizeof(*header) + header->sizeofcmds;
+		[headerData appendBytes:buf + headerSize length:data.length - headerSize];
+		
+		[data setData:headerData];
+		buf = (uint8_t*)data.mutableBytes;
+		header = (struct mach_header_64*)buf;
+		
+		header->ncmds += 1;
+		header->sizeofcmds += sizeof(newCodeSignCmd);
+		
+		lcPtr = buf + sizeof(*header);
+		for (uint32_t i = 0; i < header->ncmds - 1; i++) {
+			struct load_command* lc = (struct load_command*)lcPtr;
+			lcPtr += lc->cmdsize;
+		}
+		codeSignCmd = (struct linkedit_data_command*)lcPtr;
+	}
+
+	codeSignCmd->dataoff = (uint32_t)data.length;
+	codeSignCmd->datasize = superBlobSize;
+
+	NSMutableData* signatureData = [NSMutableData dataWithCapacity:superBlobSize];
+
+	CS_SuperBlob superBlob;
+	superBlob.magic = swap32(CSMAGIC_EMBEDDED_SIGNATURE);
+	superBlob.length = swap32(superBlobSize);
+	superBlob.count = swap32(2); // CodeDirectory + Entitlements
+	[signatureData appendBytes:&superBlob length:sizeof(superBlob)];
+
+	uint32_t currentOffset = sizeof(CS_SuperBlob) + (2 * sizeof(CS_BlobIndex));
+
+	CS_BlobIndex codeDirIndex;
+	codeDirIndex.type = swap32(CSSLOT_CODEDIRECTORY);
+	codeDirIndex.offset = swap32(currentOffset);
+	[signatureData appendBytes:&codeDirIndex length:sizeof(codeDirIndex)];
+
+	CS_BlobIndex entIndex;
+	entIndex.type = swap32(CSSLOT_ENTITLEMENTS);
+	entIndex.offset = swap32(currentOffset + codeDirSize);
+	[signatureData appendBytes:&entIndex length:sizeof(entIndex)];
+
+	CS_GenericBlob codeDirBlob;
+	codeDirBlob.magic = swap32(CSMAGIC_CODEDIRECTORY);
+	codeDirBlob.length = swap32(codeDirSize);
+	[signatureData appendBytes:&codeDirBlob length:sizeof(codeDirBlob)];
+
+	uint32_t codeDirPadding = codeDirSize - sizeof(codeDirBlob);
+	uint8_t* padding = (uint8_t*)calloc(1, codeDirPadding);
+	[signatureData appendBytes:padding length:codeDirPadding];
+	free(padding);
+
+	CS_GenericBlob entBlob;
+	entBlob.magic = swap32(CSMAGIC_ENTITLEMENT);
+	entBlob.length = swap32(entitlementsBlobSize);
+	[signatureData appendBytes:&entBlob length:sizeof(entBlob)];
+	[signatureData appendBytes:entitlementsData.bytes length:entitlementsData.length];
+
+	uint32_t entPadding = entitlementsBlobSize - sizeof(entBlob) - entitlementsSize;
+	if (entPadding > 0) {
+		uint8_t* entPad = (uint8_t*)calloc(1, entPadding);
+		[signatureData appendBytes:entPad length:entPadding];
+		free(entPad);
+	}
+
+	uint32_t finalPadding = superBlobSize - (uint32_t)signatureData.length;
+	if (finalPadding > 0) {
+		uint8_t* finalPad = (uint8_t*)calloc(1, finalPadding);
+		[signatureData appendBytes:finalPad length:finalPadding];
+		free(finalPad);
+	}
+	[data appendData:signatureData];
 	return YES;
 }
 // ^^^
@@ -461,7 +635,7 @@ for func in list:
 }
 
 // handler addr being that textHandlerStorage
-+ (void)patchGDBinary:(NSURL*)from to:(NSURL*)to withHandlerAddress:(uint64_t)handlerAddress force:(BOOL)force withSafeMode:(BOOL)safeMode completionHandler:(void (^)(BOOL success, NSString* error))completionHandler {
++ (void)patchGDBinary:(NSURL*)from to:(NSURL*)to withHandlerAddress:(uint64_t)handlerAddress force:(BOOL)force withSafeMode:(BOOL)safeMode withEntitlements:(BOOL)entitlements completionHandler:(void (^)(BOOL success, NSString* error))completionHandler {
 	NSFileManager* fm = [NSFileManager defaultManager];
 	NSError* error;
 	self.originalBytes = [NSMutableDictionary dictionary];
@@ -492,9 +666,22 @@ for func in list:
 	}
 
 	AppLog(@"Writing new executable region...");
-	if (!appendNewSection(data, 0x4000)) {
+	if (!appendNewSection(data)) {
 		AppLog(@"Something went wrong when writing a new executable region.");
 		return completionHandler(NO, @"Couldn't write new RX region.");
+	}
+
+	if (entitlements) {
+		NSData* entBlob = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] URLForResource:@"gdent" withExtension:@"xml"].path options:0 error:&error];
+		if (!entBlob || error) {
+			AppLog(@"Couldn't read entitlements: %@", error);
+			return completionHandler(NO, @"Couldn't get entitlements plist");
+		}
+		AppLog(@"Adding entitlements...");
+		if (!addEntitlements(data, entBlob)) {
+			AppLog(@"Something went wrong when adding entitlements to binary.");
+			return completionHandler(NO, @"Couldn't add entitlements."); 
+		}
 	}
 
 	// === PATCH STEP 1 ====
@@ -579,17 +766,15 @@ for func in list:
 
 	NSArray* modsDir = [fm contentsOfDirectoryAtPath:unzipModsPath error:&error];
 	if (error) {
-		AppLog(@"Couldn't read unzipped directory: %@", error);
+		AppLog(@"Couldn't read unzipped directory, assuming doesn't exist", error);
 		error = nil;
 	}
 	NSArray* modsBinDir = [fm contentsOfDirectoryAtPath:unzipBinModsPath error:&error];
 	if (error) {
-		AppLog(@"Couldn't read unzipped/binaries directory: %@", error);
+		AppLog(@"Couldn't read unzipped/binaries directory, assuming doesn't exist", error);
 		error = nil;
 	}
-
-
-	if (!error && !safeMode) {
+	if (!error && !safeMode && savedJSONData != nil) {
 		savedJSONDict = [NSJSONSerialization JSONObjectWithData:savedJSONData options:kNilOptions error:&error];
 		if (!error && savedJSONDict && [savedJSONDict isKindOfClass:[NSDictionary class]]) {
 			canParseJSON = YES;
@@ -614,7 +799,10 @@ for func in list:
 					}
 				}
 			}
-		}
+		} else {
+            canParseJSON = NO;
+            AppLog(@"Couldn't read saved.json, assuming Geode has never been opened before");
+        }
 	}
 	NSMutableArray<NSString*>* modDict = [NSMutableArray new];
 	NSString* geodePath = [Utils getTweakDir];

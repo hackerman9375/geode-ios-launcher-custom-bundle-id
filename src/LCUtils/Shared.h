@@ -8,6 +8,7 @@
 + (NSURL*)dataPath;
 + (NSURL*)appGroupPath;
 + (NSURL*)tweakPath;
++ (NSURL*)realLCDocPath;
 + (NSURL*)lcGroupDocPath;
 + (NSURL*)lcGroupBundlePath;
 + (NSURL*)lcGroupDataPath;

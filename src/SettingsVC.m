@@ -136,6 +136,10 @@
 	[uiSwitch setEnabled:!disable];
 	[uiSwitch addTarget:self action:@selector(switchValueChanged:) forControlEvents:UIControlEventValueChanged];
 	return uiSwitch;
+	/*UIButton* uiSwitch = [UIButton buttonWithType:UIButtonTypeSystem];
+	[uiSwitch setEnabled:!disable];
+	[uiSwitch addTarget:self action:@selector(switchValueChanged:) forControlEvents:UIControlEventTouchUpInside];
+	return uiSwitch;*/
 }
 
 - (void)showDevMode:(UILongPressGestureRecognizer*)gestureRecognizer {
@@ -157,7 +161,7 @@
 	UITableViewCell* cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
 	UITableViewCell* cellval1 = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
 
-	BOOL disableJITLess = ![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils");
+	BOOL disableJITLess = ![Utils isSandboxed];
 	// i wish i could case(0,0) :(
 	switch (indexPath.section) {
 	case 0:
@@ -288,7 +292,7 @@
 		} else if (indexPath.row == 2) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"jitless.certstatus".loc;
-			if ([LCUtils certificateData]) {
+			if ([LCUtils certificateData] != nil) {
 				[LCUtils validateCertificate:^(int status, NSDate* expirationDate, NSString* errorC) {
 					dispatch_async(dispatch_get_main_queue(), ^{
 						if (errorC != nil || status != 0 || expirationDate == nil) {
@@ -319,7 +323,7 @@
 			}
 			return cellval1;
 		} else if (indexPath.row == 3) {
-			if (![LCUtils isAppGroupAltStoreLike]) {
+			if (![LCUtils isAppGroupAltStoreLike] && [LCUtils appGroupID] == nil) {
 				if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
 					cell.textLabel.text = @"Remove Certificate";
 				} else {
@@ -339,6 +343,9 @@
 				cell.textLabel.textColor = [Theming getAccentColor];
 			}
 			cell.accessoryType = UITableViewCellAccessoryNone;
+			if (NSClassFromString(@"LCSharedUtils")) {
+				cell.textLabel.text = @"Copy Mobile Provision";
+			}
 		} else if (indexPath.row == 4) {
 			cell.textLabel.text = @"Test JIT-Less Mode";
 			cell.textLabel.textColor = [Theming getAccentColor];
@@ -358,7 +365,9 @@
 	case 4:
 		if (indexPath.row == 0) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7 disable:![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils")];
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7
+												disable:![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils") || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) ||
+														[[Utils getPrefs] integerForKey:@"JITLESS"]];
 			cellval1.textLabel.text = @"advanced.manual-reopen-jit".loc;
 			if (![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils") || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"]) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
@@ -707,7 +716,7 @@
 				[Utils showError:self title:@"The game is already launching! Please wait." error:nil];
 				break;
 			}
-			if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] || NSClassFromString(@"LCSharedUtils")) {
+			if (([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] || NSClassFromString(@"LCSharedUtils")) && ![[Utils getPrefs] boolForKey:@"JITLESS"]) {
 				[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 				[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 				[[Utils getPrefs] setBool:YES forKey:@"safemode"];
@@ -733,6 +742,12 @@
 							if ([[UIApplication sharedApplication] canOpenURL:url]) {
 								[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
 								[self dismissViewControllerAnimated:YES completion:nil];
+							} else if (NSClassFromString(@"LCSharedUtils")) {
+								AppLog(@"Launching in Safe Mode");
+								[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
+								[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+								[[Utils getPrefs] setBool:YES forKey:@"safemode"];
+								[LCUtils launchToGuestApp];
 							}
 						});
 					}];
@@ -797,6 +812,20 @@
 			break;
 		}
 		case 3: { // Patch / Import
+			if (NSClassFromString(@"LCSharedUtils")) {
+				NSFileManager* fm = [NSFileManager defaultManager];
+				NSError* err;
+				[fm copyItemAtURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"embedded.mobileprovision"]
+							toURL:[[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"]
+							error:&err];
+				if (err) {
+					[Utils showError:self title:@"Couldn't copy file. Please verify that you have exported the certificate from LiveContainer" error:err];
+				} else {
+					[Utils showNotice:self title:@"Copied!"];
+					[self.tableView reloadData];
+				}
+				break;
+			}
 			if (![LCUtils isAppGroupAltStoreLike]) {
 				if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
 					UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Warning" message:@"Are you sure you want to remove your certificate?"
@@ -864,10 +893,6 @@
 			break;
 		}
 		case 4: { // Test JIT-Less
-			if (![LCUtils isAppGroupAltStoreLike] && ![[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
-				[Utils showError:self title:@"You did not sideload this app with AltStore or SideStore! Or you didn't import a certificate." error:nil];
-				break;
-			}
 			if ([LCUtils certificateData]) {
 				[LCUtils validateCertificate:^(int status, NSDate* expirationDate, NSString* errorC) {
 					if (errorC) {
@@ -894,8 +919,7 @@
 					}];
 				}];
 			} else {
-				[Utils showError:self title:@"launcher.error.sign.invalidcert3".loc error:nil];
-				break;
+				[Utils showError:self title:@"You did not sideload this app with AltStore or SideStore! Or you didn't import a certificate.".loc error:nil];
 			}
 			break;
 		}
@@ -942,9 +966,18 @@
 		switch (indexPath.row) {
 		case 8: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
 			[Utils showNotice:self title:[Utils getGDDocPath]];
-			/*NSFileManager* fm = [NSFileManager defaultManager];
-			NSString *fileToExtract = [[LCPath bundlePath] URLByAppendingPathComponent:@"PirataWarning.app"].path;
-			NSString *extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"PirataWarning.ipa"].path;
+			//NSFileManager* fm = [NSFileManager defaultManager];
+			/*NSURL *infoPath;
+			if ([fm fileExistsAtPath:@""]) {
+				NSMutableDictionary* infoDict = [NSMutableDictionary dictionaryWithContentsOfURL:infoPath];
+				if (!infoDict)
+					return;
+
+				infoDict[@"CFBundleExecutable"] = exec;
+				[infoDict writeToURL:infoPath error:error];
+			}*/
+			/*NSString* fileToExtract = [[LCPath bundlePath] URLByAppendingPathComponent:@"Pirata.app"].path;
+			NSString* extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Pirata.ipa"].path;
 			AppLog(@"Starting compression of %@ to %@", fileToExtract, extractionPath);
 			[[NSFileManager defaultManager] createFileAtPath:extractionPath contents:nil attributes:nil];
 			int res = compress(fileToExtract, extractionPath, nil);
@@ -1000,15 +1033,16 @@
 				[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
 					withHandlerAddress:0x88d000
 								 force:YES
-						  withSafeMode:NO completionHandler:^(BOOL success, NSString* error) {
-							  dispatch_async(dispatch_get_main_queue(), ^{
-								  if (success) {
-									  [Utils showNotice:self title:@"Patched!"];
-								  } else {
-									  [Utils showError:self title:error error:nil];
-								  }
-							  });
-						  }];
+						  withSafeMode:NO
+					  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) {
+						  dispatch_async(dispatch_get_main_queue(), ^{
+							  if (success) {
+								  [Utils showNotice:self title:@"Patched!"];
+							  } else {
+								  [Utils showError:self title:error error:nil];
+							  }
+						  });
+					  }];
 			}
 			break;
 		}
@@ -1093,6 +1127,7 @@
 	case 9: {
 		[Utils toggleKey:@"JITLESS"];
 		if ([sender isOn]) {
+			[[Utils getPrefs] setBool:NO forKey:@"MANUAL_REOPEN"];
 			[[UIApplication sharedApplication] setAlternateIconName:@"Pride" completionHandler:^(NSError* _Nullable error) {
 				if (error) {
 					AppLog(@"Failed to set alternate icon: %@", error);

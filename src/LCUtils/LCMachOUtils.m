@@ -1,6 +1,7 @@
 @import Darwin;
 @import Foundation;
 @import MachO;
+#import "../components/LogUtils.h"
 #import "LCUtils.h"
 
 static uint32_t rnd32(uint32_t v, uint32_t r) {
@@ -86,6 +87,7 @@ NSString* LCParseMachO(const char* path, bool readOnly, LCParseMachOCallback cal
 	fstat(fd, &s);
 	void* map = mmap(NULL, s.st_size, readOnly ? PROT_READ : (PROT_READ | PROT_WRITE), readOnly ? MAP_PRIVATE : MAP_SHARED, fd, 0);
 	if (map == MAP_FAILED) {
+		AppLog(@"LCParseMachO error: %@", [NSString stringWithFormat:@"Failed to map %s: %s", path, strerror(errno)]);
 		return [NSString stringWithFormat:@"Failed to map %s: %s", path, strerror(errno)];
 	}
 
@@ -103,9 +105,11 @@ NSString* LCParseMachO(const char* path, bool readOnly, LCParseMachOCallback cal
 	} else if (magic == MH_MAGIC_64) {
 		callback(path, (struct mach_header_64*)map, fd, map);
 	} else if (magic == MH_MAGIC) {
+		AppLog(@"LCParseMachO error: 32-bit app is not supported");
 		return @"32-bit app is not supported";
 	} else {
-		// return @"Not a Mach-O file";
+		AppLog(@"LCParseMachO error: Not a Mach-O file");
+		return @"Not a Mach-O file";
 	}
 
 	msync(map, s.st_size, MS_SYNC);
@@ -212,10 +216,15 @@ bool checkCodeSignature(const char* path) {
 	__block bool checked = false;
 	__block bool ans = false;
 	LCParseMachO(path, true, ^(const char* path, struct mach_header_64* header, int fd, void* filePtr) {
-		if (checked)
+		if (checked || header->cputype != CPU_TYPE_ARM64) {
 			return;
+		}
 		checked = true;
 		struct code_signature_command* codeSignatureCommand = findSignatureCommand(header);
+		if (!codeSignatureCommand) {
+			AppLog(@"Couldn't find sig command for header");
+			return;
+		}
 		off_t sliceOffset = (void*)header - filePtr;
 		fsignatures_t siginfo;
 		siginfo.fs_file_start = sliceOffset;
@@ -223,10 +232,11 @@ bool checkCodeSignature(const char* path) {
 		siginfo.fs_blob_size = codeSignatureCommand->datasize;
 		int addFileSigsReault = fcntl(fd, F_ADDFILESIGS_RETURN, &siginfo);
 		if (addFileSigsReault == -1) {
+			AppLog(@"F_ADDFILESIGS_RETURN failed: %s (%d). If you are running this in LiveContainer, please enable \"Fix File Picker & Local Notification\"", strerror(errno),
+				   errno);
 			ans = false;
 			return;
 		}
-
 		fchecklv_t checkInfo;
 		char messageBuffer[512];
 		messageBuffer[0] = '\0';
@@ -239,6 +249,7 @@ bool checkCodeSignature(const char* path) {
 			ans = true;
 			return;
 		} else {
+			AppLog(@"F_CHECK_LV failed: %s (%d)", strerror(errno), errno);
 			ans = false;
 			return;
 		}

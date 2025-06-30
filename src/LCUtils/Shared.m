@@ -31,6 +31,10 @@
 	return [[self docPath] URLByAppendingPathComponent:@"Tweaks"];
 }
 
++ (NSURL*)realLCDocPath {
+	return [[self docPath] URLByAppendingPathComponent:@"../../../../"];
+}
+
 + (NSURL*)lcGroupDocPath {
 	NSFileManager* fm = [NSFileManager defaultManager];
 	NSURL* appGroupUrl = [fm containerURLForSecurityApplicationGroupIdentifier:@"group.com.SideStore.SideStore"];

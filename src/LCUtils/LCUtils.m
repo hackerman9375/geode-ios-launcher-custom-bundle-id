@@ -9,6 +9,8 @@
 #import "src/components/LogUtils.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
+// #import <mach-o/dyld.h>
+// #include <dlfcn.h>
 
 extern NSBundle* gcMainBundle;
 
@@ -63,7 +65,7 @@ Class LCSharedUtilsClass = nil;
 + (BOOL)launchToGuestApp {
 	if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"])
 		return NO;
-	if (NSClassFromString(@"LCSharedUtils"))
+	if (NSClassFromString(@"LCSharedUtils") && ![[Utils getPrefs] boolForKey:@"JITLESS"])
 		return NO;
 	if (![Utils isSandboxed]) {
 		NSString* appBundleIdentifier = @"com.robtop.geometryjump";
@@ -125,7 +127,7 @@ Class LCSharedUtilsClass = nil;
 	if (profileData == nil) {
 		AppLog(@"Couldn't read from mobile provisioning profile! Will assume to use embedded mobile provisioning file in documents.");
 		profilePath = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
-		profileData = [NSData dataWithContentsOfURL:profilePath];
+		profileData = [NSData dataWithContentsOfURL:profilePath options:0 error:&error];
 	}
 
 	if (profileData == nil) {
@@ -142,6 +144,7 @@ Class LCSharedUtilsClass = nil;
 	}
 
 	NSFileManager* fm = [NSFileManager defaultManager];
+	NSURL* justIncase = [[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app"];
 	NSURL* bundleProvision = [[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/embedded.mobileprovision"];
 	NSURL* provisionURL = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
 	if ([[NSFileManager defaultManager] fileExistsAtPath:provisionURL.path]) {
@@ -153,14 +156,18 @@ Class LCSharedUtilsClass = nil;
 				return nil;
 			}
 		}
-		[fm copyItemAtURL:provisionURL toURL:bundleProvision error:&error];
-		if (error) {
-			completionHandler(NO, error);
-			return nil;
+		BOOL isDir = NO;
+		if ([[NSFileManager defaultManager] fileExistsAtPath:justIncase.path isDirectory:&isDir]) {
+			if (isDir) {
+				[fm copyItemAtURL:provisionURL toURL:bundleProvision error:&error];
+				if (error) {
+					completionHandler(NO, error);
+					return nil;
+				}
+				AppLog(@"Copied provision to GD bundle.");
+			}
 		}
-		AppLog(@"Copied provision to GD bundle.");
 	}
-
 	AppLog(@"starting signing...");
 
 	NSProgress* ans = [NSClassFromString(@"ZSigner") signWithAppPath:[path path] prov:profileData key:self.certificateData pass:self.certificatePassword
@@ -210,6 +217,8 @@ Class LCSharedUtilsClass = nil;
 	NSData* profileData = [NSData dataWithContentsOfURL:profilePath options:0 error:&error];
 	NSData* certData = [LCUtils certificateData];
 	if (error) {
+		AppLog(@"profileData error: %@", error);
+		completionHandler(-6, nil, [NSString stringWithFormat:@"Profile provision error: %@", error.localizedDescription]);
 		return -6;
 	}
 	[self loadStoreFrameworksWithError2:&error];
