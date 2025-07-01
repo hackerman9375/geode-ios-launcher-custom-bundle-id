@@ -86,7 +86,8 @@ extern NSBundle* gcMainBundle;
 	} else {
 		if (NSClassFromString(@"LCSharedUtils")) {
 			NSString* passLC = [NSString stringWithContentsOfURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"pass"] encoding:NSUTF8StringEncoding error:nil];
-			if (passLC != nil) return passLC;
+			if (passLC != nil)
+				return passLC;
 		}
 		NSString* pass = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificatePassword"];
 		return pass;

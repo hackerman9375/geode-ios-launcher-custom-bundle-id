@@ -3,6 +3,7 @@
 #import "IconView.h"
 #import "src/JITLessVC.h"
 #include "src/LCUtils/unarchive.h"
+#import "components/FileBrowserVC.h"
 // #import "src/components/DropdownView.h"
 #import "LogsView.h"
 #import "SettingsVC.h"
@@ -123,7 +124,7 @@
 	case 6: // Credits
 		return [self.creditsArray count];
 	case 7: // Developer
-		return 14;
+		return 17;
 	default:
 		return 0;
 	}
@@ -531,6 +532,12 @@
 			cell.textLabel.text = @"Clear App Logs".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (indexPath.row == 15) {
+			cell.textLabel.text = @"View Bundle Dir".loc;
+			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+		} else if (indexPath.row == 16) {
+			cell.textLabel.text = @"View Documents Dir".loc;
+			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		}
 		break;
 	}
@@ -1060,6 +1067,20 @@
 		case 14: { // Clear App Log
 			[LogUtils clearLogs:YES];
 			[Utils showNotice:self title:@"App Logs Cleared!"];
+			break;
+		}
+		case 15: { // View Bundle Dir
+			FileBrowserViewController* browser = [[FileBrowserViewController alloc] initWithPath:[[NSBundle mainBundle] bundlePath]];
+			// Present in navigation controller
+			UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:browser];
+			[self presentViewController:navController animated:YES completion:nil];
+			break;
+		}
+		case 16: { // View Doc Dir
+			FileBrowserViewController* browser = [[FileBrowserViewController alloc] init];
+			// Present in navigation controller
+			UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:browser];
+			[self presentViewController:navController animated:YES completion:nil];
 			break;
 		}
 		}

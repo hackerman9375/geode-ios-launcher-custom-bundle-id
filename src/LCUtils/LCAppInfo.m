@@ -38,13 +38,20 @@
 		}
 
 		// fix bundle id and execName if crash when signing
-		/*if (_infoPlist[@"LCBundleIdentifier"]) {
+		if (_infoPlist[@"LCBundleIdentifier"]) {
+			AppLog(@"Fixing Bundle Identifier...");
 			_infoPlist[@"CFBundleExecutable"] = _infoPlist[@"LCBundleExecutable"];
 			_infoPlist[@"CFBundleIdentifier"] = _infoPlist[@"LCBundleIdentifier"];
 			[_infoPlist removeObjectForKey:@"LCBundleExecutable"];
 			[_infoPlist removeObjectForKey:@"LCBundleIdentifier"];
 			[_infoPlist writeToFile:[NSString stringWithFormat:@"%@/Info.plist", bundlePath] atomically:YES];
-		}*/
+		}
+
+		if (![_infoPlist[@"CFBundleExecutable"] isEqualToString:@"GeometryJump"]) {
+			AppLog(@"CFBundleExecutable isn't GeometryJump! Changing it back to prevent problems...");
+			_infoPlist[@"CFBundleExecutable"] = @"GeometryJump";
+			[_infoPlist writeToFile:[NSString stringWithFormat:@"%@/Info.plist", bundlePath] atomically:YES];
+		}
 
 		_autoSaveDisabled = false;
 	}
@@ -146,12 +153,11 @@
 		[fm copyItemAtPath:execPath toPath:backupPath error:&err];
 		[fm removeItemAtPath:execPath error:&err];
 		[fm moveItemAtPath:backupPath toPath:execPath error:&err];
-		AppLog(@"Interact error: %@", err);
-		/*if (err) {
+		if (err) {
 			AppLog(@"Interact Error: %@", err);
-			completetionHandler(NO, @"Couldn't interact with execPath or backupPath. Look in logs for more details.");
-			return;
-		}*/
+			// completetionHandler(NO, @"Couldn't interact with execPath or backupPath. Look in logs for more details.");
+			// return;
+		}
 	}
 
 	if (needPatch) {
@@ -178,25 +184,6 @@
 			}
 		}
 	}
-	/*
-	if ([info[@"LCPatchRevision"] intValue] < currentPatchRev) {
-		//[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app/GeometryJump"].path;
-		NSString* execPath = [NSString stringWithFormat:@"%@/%@", appPath, _infoPlist[@"CFBundleExecutable"]];
-		/\*NSString *backupPath = [NSString stringWithFormat:@"%@/%@_GeodePatchBackUp", appPath, _infoPlist[@"CFBundleExecutable"]];
-		NSError *err;
-		[fm copyItemAtPath:execPath toPath:backupPath error:&err];
-		[fm removeItemAtPath:execPath error:&err];
-		[fm moveItemAtPath:backupPath toPath:execPath error:&err];*\/
-		NSString* error = LCParseMachO(execPath.UTF8String, ^(const char* path, struct mach_header_64* header) { LCPatchExecSlice(path, header); });
-		if (error) {
-			completetionHandler(NO, error);
-			return;
-		}
-		info[@"LCPatchRevision"] = @(currentPatchRev);
-		[self save];
-	}
-	*/
-
 	if (!LCUtils.certificatePassword) {
 		completetionHandler(YES, nil);
 		return;
@@ -213,7 +200,7 @@
 	}
 
 	if (!LCUtils.certificateData) {
-		completetionHandler(NO, @"Failed to find signing certificate. Please refresh your store and try again.");
+		completetionHandler(NO, @"Failed to find signing certificate. Please refresh your store or import a certificate and try again.");
 		return;
 	}
 
@@ -271,27 +258,6 @@
 }
 - (void)setDoSymlinkInbox:(bool)doSymlinkInbox {
 	_info[@"doSymlinkInbox"] = [NSNumber numberWithBool:doSymlinkInbox];
-	[self save];
-}
-
-- (bool)ignoreDlopenError {
-	if (_info[@"ignoreDlopenError"] != nil) {
-		return [_info[@"ignoreDlopenError"] boolValue];
-	} else {
-		return NO;
-	}
-}
-- (void)setIgnoreDlopenError:(bool)ignoreDlopenError {
-	_info[@"ignoreDlopenError"] = [NSNumber numberWithBool:ignoreDlopenError];
-	[self save];
-}
-
-- (NSArray<NSDictionary*>*)containerInfo {
-	return _info[@"LCContainers"];
-}
-
-- (void)setContainerInfo:(NSArray<NSDictionary*>*)containerInfo {
-	_info[@"LCContainers"] = containerInfo;
 	[self save];
 }
 

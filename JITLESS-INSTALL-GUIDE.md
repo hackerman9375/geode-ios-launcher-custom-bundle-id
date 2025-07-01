@@ -17,7 +17,7 @@ This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but i
 - **Apple ID** (Secondary / Throwaway Recommended)
 - **Full version of Geometry Dash installed**
 - **An internet connection**
-- **SideStore** (if you have SideStore 0.6.0 or above, install the nightly version of SideStore by going to the app settings and enabling the beta updates. If you are on a version below 0.6.0, get [this version](https://github.com/geode-sdk/ios-launcher/raw/refs/heads/main/screenshots/SideStore-0.6.2-pr.959+4534534.ipa))
+- **SideStore** (Ensure you are on the latest version. If you are on a version below 0.6.0 and you are receiving issues with updating, get [this version](https://github.com/geode-sdk/ios-launcher/raw/refs/heads/main/screenshots/SideStore-0.6.2-pr.959+4534534.ipa))
 - **IPA file** of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases)
 
 ## Apple Developer Certificate Method

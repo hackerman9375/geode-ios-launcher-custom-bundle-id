@@ -10,9 +10,7 @@
 @property NSString* relativeBundlePath;
 @property bool isShared;
 @property bool doSymlinkInbox;
-@property bool ignoreDlopenError;
 @property NSString* dataUUID;
-@property NSArray<NSDictionary*>* containerInfo;
 @property bool autoSaveDisabled;
 
 - (void)setBundlePath:(NSString*)newBundlePath;

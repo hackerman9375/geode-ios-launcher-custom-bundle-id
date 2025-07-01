@@ -45,7 +45,7 @@ Class LCSharedUtilsClass = nil;
 		ans = [NSUserDefaults.standardUserDefaults objectForKey:@"LCCertificateData"];
 	} else if (NSClassFromString(@"LCSharedUtils")) {
 		ans = [NSData dataWithContentsOfURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"cert.p12"] options:0 error:nil];
-    }
+	}
 	if (ans == nil) {
 		ans = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificateData"];
 	}

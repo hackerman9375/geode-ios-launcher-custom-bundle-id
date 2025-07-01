@@ -81,6 +81,50 @@ void LCPatchExecSlice(const char* path, struct mach_header_64* header) {
 	}
 }
 
+void LCPatchExecSliceWithData(NSMutableData* data, const char* tweakLoaderPath) {
+	uint8_t* bytes = (uint8_t*)data.mutableBytes;
+	struct mach_header_64* header = (struct mach_header_64*)bytes;
+	uint8_t* imageHeaderPtr = (uint8_t*)header + sizeof(struct mach_header_64);
+
+	// Literally convert an executable to a dylib
+	if (header->magic == MH_MAGIC_64) {
+		// assert(header->flags & MH_PIE);
+		header->filetype = MH_DYLIB;
+		header->flags |= MH_NO_REEXPORTED_DYLIBS;
+		header->flags &= ~MH_PIE;
+	}
+
+	BOOL hasDylibCommand = NO, hasLoaderCommand = NO;
+	struct load_command* command = (struct load_command*)imageHeaderPtr;
+	for (int i = 0; i < header->ncmds; i++) {
+		if (command->cmd == LC_ID_DYLIB) {
+			hasDylibCommand = YES;
+		} else if (command->cmd == LC_LOAD_DYLIB) {
+			struct dylib_command* dylib = (struct dylib_command*)command;
+			char* dylibName = (void*)dylib + dylib->dylib.name.offset;
+			if (!strncmp(dylibName, tweakLoaderPath, strlen(tweakLoaderPath))) {
+				hasLoaderCommand = YES;
+			}
+		}
+		command = (struct load_command*)((void*)command + command->cmdsize);
+	}
+	if (!hasDylibCommand) {
+		// insertDylibCommand(LC_ID_DYLIB, path, header);
+	}
+	if (!hasLoaderCommand) {
+		insertDylibCommand(LC_LOAD_DYLIB, tweakLoaderPath, header);
+	}
+
+	// Patch __PAGEZERO to map just a single zero page, fixing "out of address space"
+	struct segment_command_64* seg = (struct segment_command_64*)imageHeaderPtr;
+	assert(seg->cmd == LC_SEGMENT_64);
+	if (seg->vmaddr == 0) {
+		assert(seg->vmsize == 0x100000000);
+		seg->vmaddr = 0x100000000 - 0x4000;
+		seg->vmsize = 0x4000;
+	}
+}
+
 NSString* LCParseMachO(const char* path, bool readOnly, LCParseMachOCallback callback) {
 	int fd = open(path, readOnly ? O_RDONLY : O_RDWR, (mode_t)readOnly ? 0400 : 0600);
 	struct stat s;

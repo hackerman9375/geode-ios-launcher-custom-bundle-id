@@ -207,7 +207,6 @@ BOOL hasDoneUpdate = NO;
 						finalNewApp.autoSaveDisabled = true;
 						finalNewApp.isShared = appToReplace.appInfo.isShared;
 						finalNewApp.doSymlinkInbox = appToReplace.appInfo.doSymlinkInbox;
-						finalNewApp.containerInfo = appToReplace.appInfo.containerInfo;
 						finalNewApp.dataUUID = appToReplace.appInfo.dataUUID;
 						finalNewApp.autoSaveDisabled = false;
 
