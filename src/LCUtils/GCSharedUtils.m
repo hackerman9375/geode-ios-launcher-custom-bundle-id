@@ -84,14 +84,12 @@ extern NSBundle* gcMainBundle;
 		NSString* ans = [gcUserDefaults objectForKey:@"LCCertificatePassword"];
 		return ans;
 	} else {
-		NSString* pass = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificatePassword"];
-		if (pass != nil)
-			return pass;
 		if (NSClassFromString(@"LCSharedUtils")) {
-			return [NSString stringWithContentsOfURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"pass"] encoding:NSUTF8StringEncoding error:nil];
-		} else {
-			return nil;
+			NSString* passLC = [NSString stringWithContentsOfURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"pass"] encoding:NSUTF8StringEncoding error:nil];
+			if (passLC != nil) return passLC;
 		}
+		NSString* pass = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificatePassword"];
+		return pass;
 	}
 }
 

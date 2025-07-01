@@ -43,11 +43,11 @@ Class LCSharedUtilsClass = nil;
 	NSData* ans;
 	if ([NSUserDefaults.standardUserDefaults boolForKey:@"LCCertificateImported"]) {
 		ans = [NSUserDefaults.standardUserDefaults objectForKey:@"LCCertificateData"];
-	} else {
-		ans = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificateData"];
-	}
-	if (ans == nil && NSClassFromString(@"LCSharedUtils")) {
+	} else if (NSClassFromString(@"LCSharedUtils")) {
 		ans = [NSData dataWithContentsOfURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"cert.p12"] options:0 error:nil];
+    }
+	if (ans == nil) {
+		ans = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificateData"];
 	}
 	return ans;
 }
@@ -215,7 +215,11 @@ Class LCSharedUtilsClass = nil;
 	NSError* error;
 	NSURL* profilePath = [NSBundle.mainBundle URLForResource:@"embedded" withExtension:@"mobileprovision"];
 	if (!profilePath) {
-		profilePath = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
+		if (NSClassFromString(@"LCSharedUtils")) {
+			profilePath = [[LCPath realLCDocPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
+		} else {
+			profilePath = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
+		}
 	}
 	if (!profilePath) {
 		int ans = 0;
