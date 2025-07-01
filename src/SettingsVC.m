@@ -344,7 +344,9 @@
 			}
 			cell.accessoryType = UITableViewCellAccessoryNone;
 			if (NSClassFromString(@"LCSharedUtils")) {
-				cell.textLabel.text = @"Copy Mobile Provision";
+				cell.textLabel.text = @"Follow the LiveContainer guide";
+				cell.selectionStyle = UITableViewCellSelectionStyleNone;
+				cell.textLabel.textColor = [UIColor systemGrayColor];
 			}
 		} else if (indexPath.row == 4) {
 			cell.textLabel.text = @"Test JIT-Less Mode";
@@ -813,17 +815,6 @@
 		}
 		case 3: { // Patch / Import
 			if (NSClassFromString(@"LCSharedUtils")) {
-				NSFileManager* fm = [NSFileManager defaultManager];
-				NSError* err;
-				[fm copyItemAtURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"embedded.mobileprovision"]
-							toURL:[[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"]
-							error:&err];
-				if (err) {
-					[Utils showError:self title:@"Couldn't copy file. Please verify that you have exported the certificate from LiveContainer" error:err];
-				} else {
-					[Utils showNotice:self title:@"Copied!"];
-					[self.tableView reloadData];
-				}
 				break;
 			}
 			if (![LCUtils isAppGroupAltStoreLike]) {
@@ -966,7 +957,7 @@
 		switch (indexPath.row) {
 		case 8: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
 			[Utils showNotice:self title:[Utils getGDDocPath]];
-			//NSFileManager* fm = [NSFileManager defaultManager];
+			// NSFileManager* fm = [NSFileManager defaultManager];
 			/*NSURL *infoPath;
 			if ([fm fileExistsAtPath:@""]) {
 				NSMutableDictionary* infoDict = [NSMutableDictionary dictionaryWithContentsOfURL:infoPath];

@@ -59,6 +59,5 @@ Finally, the last steps are:
 - Press **"Verify Geometry Dash"**
 - Press **"Download"**
 - Open Settings
-- Scroll down until you reach **"Copy Mobile Provision"**
 - Press **"Test JIT-Less Mode"** to test if JIT-less mode works properly
 - Exit settings & press **"Launch"**

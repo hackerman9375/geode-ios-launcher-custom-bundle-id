@@ -46,9 +46,9 @@ Class LCSharedUtilsClass = nil;
 	} else {
 		ans = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificateData"];
 	}
-    if (ans == nil && NSClassFromString(@"LCSharedUtils")) {
-        ans = [NSData dataWithContentsOfURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"cert.p12"] options:0 error:nil];
-    }
+	if (ans == nil && NSClassFromString(@"LCSharedUtils")) {
+		ans = [NSData dataWithContentsOfURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"cert.p12"] options:0 error:nil];
+	}
 	return ans;
 }
 
@@ -129,8 +129,13 @@ Class LCSharedUtilsClass = nil;
 	NSData* profileData = [NSData dataWithContentsOfURL:profilePath];
 	if (profileData == nil) {
 		AppLog(@"Couldn't read from mobile provisioning profile! Will assume to use embedded mobile provisioning file in documents.");
-		profilePath = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
-		profileData = [NSData dataWithContentsOfURL:profilePath options:0 error:&error];
+		if (NSClassFromString(@"LCSharedUtils")) {
+			profilePath = [[LCPath realLCDocPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
+			profileData = [NSData dataWithContentsOfURL:profilePath options:0 error:&error];
+		} else {
+			profilePath = [[LCPath docPath] URLByAppendingPathComponent:@"embedded.mobileprovision"];
+			profileData = [NSData dataWithContentsOfURL:profilePath options:0 error:&error];
+		}
 	}
 
 	if (profileData == nil) {
