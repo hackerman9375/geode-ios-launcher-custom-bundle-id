@@ -31,9 +31,6 @@ SUBPROJECTS += ZSign TweakLoader WebServerLib TestJITLess
 include $(THEOS_MAKE_PATH)/aggregate.mk
 
 
-before-package::
-	@mv $(THEOS_STAGING_DIR)/Applications/Geode.app/Geode $(THEOS_STAGING_DIR)/Applications/Geode.app/GeodeLauncher_PleaseDoNotShortenTheExecutableNameBecauseItIsUsedToReserveSpaceForOverwritingThankYou
-
 after-package::
 ifeq ($(TROLLSTORE),1)
 	@mv "$(THEOS_PACKAGE_DIR)/trollstore_$(THEOS_PACKAGE_BASE_VERSION).ipa" "$(THEOS_PACKAGE_DIR)/com.geode.launcher_$(THEOS_PACKAGE_BASE_VERSION).tipa"

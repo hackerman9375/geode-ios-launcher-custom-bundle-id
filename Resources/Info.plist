@@ -7,7 +7,7 @@
 	<key>CFBundleName</key>
 	<string>Geode</string>
 	<key>CFBundleExecutable</key>
-	<string>GeodeLauncher_PleaseDoNotShortenTheExecutableNameBecauseItIsUsedToReserveSpaceForOverwritingThankYou</string>
+	<string>Geode</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UISupportsDocumentBrowser</key>
