@@ -47,7 +47,7 @@ After going through the setup process, you may have seen the warning that **Just
 
 ## Installing and Using StikDebug to enable JIT
 > [!NOTE]
-> For the first time setup, you will need a computer to get a Pairing File. If you installed SideStore, you likely already have a pairing profile, meaning there is no need to reinstall Jitterbug Pair.
+> For the first time setup, you will need a computer to get a pairing file. If you installed SideStore, you likely already have a pairing file, meaning there is no need to reinstall Jitterbug Pair.
 
 #### Steps for downloading Jitterbug Pair (Skippable if you already have a Pairing File)
 1. Go to [Jitterbug Pair](https://github.com/osy/Jitterbug/releases) and download the version for your computer.
