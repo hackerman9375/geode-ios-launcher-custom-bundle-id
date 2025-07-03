@@ -1,4 +1,5 @@
 #import "GeodeInstaller.h"
+#include <UIKit/UIKit.h>
 #import "LCUtils/GCSharedUtils.h"
 #import "LCUtils/LCUtils.h"
 #import "LCUtils/Shared.h"
@@ -171,6 +172,8 @@
 - (void)viewDidLoad {
 	[super viewDidLoad];
 	[Utils increaseLaunchCount];
+	self.impactFeedback = [[UIImpactFeedbackGenerator alloc] initWithStyle: UIImpactFeedbackStyleHeavy];
+    [self.impactFeedback prepare];
 	[LogUtils clearLogs:NO];
 	NSError* err;
 	[LCPath ensureAppGroupPaths:&err];
@@ -186,6 +189,10 @@
 		// self.logoImageView.backgroundColor = [UIColor redColor];
 		AppLog(@"Image is null");
 	}
+
+	self.logoImageView.userInteractionEnabled = YES;
+	UILongPressGestureRecognizer* longPressGR = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(fish:)];
+	[self.logoImageView addGestureRecognizer:longPressGR];
 
 	self.titleLabel = [[UILabel alloc] init];
 	self.titleLabel.text = @"Geode";
@@ -336,6 +343,65 @@
 	UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:settings];
 	[self presentViewController:navController animated:YES completion:nil];
 }
+
+- (void)fish:(UILongPressGestureRecognizer*)gestureRecognizer {
+	if (gestureRecognizer.state != UIGestureRecognizerStateCancelled && !self.hasTappedFish) {
+		self.processOfTappedFish = NO; 
+	}
+	if (gestureRecognizer.state == UIGestureRecognizerStateBegan && !self.hasTappedFish) {
+		self.processOfTappedFish = YES;
+		[self loadFishAnimation];
+		[self.impactFeedback impactOccurredWithIntensity:0.25];
+		[self.impactFeedback prepare];
+		[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+			self.logoImageView.transform = CGAffineTransformMakeRotation(M_PI);
+		} completion:^(BOOL finished){
+			if (finished && self.processOfTappedFish) {
+				[self.impactFeedback impactOccurredWithIntensity:0.5];
+				[self.impactFeedback prepare];
+				[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+					self.logoImageView.transform = CGAffineTransformMakeRotation(M_PI_2);
+				} completion:^(BOOL finished2){
+					if (finished2 && self.processOfTappedFish) {
+						self.hasTappedFish = YES;
+						self.processOfTappedFish = NO;
+						[self.impactFeedback impactOccurredWithIntensity:1.0];
+						[self.impactFeedback prepare];
+
+						UIImageView *fishImageView = [[UIImageView alloc] init];
+						fishImageView.image = self.cachedFishAnimation;
+						fishImageView.contentMode = UIViewContentModeCenter;
+						fishImageView.clipsToBounds = YES;
+						fishImageView.alpha = 0.f;
+						fishImageView.frame = self.logoImageView.frame;
+						fishImageView.contentScaleFactor /= 3; // yes we divide instead of multiplying, that definitely makes sense apple
+						
+						/* i wanted to do rainbow but i cant figure it out
+						CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"tintColor"];
+						animation.fromValue = [NSNumber numberWithFloat:1.0];
+						animation.toValue = [NSNumber numberWithFloat:0.0];
+						animation.duration = 1.0;
+						animation.repeatCount = HUGE_VALF;*/
+
+						[self.view addSubview:fishImageView];
+
+						[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+							self.logoImageView.alpha = 0.f;
+							fishImageView.alpha = 1.f;
+							self.titleLabel.text = @"fish";
+						} completion:^(BOOL finished3){
+							if (finished3) {
+								self.fishes = [[NSMutableArray alloc] init];
+								[self startFishRain];
+							}
+						}];
+					}
+				}];
+			}
+		}];
+	}
+}
+
 - (void)updateGeode {
 	[[GeodeInstaller alloc] checkUpdates:self download:YES];
 }
@@ -659,6 +725,65 @@
 		[downloadTask cancel];
 	}
 	[self.progressBar setHidden:YES];
+}
+
+- (void)loadFishAnimation {
+    NSMutableArray *fishFrames = [[NSMutableArray alloc] init];
+    for (int frameIndex = 0; frameIndex <= 142; frameIndex++) {
+        NSString *frameName = [NSString stringWithFormat:@"fish/frame_%03d", frameIndex];
+        UIImage *frameImage = [UIImage imageNamed:frameName];
+        if (frameImage) {
+            [fishFrames addObject:frameImage];
+        }
+    }
+    self.cachedFishAnimation = [[UIImage animatedImageWithImages:fishFrames duration:5.0] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+}
+
+- (void)startFishRain {
+    [self createFishBurst];
+    [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(createFishBurst) userInfo:nil repeats:YES];
+    [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(cleanupOffscreenFish) userInfo:nil repeats:YES];
+}
+
+- (void)createFishBurst {
+    int fishCount = 3 + arc4random_uniform(10);
+    for (int i = 0; i < fishCount; i++) {
+        UIImageView *fishImageView = [[UIImageView alloc] init];
+        fishImageView.image = self.cachedFishAnimation;
+        fishImageView.contentMode = UIViewContentModeCenter;
+        fishImageView.clipsToBounds = YES;
+        CGFloat fishSize = 48.0;
+        
+        CGFloat start = arc4random_uniform((int)(self.view.bounds.size.width - fishSize));
+        fishImageView.frame = CGRectMake(start, -fishSize, fishSize, fishSize);
+		[self.view insertSubview:fishImageView atIndex:0];
+        [self.fishes addObject:fishImageView];
+        
+        CGFloat delay = (arc4random_uniform(10)) / 100.0;
+        CGFloat duration = 3.0 + (arc4random_uniform(200)) / 100.0;
+        
+        [UIView animateWithDuration:duration delay:delay options:UIViewAnimationOptionCurveLinear animations:^{
+			 fishImageView.frame = CGRectMake(start, self.view.bounds.size.height + fishSize, fishSize, fishSize);
+			 fishImageView.transform = CGAffineTransformMakeRotation(M_PI * 0.5 * (arc4random_uniform(100) / 100.0));
+		} completion:^(BOOL finished) {
+			[fishImageView removeFromSuperview];
+            [self.fishes removeObject:fishImageView];
+        }];
+    }
+}
+
+- (void)cleanupOffscreenFish {
+    NSMutableArray *fishToRemove = [[NSMutableArray alloc] init];
+    CGFloat screenHeight = self.view.bounds.size.height;
+    for (UIImageView *fishImageView in self.fishes) {
+        if (fishImageView.frame.origin.y > screenHeight + 100) {
+            [fishToRemove addObject:fishImageView];
+        }
+    }
+    for (UIImageView *fishImageView in fishToRemove) {
+        [fishImageView removeFromSuperview];
+        [self.fishes removeObject:fishImageView];
+    }
 }
 
 @end

@@ -6,6 +6,14 @@
 @property(nonatomic, strong) UILabel* optionalTextLabel;
 @property(nonatomic, strong) UIButton* launchButton;
 @property(nonatomic, strong) UIButton* settingsButton;
+
+
+@property (strong, nonatomic) NSMutableArray *fishes;
+@property (strong, nonatomic) UIImage *cachedFishAnimation;
+@property (nonatomic) BOOL hasTappedFish;
+@property (nonatomic) BOOL processOfTappedFish;
+@property (nonatomic, strong) UIImpactFeedbackGenerator *impactFeedback;
+
 - (void)updateState;
 - (void)cancelDownload;
 
