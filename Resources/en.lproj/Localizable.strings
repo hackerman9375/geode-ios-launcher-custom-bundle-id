@@ -74,6 +74,9 @@
 "launcher.notice.mod-import" = "The mod '%@' has been imported!";
 "launcher.notice.mod-import.fail" = "The mod '%@' couldn't be imported";
 "launcher.notice.ts-app-uri" = "TrollStore Detected! If you haven't already, ensure that you have the \"URL Scheme Enabled\" setting enabled in TrollStore, otherwise the app will launch the Magnifier App rather than TrollStore to enable JIT.";
+"launcher.notice.enterprise.s1" = "This is the first time you are setting up Geode in Enterprise Mode! Please read carefully. You will need to do the following after tapping OK:\n- Wait for the patching to complete.\n- When the share popup appears for Helper.ipa, open it with any IPA installer. (Feather, Ksign, etc)\n- Launch the Helper app once (it will crash, that is expected)\n- Return back to the launcher after opening the Helper app.\nIt is recommended to take a screenshot of this popup in case you forget.\n\nDo you wish to proceed?";
+"launcher.notice.enterprise.s2" = "You will now open the app folder for Geode Helper.\nThis will allow the launcher to view the Geode Helper folder, and allow you to launch the game.\n\nEnsure that you select the correct folder. If the only folders you see after opening the Geode Helper folder are \"game\" and \"save\", tap Open.";
+"launcher.notice.enterprise.s3" = "Tap Launch again.";
 
 "launcher.status.not-verified" = "Geometry Dash is not verified.\nYou need to verify that you installed the app.";
 "launcher.status.not-installed" = "Geode is not installed.";
@@ -99,9 +102,11 @@
 "launcher.error.sign.invalidcert2" = "Certificate Status Invalid";
 "launcher.error.sign.invalidcert3" = "Invalid Certificate Data";
 "launcher.error.patch.origsign" = "The original binary had been signed! Please reinstall Geometry Dash.";
+"launcher.error.enterprise-launch" = "Geode Helper couldn't be launched.\nPlease verify that you have installed the Helper.";
 
 "launcher.progress.download.text" = "Downloading... {percent}%";
 "launcher.progress.extract.text" = "Extracting... {percent}%";
+"launcher.progress.patch.text" = "Patching... {percent}%";
 
 // Settings
 "general" = "General";
@@ -147,6 +152,7 @@
 "jit.footer.livecontainer" = "Ensure that you enabled \"Launch with JIT\" for the Geode app in LiveContainer.";
 
 "jitless" = "JIT-Less";
+"jitless.enterprise" = "Enterprise Mode";
 "jitless.enable" = "Enable JIT-Less";
 "jitless.diag" = "JIT-Less Diagnose";
 "jitless.footer" = "JIT-less allows you to use Geode without enabling JIT! You will need to import a certificate.";
@@ -160,6 +166,7 @@
 "jitless.cert.dev-cert.unused" = "Certificate Imported! However, Geode will not work as it was signed without the \"get-task-allow\" entitlement. You must use a Development Certificate, or Geode will not load.";
 "jitless.cert.dev-cert" = "Application signed without the \"get-task-allow\" entitlement. You must use a Development Certificate with that entitlement for Geode. Please wait for a future update for this to be possible.\nYou can verify if Geode was signed with the entitlement by seeing if it's visible in an app like StikDebug.";
 "jitless.cert.success" = "Certificate Imported! Be sure to run the JIT-Less test first to ensure it works!";
+"jitless.enterprise.warning" = "This method requires reinstalling a patched version of Geometry Dash everytime you want to enable, disable, download, or update any mod or Geode itself. This method also requires at least 400 MB of storage.\nIt is recommended to obtain a Developer Certificate for Geode, as it provides a better experience, and does not require installing a patched Geometry Dash every time.\nWould you like to enable Enterprise Mode anyways?";
 
 "advanced" = "Advanced";
 "advanced.dev-mode" = "Developer Mode";

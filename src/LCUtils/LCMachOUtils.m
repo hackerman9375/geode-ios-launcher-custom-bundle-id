@@ -3,6 +3,9 @@
 @import MachO;
 #import "../components/LogUtils.h"
 #import "LCUtils.h"
+// #import <Foundation/Foundation.h>
+// #import <mach-o/dyld.h>
+// #import <mach-o/loader.h>
 
 static uint32_t rnd32(uint32_t v, uint32_t r) {
 	r--;
@@ -23,6 +26,13 @@ static void insertDylibCommand(uint32_t cmd, const char* path, struct mach_heade
 	header->sizeofcmds += dylib->cmdsize;
 }
 
+void noopOverwrite(struct load_command* command) {
+	uint32_t old_size = command->cmdsize;
+	memset(command, 0, old_size);
+	command->cmd = 0x12345678; // dont question it lol, apple will most likely not have a command with this so itll just ignore it... hopefully
+	command->cmdsize = old_size;
+}
+
 static void insertRPathCommand(const char* path, struct mach_header_64* header) {
 	struct rpath_command* rpath = (struct rpath_command*)(sizeof(struct mach_header_64) + (void*)header + header->sizeofcmds);
 	rpath->cmd = LC_RPATH;
@@ -38,37 +48,83 @@ void LCPatchAddRPath(const char* path, struct mach_header_64* header) {
 	insertRPathCommand("@loader_path", header);
 }
 
-void LCPatchExecSlice(const char* path, struct mach_header_64* header) {
+void LCPatchExecSlice(const char* path, struct mach_header_64* header, bool withGeode) {
 	uint8_t* imageHeaderPtr = (uint8_t*)header + sizeof(struct mach_header_64);
 
 	// Literally convert an executable to a dylib
 	if (header->magic == MH_MAGIC_64) {
 		// assert(header->flags & MH_PIE);
-		header->filetype = MH_DYLIB;
-		header->flags |= MH_NO_REEXPORTED_DYLIBS;
-		header->flags &= ~MH_PIE;
+		if (withGeode) { // how about no, we want it as executable again!
+			header->filetype = MH_EXECUTE;
+			header->flags |= MH_PIE;
+			header->flags &= ~MH_NO_REEXPORTED_DYLIBS;
+		} else {
+			header->filetype = MH_DYLIB;
+			header->flags |= MH_NO_REEXPORTED_DYLIBS;
+			header->flags &= ~MH_PIE;
+		}
 	}
 
 	BOOL hasDylibCommand = NO, hasLoaderCommand = NO;
 	const char* tweakLoaderPath = "@loader_path/../../Tweaks/TweakLoader.dylib";
+	// const char* geodeLoaderPath = "@executable_path/Geode.ios.dylib";
+	const char* geodeLoaderPath = "@executable_path/EnterpriseLoader.dylib";
+	// const char* geodeLoaderPath = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
 	struct load_command* command = (struct load_command*)imageHeaderPtr;
+	struct load_command* lcIDcmd;
+	struct dylib_command* lcLOADcmd;
 	for (int i = 0; i < header->ncmds; i++) {
 		if (command->cmd == LC_ID_DYLIB) {
+			lcIDcmd = command;
 			hasDylibCommand = YES;
 		} else if (command->cmd == LC_LOAD_DYLIB) {
 			struct dylib_command* dylib = (struct dylib_command*)command;
 			char* dylibName = (void*)dylib + dylib->dylib.name.offset;
 			if (!strncmp(dylibName, tweakLoaderPath, strlen(tweakLoaderPath))) {
+				lcLOADcmd = dylib;
 				hasLoaderCommand = YES;
 			}
 		}
 		command = (struct load_command*)((void*)command + command->cmdsize);
 	}
-	if (!hasDylibCommand) {
-		insertDylibCommand(LC_ID_DYLIB, path, header);
-	}
-	if (!hasLoaderCommand) {
-		insertDylibCommand(LC_LOAD_DYLIB, tweakLoaderPath, header);
+	if (withGeode) { // we're just going to decide to NO-OP the commands then i guess add the LC_LOAD_DYLIB command
+		if (hasDylibCommand && hasLoaderCommand) {
+			uint32_t totalSpace = lcIDcmd->cmdsize + lcLOADcmd->cmdsize;
+			uint32_t newCmdSize = sizeof(struct dylib_command) + rnd32((uint32_t)strlen(geodeLoaderPath) + 1, 8);
+			if (newCmdSize <= totalSpace) { // this shouldnt happen but you never know!
+				memset(lcIDcmd, 0, totalSpace);
+				struct dylib_command* newCmd = (struct dylib_command*)lcIDcmd;
+				newCmd->cmd = LC_LOAD_DYLIB;
+				newCmd->cmdsize = newCmdSize;
+				newCmd->dylib.name.offset = sizeof(struct dylib_command);
+				newCmd->dylib.compatibility_version = 0x10000;
+				newCmd->dylib.current_version = 0x10000;
+				newCmd->dylib.timestamp = 2;
+				strncpy((void*)newCmd + newCmd->dylib.name.offset, geodeLoaderPath, strlen(geodeLoaderPath));
+
+				if (totalSpace > newCmdSize) {
+					struct load_command* padding = (struct load_command*)((uint8_t*)newCmd + newCmdSize);
+					padding->cmd = 0; // This will be ignored
+					padding->cmdsize = totalSpace - newCmdSize;
+				}
+				header->ncmds--;
+			} else {
+				noopOverwrite(lcIDcmd);
+				noopOverwrite((struct load_command*)lcLOADcmd);
+				insertDylibCommand(LC_LOAD_DYLIB, geodeLoaderPath, header);
+				header->ncmds -= 2;
+			}
+		} else {
+			// something must really be wrong if this were to pass
+			// insertDylibCommand(LC_LOAD_DYLIB, geodeLoaderPath, header);
+		}
+	} else {
+		if (!hasDylibCommand) {
+			insertDylibCommand(LC_ID_DYLIB, path, header);
+		}
+		if (!hasLoaderCommand) {
+			insertDylibCommand(LC_LOAD_DYLIB, tweakLoaderPath, header);
+		}
 	}
 
 	// Patch __PAGEZERO to map just a single zero page, fixing "out of address space"
@@ -78,50 +134,10 @@ void LCPatchExecSlice(const char* path, struct mach_header_64* header) {
 		assert(seg->vmsize == 0x100000000);
 		seg->vmaddr = 0x100000000 - 0x4000;
 		seg->vmsize = 0x4000;
-	}
-}
-
-void LCPatchExecSliceWithData(NSMutableData* data, const char* tweakLoaderPath) {
-	uint8_t* bytes = (uint8_t*)data.mutableBytes;
-	struct mach_header_64* header = (struct mach_header_64*)bytes;
-	uint8_t* imageHeaderPtr = (uint8_t*)header + sizeof(struct mach_header_64);
-
-	// Literally convert an executable to a dylib
-	if (header->magic == MH_MAGIC_64) {
-		// assert(header->flags & MH_PIE);
-		header->filetype = MH_DYLIB;
-		header->flags |= MH_NO_REEXPORTED_DYLIBS;
-		header->flags &= ~MH_PIE;
-	}
-
-	BOOL hasDylibCommand = NO, hasLoaderCommand = NO;
-	struct load_command* command = (struct load_command*)imageHeaderPtr;
-	for (int i = 0; i < header->ncmds; i++) {
-		if (command->cmd == LC_ID_DYLIB) {
-			hasDylibCommand = YES;
-		} else if (command->cmd == LC_LOAD_DYLIB) {
-			struct dylib_command* dylib = (struct dylib_command*)command;
-			char* dylibName = (void*)dylib + dylib->dylib.name.offset;
-			if (!strncmp(dylibName, tweakLoaderPath, strlen(tweakLoaderPath))) {
-				hasLoaderCommand = YES;
-			}
-		}
-		command = (struct load_command*)((void*)command + command->cmdsize);
-	}
-	if (!hasDylibCommand) {
-		// insertDylibCommand(LC_ID_DYLIB, path, header);
-	}
-	if (!hasLoaderCommand) {
-		insertDylibCommand(LC_LOAD_DYLIB, tweakLoaderPath, header);
-	}
-
-	// Patch __PAGEZERO to map just a single zero page, fixing "out of address space"
-	struct segment_command_64* seg = (struct segment_command_64*)imageHeaderPtr;
-	assert(seg->cmd == LC_SEGMENT_64);
-	if (seg->vmaddr == 0) {
-		assert(seg->vmsize == 0x100000000);
-		seg->vmaddr = 0x100000000 - 0x4000;
-		seg->vmsize = 0x4000;
+	} else if (withGeode) {
+		// we arent containerizing it so...
+		seg->vmaddr = 0x0;
+		seg->vmsize = 0x100000000;
 	}
 }
 

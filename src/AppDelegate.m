@@ -127,6 +127,10 @@ static NSString* certPassword = nil;
 		return YES;
 	}
 
+	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+		[Utils showNoticeGlobal:@"Any app scheme is not supported. This includes restarting Geode."];
+		return YES;
+	}
 	if ([url.host isEqualToString:@"open-web-page"]) {
 		NSURLComponents* components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
 		for (NSURLQueryItem* item in components.queryItems) {
@@ -161,20 +165,22 @@ static NSString* certPassword = nil;
 			return NO;
 		}
 		if ([url.host isEqualToString:@"relaunch"] && [[Utils getPrefs] boolForKey:@"JITLESS"]) {
-			NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
-			[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
-				withHandlerAddress:0x88d000
-							 force:NO
-					  withSafeMode:NO
-				  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) {
-					  [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:NO progressHandler:^(NSProgress* progress) {}
-						  completion:^(NSError* error) {
-							  if (error != nil) {
-								  AppLog(@"Detailed error for signing mods: %@", error);
-							  }
-							  [LCUtils launchToGuestApp];
-						  }];
-				  }];
+			if (NO) {
+				NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
+				[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
+					withHandlerAddress:0x88d000
+								 force:NO
+						  withSafeMode:NO
+					  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) {
+						  [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"game/geode"] force:NO progressHandler:^(NSProgress* progress) {}
+							  completion:^(NSError* error) {
+								  if (error != nil) {
+									  AppLog(@"Detailed error for signing mods: %@", error);
+								  }
+								  [LCUtils launchToGuestApp];
+							  }];
+					  }];
+			}
 		} else {
 			AppLog(@"Launching Geometry Dash");
 			if (![LCUtils launchToGuestApp]) {

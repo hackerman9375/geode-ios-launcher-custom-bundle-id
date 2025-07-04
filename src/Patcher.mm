@@ -1,3 +1,4 @@
+#import "LCUtils/LCUtils.h"
 #import <Foundation/Foundation.h>
 #include <filesystem>
 #import "Patcher.h"
@@ -261,6 +262,77 @@ static uint32_t swap32(uint32_t val) {
     return CFSwapInt32HostToBig(val);
 }
 
+void updateFileOffsets(uint8_t* buf, uint32_t removedOffset, uint32_t removedSize, uint32_t newSignatureSize) {
+    struct mach_header_64* header = (struct mach_header_64*)buf;
+    uint8_t* lcPtr = buf + sizeof(*header);
+    
+    int32_t sizeDifference = (int32_t)newSignatureSize - (int32_t)removedSize;
+    
+    for (uint32_t i = 0; i < header->ncmds; i++) {
+        struct load_command* lc = (struct load_command*)lcPtr;
+        
+        if (lc->cmd == LC_SEGMENT_64) {
+            struct segment_command_64* seg = (struct segment_command_64*)lcPtr;
+            
+            if (strncmp(seg->segname, "__LINKEDIT", 16) == 0) {
+                seg->filesize = (uint32_t)((int32_t)seg->filesize + sizeDifference);
+                seg->vmsize = align(seg->filesize, 4096); // align 4096
+            }
+            else if (seg->fileoff > removedOffset) {
+                seg->fileoff = (uint32_t)((int32_t)seg->fileoff + sizeDifference);
+            }
+            struct section_64* sections = (struct section_64*)(lcPtr + sizeof(struct segment_command_64));
+            for (uint32_t j = 0; j < seg->nsects; j++) {
+                if (sections[j].offset > removedOffset) {
+                    sections[j].offset = (uint32_t)((int32_t)sections[j].offset + sizeDifference);
+                }
+                if (sections[j].reloff > removedOffset) {
+                    sections[j].reloff = (uint32_t)((int32_t)sections[j].reloff + sizeDifference);
+                }
+            }
+        }
+        else if (lc->cmd == LC_SYMTAB) {
+            struct symtab_command* symtab = (struct symtab_command*)lcPtr;
+            if (symtab->symoff > removedOffset) {
+                symtab->symoff = (uint32_t)((int32_t)symtab->symoff + sizeDifference);
+            }
+            if (symtab->stroff > removedOffset) {
+                symtab->stroff = (uint32_t)((int32_t)symtab->stroff + sizeDifference);
+            }
+        }
+        else if (lc->cmd == LC_DYSYMTAB) {
+            struct dysymtab_command* dysymtab = (struct dysymtab_command*)lcPtr;
+            if (dysymtab->tocoff > removedOffset) {
+                dysymtab->tocoff = (uint32_t)((int32_t)dysymtab->tocoff + sizeDifference);
+            }
+            if (dysymtab->modtaboff > removedOffset) {
+                dysymtab->modtaboff = (uint32_t)((int32_t)dysymtab->modtaboff + sizeDifference);
+            }
+            if (dysymtab->extrefsymoff > removedOffset) {
+                dysymtab->extrefsymoff = (uint32_t)((int32_t)dysymtab->extrefsymoff + sizeDifference);
+            }
+            if (dysymtab->indirectsymoff > removedOffset) {
+                dysymtab->indirectsymoff = (uint32_t)((int32_t)dysymtab->indirectsymoff + sizeDifference);
+            }
+            if (dysymtab->extreloff > removedOffset) {
+                dysymtab->extreloff = (uint32_t)((int32_t)dysymtab->extreloff + sizeDifference);
+            }
+            if (dysymtab->locreloff > removedOffset) {
+                dysymtab->locreloff = (uint32_t)((int32_t)dysymtab->locreloff + sizeDifference);
+            }
+        }
+        else if (lc->cmd == LC_FUNCTION_STARTS || lc->cmd == LC_DATA_IN_CODE || 
+                 lc->cmd == LC_DYLIB_CODE_SIGN_DRS || lc->cmd == LC_LINKER_OPTIMIZATION_HINT) {
+            struct linkedit_data_command* linkedit = (struct linkedit_data_command*)lcPtr;
+            if (linkedit->dataoff > removedOffset) {
+                linkedit->dataoff = (uint32_t)((int32_t)linkedit->dataoff + sizeDifference);
+            }
+        }
+        
+        lcPtr += lc->cmdsize;
+    }
+}
+
 BOOL addEntitlements(NSMutableData* data, NSData* entitlementsData) {
 	uint8_t* buf = (uint8_t*)data.mutableBytes;
 	struct mach_header_64* header = (struct mach_header_64*)buf;
@@ -291,20 +363,22 @@ BOOL addEntitlements(NSMutableData* data, NSData* entitlementsData) {
 	superBlobSize = align(superBlobSize, 16);
 
 	NSUInteger originalSize = data.length;
+	uint32_t removedOffset = 0;
+	uint32_t removedSize = 0;
 
 	if (codeSignCmd) {
-		NSUInteger removeStart = codeSignCmd->dataoff;
-		NSUInteger removeSize = codeSignCmd->datasize;
+		removedOffset = codeSignCmd->dataoff;
+		removedSize = codeSignCmd->datasize;
 		
-		NSMutableData* newData = [NSMutableData dataWithBytes:buf length:removeStart];
-		if (originalSize > removeStart + removeSize) {
-			[newData appendBytes:buf + removeStart + removeSize 
-						  length:originalSize - removeStart - removeSize];
+		NSMutableData* newData = [NSMutableData dataWithBytes:buf length:removedOffset];
+		if (originalSize > removedOffset + removedSize) {
+			[newData appendBytes:buf + removedOffset + removedSize 
+						  length:originalSize - removedOffset - removedSize];
 		}
 		[data setData:newData];
 		buf = (uint8_t*)data.mutableBytes;
 		header = (struct mach_header_64*)buf;
-		
+		updateFileOffsets(buf, removedOffset, removedSize, superBlobSize);
 		codeSignCmd = (struct linkedit_data_command*)(buf + sizeof(*header));
 		searchPtr = (uint8_t*)codeSignCmd;
 		for (uint32_t i = 0; i < codeSignCmdIndex; i++) {
@@ -590,9 +664,9 @@ for func in list:
 	NSError* error;
 	BOOL isDir = NO;
 	NSString *forceSign = nil;
-	NSURL* zipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/mods"];
-	NSString* unzipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/unzipped"].path;
-	if ([fm fileExistsAtPath:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"].path isDirectory:&isDir]) {
+	NSURL* zipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"game/geode/mods"];
+	NSString* unzipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"game/geode/unzipped"].path;
+	if ([fm fileExistsAtPath:[[LCPath dataPath] URLByAppendingPathComponent:@"game/geode"].path isDirectory:&isDir]) {
 		if (isDir) {
 			AppLog(@"Checking if mods need to be unzipped...");
 			[fm createDirectoryAtPath:unzipModsPath withIntermediateDirectories:YES attributes:nil error:nil];
@@ -657,19 +731,6 @@ for func in list:
 		AppLog(@"Couldn't read binary: %@", error);
 		return completionHandler(NO, @"Couldn't read binary");
 	}
-	uint8_t* base = (uint8_t*)data.mutableBytes;
-	struct mach_header_64* header = (struct mach_header_64*)base;
-	uint8_t* imageHeaderPtr = (uint8_t*)header + sizeof(struct mach_header_64);
-	if (data.length < sizeof(struct mach_header_64) || (header->magic != MH_MAGIC && header->magic != MH_MAGIC_64)) {
-		AppLog(@"Couldn't patch! Binary is not 64-bit Mach-O.");
-		return completionHandler(NO, @"Binary is not 64-bit Mach-O.");
-	}
-
-	AppLog(@"Writing new executable region...");
-	if (!appendNewSection(data)) {
-		AppLog(@"Something went wrong when writing a new executable region.");
-		return completionHandler(NO, @"Couldn't write new RX region.");
-	}
 
 	if (entitlements) {
 		NSData* entBlob = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] URLForResource:@"gdent" withExtension:@"xml"].path options:0 error:&error];
@@ -682,6 +743,28 @@ for func in list:
 			AppLog(@"Something went wrong when adding entitlements to binary.");
 			return completionHandler(NO, @"Couldn't add entitlements."); 
 		}
+	}
+	if (entitlements) {
+		NSString* execPath = to.path;
+		NSString* error = LCParseMachO(execPath.UTF8String, false, ^(const char* path, struct mach_header_64* header, int fd, void* filePtr) {
+			LCPatchExecSlice(path, header, true);
+		});
+		if (error) {
+			return completionHandler(NO, error);
+		}
+	}
+	uint8_t* base = (uint8_t*)data.mutableBytes;
+	struct mach_header_64* header = (struct mach_header_64*)base;
+	uint8_t* imageHeaderPtr = (uint8_t*)header + sizeof(struct mach_header_64);
+	if (data.length < sizeof(struct mach_header_64) || (header->magic != MH_MAGIC && header->magic != MH_MAGIC_64)) {
+		AppLog(@"Couldn't patch! Binary is not 64-bit Mach-O.");
+		return completionHandler(NO, @"Binary is not 64-bit Mach-O.");
+	}
+
+	AppLog(@"Writing new executable region...");
+	if (!appendNewSection(data)) {
+		AppLog(@"Something went wrong when writing a new executable region.");
+		return completionHandler(NO, @"Couldn't write new RX region.");
 	}
 
 	// === PATCH STEP 1 ====
@@ -755,10 +838,10 @@ for func in list:
 	}
 
 	// === PATCH STEP 2 ====
-	NSString* unzipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/unzipped"].path;
-	NSString* unzipBinModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/unzipped/binaries"].path;
-	NSString* zipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode/mods"].path;
-	NSURL* savedJSONURL = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/save/geode/mods/geode.loader/saved.json"];
+	NSString* unzipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"game/geode/unzipped"].path;
+	NSString* unzipBinModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"game/geode/unzipped/binaries"].path;
+	NSString* zipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"game/geode/mods"].path;
+	NSURL* savedJSONURL = [[LCPath dataPath] URLByAppendingPathComponent:@"save/geode/mods/geode.loader/saved.json"];
 	NSData* savedJSONData = [NSData dataWithContentsOfURL:savedJSONURL options:0 error:&error];
 	NSDictionary* savedJSONDict;
 	BOOL canParseJSON = NO;
@@ -833,6 +916,18 @@ for func in list:
 			}
 		}
 	}
+	NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
+	if (entitlements) {
+		if ([fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"mods"].path]) {
+			[fm removeItemAtURL:[bundlePath URLByAppendingPathComponent:@"mods"] error:nil];
+		}
+		if ([fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"o_mods"].path]) {
+			[fm removeItemAtURL:[bundlePath URLByAppendingPathComponent:@"o_mods"] error:nil];
+		}
+		if (modDict.count > 1 && !safeMode) {
+		    [fm createDirectoryAtURL:[bundlePath URLByAppendingPathComponent:@"mods"] withIntermediateDirectories:YES attributes:nil error:nil];
+		}
+	}
 	for (int i = 0; i < modDict.count; i++) {
 		AppLog(@"Patching functions... (%i/%i)", (i + 1), modDict.count);
 		NSData* mdata = [NSData dataWithContentsOfFile:[modDict objectAtIndex:i] options:0 error:nil];
@@ -862,6 +957,9 @@ for func in list:
 			[data replaceBytesInRange:NSMakeRange(addr, patchSize) withBytes:patchData.bytes];
 			AppLogDebug(@"Patched Offset %#llx with %i bytes (%@)", addr, patchSize, [Patcher hexStringWithSpaces:patchData includeSpaces:YES]);
 		}
+        if (i > 0 && entitlements) {
+            [fm copyItemAtPath:[modDict objectAtIndex:i] toPath:[[bundlePath URLByAppendingPathComponent:@"mods"] URLByAppendingPathComponent:[[modDict objectAtIndex:i] lastPathComponent]].path error:nil];
+        }
 	}
 	NSString* patchChecksum = [[Utils getPrefs] stringForKey:@"PATCH_CHECKSUM"];
 	NSArray* keys = [self.originalBytes allKeys];
@@ -892,6 +990,15 @@ for func in list:
 	if (error) {
 		AppLog(@"Couldn't patch binary: %@", error);
 		return completionHandler(NO, [NSString stringWithFormat:@"Patch failed: %@", error.localizedDescription]);
+	}
+	if (entitlements) {
+		NSString* execPath = to.path;
+		NSString* error = LCParseMachO(execPath.UTF8String, false, ^(const char* path, struct mach_header_64* header, int fd, void* filePtr) {
+			LCPatchExecSlice(path, header, true);
+		});
+		if (error) {
+			return completionHandler(NO, error);
+		}
 	}
 	AppLog(@"Binary has been patched!");
 	return completionHandler(YES, @"force");

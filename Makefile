@@ -27,7 +27,7 @@ $(APPLICATION_NAME)_LDFLAGS = -e _GeodeMain -rpath @loader_path/Frameworks
 #$(APPLICATION_NAME)_LDFLAGS = -e _GeodeMain -rpath @loader_path/Frameworks -L./libs -lLIEF -lstdc++
 
 include $(THEOS_MAKE_PATH)/application.mk
-SUBPROJECTS += ZSign TweakLoader WebServerLib TestJITLess
+SUBPROJECTS += ZSign TweakLoader WebServerLib TestJITLess EnterpriseLoader
 include $(THEOS_MAKE_PATH)/aggregate.mk
 
 

@@ -1,6 +1,7 @@
 #import "LCUtils/GCSharedUtils.h"
 #import "LCUtils/Shared.h"
 #import "LCUtils/unarchive.h"
+#import "Patcher.h"
 #import "Utils.h"
 #import "components/LogUtils.h"
 #import "src/LCUtils/UIKitPrivate.h"
@@ -242,11 +243,65 @@ extern SecTaskRef SecTaskCreateFromSelf(CFAllocatorRef allocator) __attribute__(
 	NSFileManager* fileManager = [NSFileManager defaultManager];
 	return [fileManager fileExistsAtPath:path isDirectory:nil];
 }
++ (void)accessHelper:(BOOL)urlOnly completionHandler:(void (^)(NSURL* url, BOOL success, NSString* error))completionHandler {
+	NSData* bookmark = [[Utils getPrefs] objectForKey:@"GEODE_HELPER_BOOKMARK"];
+	if (bookmark == nil)
+		return completionHandler(nil, NO, @"Bookmark not set.");
+	BOOL stale;
+	NSError* err;
+	NSURL* folderURL = [NSURL URLByResolvingBookmarkData:bookmark options:0 relativeToURL:nil bookmarkDataIsStale:&stale error:&err];
+	if (err) {
+		AppLog(@"Couldn't read bookmarked dir: %@", err);
+		return completionHandler(folderURL, NO, err.localizedDescription);
+	} else if (stale && !urlOnly) {
+		return completionHandler(folderURL, NO, @"Stale");
+	} else if (urlOnly) {
+		return completionHandler(folderURL, YES, nil);
+	}
+	if (folderURL && [folderURL startAccessingSecurityScopedResource]) {
+		completionHandler(folderURL, YES, nil);
+		[folderURL stopAccessingSecurityScopedResource];
+	}
+}
++ (void)bundleIPA:(UIViewController*)root {
+	[[Utils getPrefs] setBool:YES forKey:@"IS_COMPRESSING_IPA"];
+	NSFileManager* fm = [NSFileManager defaultManager];
+	[fm removeItemAtPath:[[fm temporaryDirectory] URLByAppendingPathComponent:@"Helper.ipa"].path error:nil];
+	NSString* fileToExtract = [[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app"].path;
+	NSString* extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Helper.ipa"].path;
+	NSURL* extractionPathURL = [NSURL fileURLWithPath:extractionPath];
+	AppLog(@"Starting compression of %@ to %@", fileToExtract, extractionPath);
+	[[NSFileManager defaultManager] createFileAtPath:extractionPath contents:nil attributes:nil];
+	int res = compress(fileToExtract, extractionPath, nil);
+	if (res != 0) {
+		[Utils showError:root title:[NSString stringWithFormat:@"Couldn't bundle IPA. (Compression error code: %lu)", (unsigned long)res] error:nil];
+		return;
+	}
+	dispatch_async(dispatch_get_main_queue(), ^{
+		[[Utils getPrefs] setBool:NO forKey:@"IS_COMPRESSING_IPA"];
+		UIActivityViewController* activityViewController = [[UIActivityViewController alloc] initWithActivityItems:@[ extractionPathURL ] applicationActivities:nil];
+		// not sure if this is even necessary because ive never seen anyone complain about app logs
+		if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+			activityViewController.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(root.view.bounds), CGRectGetMidY(root.view.bounds), 0, 0);
+			activityViewController.popoverPresentationController.permittedArrowDirections = 0;
+		}
+		activityViewController.popoverPresentationController.sourceView = root.view;
+		[root presentViewController:activityViewController animated:YES completion:nil];
+	});
+}
+
 + (NSString*)getGDDocPath {
 	// me when performance
 	if (gdDocPath != nil)
 		return gdDocPath;
 	NSFileManager* fm = [NSFileManager defaultManager];
+	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+		NSData* bookmark = [[Utils getPrefs] objectForKey:@"GEODE_HELPER_BOOKMARK"];
+		if (bookmark == nil)
+			return nil;
+		NSURL* folderURL = [NSURL URLByResolvingBookmarkData:bookmark options:0 relativeToURL:nil bookmarkDataIsStale:nil error:NULL];
+		return folderURL.path;
+	}
 	NSError* err;
 	NSArray* dirs = [fm contentsOfDirectoryAtPath:@"/var/mobile/Containers/Data/Application" error:&err];
 	if (err) {
@@ -424,6 +479,8 @@ extern SecTaskRef SecTaskCreateFromSelf(CFAllocatorRef allocator) __attribute__(
 	return NO;
 }
 + (BOOL)isDevCert {
+	if ([[Utils getPrefs] boolForKey:@"FORCE_ENTERPRISE"])
+		return NO;
 	SecTaskRef task = SecTaskCreateFromSelf(nil);
 	if (task == nil) {
 		return NO;
@@ -524,7 +581,7 @@ extern SecTaskRef SecTaskCreateFromSelf(CFAllocatorRef allocator) __attribute__(
 	if (![Utils isSandboxed]) {
 		path = [[Utils getGDDocPath] stringByAppendingString:@"Documents/"];
 	} else {
-		path = [[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/"].path;
+		path = [[LCPath dataPath] URLByAppendingPathComponent:@"/"].path;
 	}
 	if ([path hasSuffix:@"/"]) {
 		return path;

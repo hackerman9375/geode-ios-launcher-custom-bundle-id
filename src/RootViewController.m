@@ -1,8 +1,8 @@
 #import "GeodeInstaller.h"
-#include <UIKit/UIKit.h>
 #import "LCUtils/GCSharedUtils.h"
 #import "LCUtils/LCUtils.h"
 #import "LCUtils/Shared.h"
+#include "LCUtils/unarchive.h"
 #import "LCUtils/utils.h"
 #import "Patcher.h"
 #import "RootViewController.h"
@@ -17,6 +17,8 @@
 #import <Foundation/Foundation.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <Security/SecKey.h>
+#include <UIKit/UIKit.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #include <dlfcn.h>
 #include <mach-o/dyld.h>
 #include <objc/runtime.h>
@@ -172,8 +174,8 @@
 - (void)viewDidLoad {
 	[super viewDidLoad];
 	[Utils increaseLaunchCount];
-	self.impactFeedback = [[UIImpactFeedbackGenerator alloc] initWithStyle: UIImpactFeedbackStyleHeavy];
-    [self.impactFeedback prepare];
+	self.impactFeedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
+	[self.impactFeedback prepare];
 	[LogUtils clearLogs:NO];
 	NSError* err;
 	[LCPath ensureAppGroupPaths:&err];
@@ -346,59 +348,57 @@
 
 - (void)fish:(UILongPressGestureRecognizer*)gestureRecognizer {
 	if (gestureRecognizer.state != UIGestureRecognizerStateCancelled && !self.hasTappedFish) {
-		self.processOfTappedFish = NO; 
+		self.processOfTappedFish = NO;
 	}
 	if (gestureRecognizer.state == UIGestureRecognizerStateBegan && !self.hasTappedFish) {
 		self.processOfTappedFish = YES;
 		[self loadFishAnimation];
 		[self.impactFeedback impactOccurredWithIntensity:0.25];
 		[self.impactFeedback prepare];
-		[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-			self.logoImageView.transform = CGAffineTransformMakeRotation(M_PI);
-		} completion:^(BOOL finished){
-			if (finished && self.processOfTappedFish) {
-				[self.impactFeedback impactOccurredWithIntensity:0.5];
-				[self.impactFeedback prepare];
-				[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-					self.logoImageView.transform = CGAffineTransformMakeRotation(M_PI_2);
-				} completion:^(BOOL finished2){
-					if (finished2 && self.processOfTappedFish) {
-						self.hasTappedFish = YES;
-						self.processOfTappedFish = NO;
-						[self.impactFeedback impactOccurredWithIntensity:1.0];
-						[self.impactFeedback prepare];
+		[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{ self.logoImageView.transform = CGAffineTransformMakeRotation(M_PI); }
+			completion:^(BOOL finished) {
+				if (finished && self.processOfTappedFish) {
+					[self.impactFeedback impactOccurredWithIntensity:0.5];
+					[self.impactFeedback prepare];
+					[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseOut
+						animations:^{ self.logoImageView.transform = CGAffineTransformMakeRotation(M_PI_2); } completion:^(BOOL finished2) {
+							if (finished2 && self.processOfTappedFish) {
+								self.hasTappedFish = YES;
+								self.processOfTappedFish = NO;
+								[self.impactFeedback impactOccurredWithIntensity:1.0];
+								[self.impactFeedback prepare];
 
-						UIImageView *fishImageView = [[UIImageView alloc] init];
-						fishImageView.image = self.cachedFishAnimation;
-						fishImageView.contentMode = UIViewContentModeCenter;
-						fishImageView.clipsToBounds = YES;
-						fishImageView.alpha = 0.f;
-						fishImageView.frame = self.logoImageView.frame;
-						fishImageView.contentScaleFactor /= 3; // yes we divide instead of multiplying, that definitely makes sense apple
-						
-						/* i wanted to do rainbow but i cant figure it out
-						CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"tintColor"];
-						animation.fromValue = [NSNumber numberWithFloat:1.0];
-						animation.toValue = [NSNumber numberWithFloat:0.0];
-						animation.duration = 1.0;
-						animation.repeatCount = HUGE_VALF;*/
+								UIImageView* fishImageView = [[UIImageView alloc] init];
+								fishImageView.image = self.cachedFishAnimation;
+								fishImageView.contentMode = UIViewContentModeCenter;
+								fishImageView.clipsToBounds = YES;
+								fishImageView.alpha = 0.f;
+								fishImageView.frame = self.logoImageView.frame;
+								fishImageView.contentScaleFactor /= 3; // yes we divide instead of multiplying, that definitely makes sense apple
 
-						[self.view addSubview:fishImageView];
+								/* i wanted to do rainbow but i cant figure it out
+								CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"tintColor"];
+								animation.fromValue = [NSNumber numberWithFloat:1.0];
+								animation.toValue = [NSNumber numberWithFloat:0.0];
+								animation.duration = 1.0;
+								animation.repeatCount = HUGE_VALF;*/
 
-						[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-							self.logoImageView.alpha = 0.f;
-							fishImageView.alpha = 1.f;
-							self.titleLabel.text = @"fish";
-						} completion:^(BOOL finished3){
-							if (finished3) {
-								self.fishes = [[NSMutableArray alloc] init];
-								[self startFishRain];
+								[self.view addSubview:fishImageView];
+
+								[UIView animateWithDuration:0.5 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+									self.logoImageView.alpha = 0.f;
+									fishImageView.alpha = 1.f;
+									self.titleLabel.text = @"fish";
+								} completion:^(BOOL finished3) {
+									if (finished3) {
+										self.fishes = [[NSMutableArray alloc] init];
+										[self startFishRain];
+									}
+								}];
 							}
 						}];
-					}
-				}];
-			}
-		}];
+				}
+			}];
 	}
 }
 
@@ -591,9 +591,9 @@
 																[LCUtils getStoreName]]);
 										  }
 
-										  [LCUtils signModsNew:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:force
-											  progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
-												  [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"GeometryDash/Documents/game/geode"] force:force
+										  [LCUtils signModsNew:[[LCPath dataPath] URLByAppendingPathComponent:@"game/geode"] force:force progressHandler:^(NSProgress* progress) {}
+											  completion:^(NSError* error) {
+												  [LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"game/geode"] force:force
 													  progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
 														  if (error != nil) {
 															  AppLog(@"Detailed error for signing mods: %@", error);
@@ -624,6 +624,211 @@
 			  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) { completionHandler(success, error); }];
 	}
 }
+- (void)launchHelper:(BOOL)safeMode {
+	[Utils accessHelper:NO completionHandler:^(NSURL* url, BOOL success, NSString* error) {
+		if (!success && [error isEqualToString:@"Stale"]) {
+			[self.launchButton setEnabled:YES];
+			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s2".loc
+																	preferredStyle:UIAlertControllerStyleAlert];
+			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ [UTType typeWithIdentifier:@"public.folder"] ]
+																													 asCopy:NO];
+				picker.delegate = self;
+				picker.allowsMultipleSelection = NO;
+				[self presentViewController:picker animated:YES completion:nil];
+			}];
+			[alert addAction:okAction];
+			[self presentViewController:alert animated:YES completion:nil];
+		} else if (!success) {
+			[Utils showError:self title:error error:nil];
+		} else if (success) {
+			NSString* geode_env = [url.path stringByAppendingString:@"/game/geode/unzipped/launch-args.txt"];
+
+			NSString* env;
+			NSString* launchArgs = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
+			if (launchArgs && [launchArgs length] > 1) {
+				env = launchArgs;
+			}
+			if (safeMode) {
+				env = @"--geode:use-common-handler-offset=88d000 --geode:safe-mode";
+			} else {
+				env = @"--geode:use-common-handler-offset=88d000";
+			}
+			NSFileManager* fm = [NSFileManager defaultManager];
+			[fm createFileAtPath:geode_env contents:[env dataUsingEncoding:NSUTF8StringEncoding] attributes:@{}];
+			BOOL canLaunch = [VerifyInstall canLaunchAppWithBundleID:@"com.geode.helper"];
+			if (!canLaunch) {
+				UIAlertController* resultAlert = [UIAlertController alertControllerWithTitle:@"Error" message:@"launcher.error.enterprise-launch".loc
+																			  preferredStyle:UIAlertControllerStyleAlert];
+				UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
+				[resultAlert addAction:okAction];
+				[self presentViewController:resultAlert animated:YES completion:nil];
+				return;
+			}
+			exit(0);
+		}
+	}];
+}
+- (BOOL)bundleIPAWithPatch:(BOOL)safeMode withLaunch:(BOOL)launch {
+	[UIApplication sharedApplication].idleTimerDisabled = YES;
+	NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
+	NSFileManager* fm = [NSFileManager defaultManager];
+	NSString* infoPath = [bundlePath URLByAppendingPathComponent:@"Info.plist"].path;
+	NSString* infoBackupPath = [bundlePath URLByAppendingPathComponent:@"InfoBackup.plist"].path;
+	NSError* err;
+	if (![fm fileExistsAtPath:infoBackupPath]) {
+		[fm copyItemAtPath:infoPath toPath:infoBackupPath error:&err];
+		if (err) {
+			[Utils showError:self title:@"Failed to copy Info.plist" error:err];
+			return NO;
+		}
+	}
+	if ([fm fileExistsAtPath:infoBackupPath]) {
+		NSMutableDictionary* infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:infoBackupPath];
+		if (!infoDict) {
+			[Utils showError:self title:@"Couldn't read InfoBackup.plist" error:nil];
+			return NO;
+		}
+		infoDict[@"CFBundleDisplayName"] = @"Geode Helper";
+		infoDict[@"CFBundleIdentifier"] = @"com.geode.helper";
+		infoDict[@"GCSupportsControllerUserInteraction"] = @YES;
+		infoDict[@"GCSupportsGameMode"] = @YES;
+		infoDict[@"LSApplicationCategoryType"] = @"public.app-category.games";
+		infoDict[@"CADisableMinimumFrameDurationOnPhone"] = @YES;
+		infoDict[@"UISupportsDocumentBrowser"] = @YES; // is this necessary? dunno
+		infoDict[@"UIFileSharingEnabled"] = @YES;
+		infoDict[@"LSSupportsOpeningDocumentsInPlace"] = @YES;
+		infoDict[@"MinimumOSVersion"] = @"13.0";
+		// infoDict[@"CFBundleExecutable"] = @"GeodeHelper";
+		// infoDict[@"CFBundleName"] = @"GeodeHelper";
+
+		// permissions
+		infoDict[@"NSMicrophoneUsageDescription"] = @"A mod you are using is requesting this permission.";
+		infoDict[@"NSCameraUsageDescription"] = @"A mod you are using is requesting this permission.";
+
+		// icon
+		NSMutableDictionary* iphoneIconsDict = infoDict[@"CFBundleIcons"];
+		NSMutableDictionary* ipadIconsDict = infoDict[@"CFBundleIcons~ipad"];
+		NSMutableDictionary* iphonePrimaryIconDict = iphoneIconsDict[@"CFBundlePrimaryIcon"];
+		NSMutableDictionary* ipadPrimaryIconDict = ipadIconsDict[@"CFBundlePrimaryIcon"];
+		iphonePrimaryIconDict[@"CFBundleIconName"] = @"HelperIcon";
+		ipadPrimaryIconDict[@"CFBundleIconName"] = @"HelperIcon";
+		NSMutableArray* iconFiles = [iphonePrimaryIconDict[@"CFBundleIconFiles"] mutableCopy];
+		for (NSUInteger i = 0; i < iconFiles.count; i++) {
+			NSString* oldName = iconFiles[i];
+			if ([oldName hasPrefix:@"AppIcon"]) {
+				NSString* newName = [oldName stringByReplacingOccurrencesOfString:@"AppIcon" withString:@"HelperIcon"];
+				iconFiles[i] = newName;
+			}
+		}
+		iphonePrimaryIconDict[@"CFBundleIconFiles"] = iconFiles;
+		NSMutableArray* iconFiles2 = [ipadPrimaryIconDict[@"CFBundleIconFiles"] mutableCopy];
+		for (NSUInteger i = 0; i < iconFiles2.count; i++) {
+			NSString* oldName = iconFiles2[i];
+			if ([oldName hasPrefix:@"AppIcon"]) {
+				NSString* newName = [oldName stringByReplacingOccurrencesOfString:@"AppIcon" withString:@"HelperIcon"];
+				iconFiles2[i] = newName;
+			}
+		}
+		ipadPrimaryIconDict[@"CFBundleIconFiles"] = iconFiles2;
+
+		[infoDict writeToFile:infoPath atomically:YES];
+
+		if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"HelperIcon60x60@2x.png"].path]) {
+			//[fm moveItemAtURL:[bundlePath URLByAppendingPathComponent:@"AppIcon60x60@2x.png"] toURL:[bundlePath URLByAppendingPathComponent:@"Old-AppIcon60x60@2x.png"]
+			//error:nil]; [fm moveItemAtURL:[bundlePath URLByAppendingPathComponent:@"AppIcon76x76@2x~ipad.png"] toURL:[bundlePath
+			//URLByAppendingPathComponent:@"Old-AppIcon76x76@2x~ipad.png"] error:nil]; [fm copyItemAtPath:[[[NSBundle mainBundle] resourcePath]
+			//stringByAppendingPathComponent:@"GD/AppIcon76x76@2x~ipad.png"] toPath:[bundlePath URLByAppendingPathComponent:@"AppIcon76x76@2x~ipad.png"].path error:nil]; [fm
+			//copyItemAtPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"GD/AppIcon60x60@2x.png"] toPath:[bundlePath
+			//URLByAppendingPathComponent:@"AppIcon60x60@2x.png"].path error:nil];
+
+			[fm copyItemAtPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"GD/AppIcon76x76@2x~ipad.png"]
+						toPath:[bundlePath URLByAppendingPathComponent:@"HelperIcon76x76@2x~ipad.png"].path
+						 error:nil];
+			[fm copyItemAtPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"GD/AppIcon60x60@2x.png"]
+						toPath:[bundlePath URLByAppendingPathComponent:@"HelperIcon60x60@2x.png"].path
+						 error:nil];
+		}
+	}
+	NSString* docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
+	NSString* tweakPath = [NSString stringWithFormat:@"%@/Tweaks/Geode.ios.dylib", docPath];
+	NSString* tweakBundlePath = [bundlePath URLByAppendingPathComponent:@"Geode.ios.dylib"].path;
+	if ([fm fileExistsAtPath:tweakBundlePath]) {
+		NSError* removeError;
+		[fm removeItemAtPath:tweakBundlePath error:&removeError];
+		if (removeError) {
+			[Utils showError:self title:@"Failed to delete old Geode library" error:removeError];
+			return NO;
+		}
+	}
+	NSString* tweakLoaderPath = [bundlePath URLByAppendingPathComponent:@"EnterpriseLoader.dylib"].path;
+	NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"EnterpriseLoader.dylib"];
+	if ([fm fileExistsAtPath:tweakLoaderPath]) {
+		[fm removeItemAtPath:tweakLoaderPath error:nil];
+	}
+	[fm copyItemAtPath:target toPath:tweakLoaderPath error:nil];
+	[fm copyItemAtPath:tweakPath toPath:tweakBundlePath error:&err];
+	if (err) {
+		[Utils showError:self title:@"Failed to copy Geode library" error:err];
+		return NO;
+	}
+
+	NSUserDefaults* shared = [[NSUserDefaults alloc] initWithSuiteName:@"group.com.geode.launcher"];
+	NSString* bbUID = [shared objectForKey:@"BB"];
+	if (!bbUID) {
+		bbUID = [NSUUID UUID].UUIDString;
+		[shared setObject:bbUID forKey:@"BB"];
+		[shared synchronize];
+	}
+	NSString* uniqId = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
+	[fm createFileAtPath:[bundlePath URLByAppendingPathComponent:@"sf.bd"].path contents:[uniqId dataUsingEncoding:NSUTF8StringEncoding] attributes:@{}];
+
+	[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] withHandlerAddress:0x88d000
+					 force:[[Utils getPrefs] boolForKey:@"IS_COMPRESSING_IPA"]
+			  withSafeMode:safeMode
+		  withEntitlements:YES completionHandler:^(BOOL success, NSString* error) {
+			  dispatch_async(dispatch_get_main_queue(), ^{
+				  if (success) {
+					  if ([error isEqualToString:@"force"]) {
+						  AppLog(@"Starting compression of IPA due to force...");
+						  /*if ([fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeodeHelper"].path]) {
+							  [fm removeItemAtURL:[bundlePath URLByAppendingPathComponent:@"GeodeHelper"] error:nil];
+						  }
+						  [fm copyItemAtURL:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] toURL:[bundlePath URLByAppendingPathComponent:@"GeodeHelper"] error:nil];*/
+						  [self.progressBar setProgressText:@"launcher.progress.patch.text".loc];
+						  [self.progressBar setHidden:NO];
+						  [self.progressBar setCancelHidden:YES];
+						  [self barProgress:0];
+						  dispatch_async(dispatch_get_main_queue(), ^{
+							  [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer* _Nonnull timer) {
+								  dispatch_async(dispatch_get_main_queue(), ^{
+									  if (getProgressCompress() < 100) {
+										  [self barProgress:getProgressCompress()];
+									  } else if (getProgressCompress() >= 100) {
+										  [self progressVisibility:YES];
+										  [UIApplication sharedApplication].idleTimerDisabled = NO;
+										  [timer invalidate];
+									  }
+								  });
+							  }];
+						  });
+						  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{ [Utils bundleIPA:self]; });
+					  } else if (launch) {
+						  [UIApplication sharedApplication].idleTimerDisabled = NO;
+						  [self launchHelper:safeMode];
+					  } else {
+						  [UIApplication sharedApplication].idleTimerDisabled = NO;
+						  [Utils showNotice:self title:@"launcher.notice.enterprise.s3".loc];
+					  }
+				  } else {
+					  [UIApplication sharedApplication].idleTimerDisabled = NO;
+					  [Utils showError:self title:error error:nil];
+				  }
+			  });
+		  }];
+	return YES;
+}
+
 - (void)launchGame {
 	[self.launchTimer invalidate];
 	self.launchTimer = nil;
@@ -640,6 +845,55 @@
 		} else {
 			[Utils showNotice:self title:@"launcher.relaunch-notice".loc];
 		}
+		return;
+	}
+	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"] && ![[Utils getPrefs] boolForKey:@"HAS_IMPORTED_BOOKMARK"]) {
+		NSFileManager* fm = [NSFileManager defaultManager];
+		if (![fm fileExistsAtPath:[[fm temporaryDirectory] URLByAppendingPathComponent:@"Helper.ipa"].path]) {
+			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s1".loc
+																	preferredStyle:UIAlertControllerStyleAlert];
+			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.yes".loc style:UIAlertActionStyleDefault
+															 handler:^(UIAlertAction* _Nonnull action) { [self bundleIPAWithPatch:NO withLaunch:NO]; }];
+			UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"common.no".loc style:UIAlertActionStyleCancel handler:nil];
+			[alert addAction:okAction];
+			[alert addAction:cancelAction];
+			[self presentViewController:alert animated:YES completion:nil];
+		} else {
+			[self.launchButton setEnabled:YES];
+			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s2".loc
+																	preferredStyle:UIAlertControllerStyleAlert];
+			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ [UTType typeWithIdentifier:@"public.folder"] ]
+																													 asCopy:NO];
+				picker.delegate = self;
+				picker.allowsMultipleSelection = NO;
+				[self presentViewController:picker animated:YES completion:nil];
+			}];
+			[alert addAction:okAction];
+			[self presentViewController:alert animated:YES completion:nil];
+		}
+		return;
+	} else if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+		[Utils accessHelper:YES completionHandler:^(NSURL* url, BOOL success, NSString* error) {
+			if (!success && [error isEqualToString:@"Stale"]) {
+				[self.launchButton setEnabled:YES];
+				UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s2".loc
+																		preferredStyle:UIAlertControllerStyleAlert];
+				UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+					UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ [UTType typeWithIdentifier:@"public.folder"] ]
+																														 asCopy:NO];
+					picker.delegate = self;
+					picker.allowsMultipleSelection = NO;
+					[self presentViewController:picker animated:YES completion:nil];
+				}];
+				[alert addAction:okAction];
+				[self presentViewController:alert animated:YES completion:nil];
+			} else if (!success) {
+				[Utils showError:self title:error error:nil];
+			} else if (success) {
+				[self bundleIPAWithPatch:NO withLaunch:YES];
+			}
+		}];
 		return;
 	}
 	if (![Utils isSandboxed]) {
@@ -728,62 +982,85 @@
 }
 
 - (void)loadFishAnimation {
-    NSMutableArray *fishFrames = [[NSMutableArray alloc] init];
-    for (int frameIndex = 0; frameIndex <= 142; frameIndex++) {
-        NSString *frameName = [NSString stringWithFormat:@"fish/frame_%03d", frameIndex];
-        UIImage *frameImage = [UIImage imageNamed:frameName];
-        if (frameImage) {
-            [fishFrames addObject:frameImage];
-        }
-    }
-    self.cachedFishAnimation = [[UIImage animatedImageWithImages:fishFrames duration:5.0] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+	NSMutableArray* fishFrames = [[NSMutableArray alloc] init];
+	for (int frameIndex = 0; frameIndex <= 142; frameIndex++) {
+		NSString* frameName = [NSString stringWithFormat:@"fish/frame_%03d", frameIndex];
+		UIImage* frameImage = [UIImage imageNamed:frameName];
+		if (frameImage) {
+			[fishFrames addObject:frameImage];
+		}
+	}
+	self.cachedFishAnimation = [[UIImage animatedImageWithImages:fishFrames duration:5.0] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
 }
 
 - (void)startFishRain {
-    [self createFishBurst];
-    [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(createFishBurst) userInfo:nil repeats:YES];
-    [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(cleanupOffscreenFish) userInfo:nil repeats:YES];
+	[self createFishBurst];
+	[NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(createFishBurst) userInfo:nil repeats:YES];
+	[NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(cleanupOffscreenFish) userInfo:nil repeats:YES];
 }
 
 - (void)createFishBurst {
-    int fishCount = 3 + arc4random_uniform(10);
-    for (int i = 0; i < fishCount; i++) {
-        UIImageView *fishImageView = [[UIImageView alloc] init];
-        fishImageView.image = self.cachedFishAnimation;
-        fishImageView.contentMode = UIViewContentModeCenter;
-        fishImageView.clipsToBounds = YES;
-        CGFloat fishSize = 48.0;
-        
-        CGFloat start = arc4random_uniform((int)(self.view.bounds.size.width - fishSize));
-        fishImageView.frame = CGRectMake(start, -fishSize, fishSize, fishSize);
+	int fishCount = 3 + arc4random_uniform(10);
+	for (int i = 0; i < fishCount; i++) {
+		UIImageView* fishImageView = [[UIImageView alloc] init];
+		fishImageView.image = self.cachedFishAnimation;
+		fishImageView.contentMode = UIViewContentModeCenter;
+		fishImageView.clipsToBounds = YES;
+		CGFloat fishSize = 48.0;
+
+		CGFloat start = arc4random_uniform((int)(self.view.bounds.size.width - fishSize));
+		fishImageView.frame = CGRectMake(start, -fishSize, fishSize, fishSize);
 		[self.view insertSubview:fishImageView atIndex:0];
-        [self.fishes addObject:fishImageView];
-        
-        CGFloat delay = (arc4random_uniform(10)) / 100.0;
-        CGFloat duration = 3.0 + (arc4random_uniform(200)) / 100.0;
-        
-        [UIView animateWithDuration:duration delay:delay options:UIViewAnimationOptionCurveLinear animations:^{
-			 fishImageView.frame = CGRectMake(start, self.view.bounds.size.height + fishSize, fishSize, fishSize);
-			 fishImageView.transform = CGAffineTransformMakeRotation(M_PI * 0.5 * (arc4random_uniform(100) / 100.0));
+		[self.fishes addObject:fishImageView];
+
+		CGFloat delay = (arc4random_uniform(10)) / 100.0;
+		CGFloat duration = 3.0 + (arc4random_uniform(200)) / 100.0;
+
+		[UIView animateWithDuration:duration delay:delay options:UIViewAnimationOptionCurveLinear animations:^{
+			fishImageView.frame = CGRectMake(start, self.view.bounds.size.height + fishSize, fishSize, fishSize);
+			fishImageView.transform = CGAffineTransformMakeRotation(M_PI * 0.5 * (arc4random_uniform(100) / 100.0));
 		} completion:^(BOOL finished) {
 			[fishImageView removeFromSuperview];
-            [self.fishes removeObject:fishImageView];
-        }];
-    }
+			[self.fishes removeObject:fishImageView];
+		}];
+	}
 }
 
 - (void)cleanupOffscreenFish {
-    NSMutableArray *fishToRemove = [[NSMutableArray alloc] init];
-    CGFloat screenHeight = self.view.bounds.size.height;
-    for (UIImageView *fishImageView in self.fishes) {
-        if (fishImageView.frame.origin.y > screenHeight + 100) {
-            [fishToRemove addObject:fishImageView];
-        }
-    }
-    for (UIImageView *fishImageView in fishToRemove) {
-        [fishImageView removeFromSuperview];
-        [self.fishes removeObject:fishImageView];
-    }
+	NSMutableArray* fishToRemove = [[NSMutableArray alloc] init];
+	CGFloat screenHeight = self.view.bounds.size.height;
+	for (UIImageView* fishImageView in self.fishes) {
+		if (fishImageView.frame.origin.y > screenHeight + 100) {
+			[fishToRemove addObject:fishImageView];
+		}
+	}
+	for (UIImageView* fishImageView in fishToRemove) {
+		[fishImageView removeFromSuperview];
+		[self.fishes removeObject:fishImageView];
+	}
+}
+
+- (void)documentPicker:(UIDocumentPickerViewController*)controller didPickDocumentsAtURLs:(nonnull NSArray<NSURL*>*)urls {
+	NSURL* folderURL = urls.firstObject;
+	// mini "hack" to get around this
+	if ([folderURL startAccessingSecurityScopedResource]) {
+		NSFileManager* fm = [NSFileManager defaultManager];
+		NSError* error;
+		NSArray<NSString*>* entries = [fm contentsOfDirectoryAtPath:folderURL.path error:&error];
+		if (error) {
+			[Utils showError:self title:@"Couldn't read folder" error:error];
+			return;
+		}
+		if (![entries containsObject:@"game"] || ![entries containsObject:@"save"]) {
+			[Utils showError:self title:@"Incorrect Geode Helper directory. Please select the correct directory." error:nil];
+			return;
+		}
+		NSData* bookmark = [folderURL bookmarkDataWithOptions:0 includingResourceValuesForKeys:nil relativeToURL:nil error:NULL];
+		[[Utils getPrefs] setBool:YES forKey:@"HAS_IMPORTED_BOOKMARK"];
+		[[Utils getPrefs] setObject:bookmark forKey:@"GEODE_HELPER_BOOKMARK"];
+		[folderURL stopAccessingSecurityScopedResource];
+		[Utils showNotice:self title:@"launcher.notice.enterprise.s3".loc];
+	}
 }
 
 @end

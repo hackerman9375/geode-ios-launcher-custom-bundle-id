@@ -20,7 +20,19 @@
 }
 
 + (NSURL*)dataPath {
-	return [[self docPath] URLByAppendingPathComponent:@"Data/Application"];
+	__block NSURL* ans;
+	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+		[Utils accessHelper:NO completionHandler:^(NSURL* url, BOOL success, NSString* error) {
+			if ((!success && [error isEqualToString:@"Stale"]) || success) {
+				ans = url;
+			}
+		}];
+	} else {
+		ans = [[self docPath] URLByAppendingPathComponent:@"Data/Application/GeometryDash/Documents"];
+	}
+	if (ans == nil)
+		ans = [[self docPath] URLByAppendingPathComponent:@"Data/Application/GeometryDash/Documents"]; // since otherwise itll crash if the bookmark no existe...
+	return ans;
 }
 
 + (NSURL*)appGroupPath {

@@ -4,10 +4,16 @@ typedef void (^LCParseMachOCallback)(const char* path, struct mach_header_64* he
 
 typedef NS_ENUM(NSInteger, Store) { SideStore, AltStore, Unknown };
 
-NSString* LCParseMachO(const char* path, bool readOnly, LCParseMachOCallback callback);
 void LCPatchAddRPath(const char* path, struct mach_header_64* header);
-void LCPatchExecSlice(const char* path, struct mach_header_64* header);
-void LCPatchExecSliceWithData(NSMutableData* data, const char* tweakLoaderPath);
+// stupid objc++
+#ifdef __cplusplus
+extern "C" {
+#endif
+NSString* LCParseMachO(const char* path, bool readOnly, LCParseMachOCallback callback);
+void LCPatchExecSlice(const char* path, struct mach_header_64* header, bool withGeode);
+#ifdef __cplusplus
+}
+#endif
 void LCPatchLibrary(const char* path, struct mach_header_64* header);
 void LCChangeExecUUID(struct mach_header_64* header);
 bool checkCodeSignature(const char* path);

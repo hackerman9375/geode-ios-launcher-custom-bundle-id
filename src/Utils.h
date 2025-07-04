@@ -49,5 +49,8 @@
 + (NSData*)decryptData:(NSData*)data withKey:(NSString*)key;
 // completionHandler:(void (^)(BOOL success, NSString* error))completionHandler;
 
++ (void)accessHelper:(BOOL)urlOnly completionHandler:(void (^)(NSURL* url, BOOL success, NSString* error))completionHandler;
++ (void)bundleIPA:(UIViewController*)root;
+
 + (void)decompress:(NSString*)fileToExtract extractionPath:(NSString*)extractionPath completion:(void (^)(int))completion;
 @end

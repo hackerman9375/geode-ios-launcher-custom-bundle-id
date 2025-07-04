@@ -161,7 +161,8 @@
 	}
 
 	if (needPatch) {
-		NSString* error = LCParseMachO(execPath.UTF8String, false, ^(const char* path, struct mach_header_64* header, int fd, void* filePtr) { LCPatchExecSlice(path, header); });
+		NSString* error =
+			LCParseMachO(execPath.UTF8String, false, ^(const char* path, struct mach_header_64* header, int fd, void* filePtr) { LCPatchExecSlice(path, header, false); });
 		if (error) {
 			completetionHandler(NO, error);
 			return;

@@ -7,6 +7,9 @@
 CGFloat completedUnitCount = 0;
 CGFloat totalUnitCount = 0;
 
+CGFloat comp_completedUnitCount = 0;
+CGFloat comp_totalUnitCount = 0;
+
 static int copy_data(struct archive* ar, struct archive* aw, NSProgress* progress) {
 	int r;
 	const void* buff;
@@ -36,6 +39,18 @@ CGFloat getProgress() {
 		return 100;
 	}
 	CGFloat progress = ((completedUnitCount / totalUnitCount) * 100);
+	if (!(progress >= 0)) {
+		return 1;
+	} else {
+		return progress;
+	}
+}
+
+CGFloat getProgressCompress() {
+	if (forceProgress) {
+		return 100;
+	}
+	CGFloat progress = ((comp_completedUnitCount / comp_totalUnitCount) * 100);
 	if (!(progress >= 0)) {
 		return 1;
 	} else {
@@ -141,5 +156,152 @@ int extract(NSString* fileToExtract, NSString* extractionPath, NSProgress* progr
 	archive_write_close(ext);
 	archive_write_free(ext);
 
+	return 0;
+}
+
+// i cant be bothered to do this...
+int addFileToArchive(struct archive* write, NSString* filePath, NSString* basePath, NSProgress* progress) {
+	NSFileManager* fm = [NSFileManager defaultManager];
+
+	// Get file attributes
+	NSError* error = nil;
+	NSDictionary* attributes = [fm attributesOfItemAtPath:filePath error:&error];
+	if (!attributes) {
+		AppLog(@"Failed to get file attributes for %@: %@", filePath, error.localizedDescription);
+		return -1;
+	}
+
+	// Create archive entry
+	struct archive_entry* entry = archive_entry_new();
+
+	// Create relative path for the archive entry
+	NSString* relativePath = [filePath stringByReplacingOccurrencesOfString:basePath withString:@""];
+	if ([relativePath hasPrefix:@"/"]) {
+		relativePath = [relativePath substringFromIndex:1];
+	}
+
+	//"Payload/Cowabunga.app"
+	// relativePath = [@"Payload/GeodeHelper.app" stringByAppendingString:relativePath];
+	relativePath = [@"Payload/GD" stringByAppendingString:relativePath];
+	// relativePath = [relativePath stringByReplacingOccurrencesOfString:@"GDcom.robtop.geometryjump.app" withString:@"GeodeHelper.app"];
+	relativePath = [relativePath stringByReplacingOccurrencesOfString:@"GDcom.robtop.geometryjump.app" withString:@"GeometryJump.app"];
+	archive_entry_set_pathname(entry, relativePath.fileSystemRepresentation);
+
+	NSString* fileType = attributes[NSFileType];
+
+	if ([fileType isEqualToString:NSFileTypeDirectory]) {
+		// Directory entry
+		archive_entry_set_filetype(entry, AE_IFDIR);
+		archive_entry_set_perm(entry, 0755);
+		archive_entry_set_size(entry, 0);
+
+		// Write directory header
+		int r = archive_write_header(write, entry);
+		if (r < ARCHIVE_OK) {
+			AppLog(@"ZIP directory header error: %s", archive_error_string(write));
+			archive_entry_free(entry);
+			return -1;
+		}
+
+		// Finish directory entry (no data to write)
+		if (archive_write_finish_entry(write) < ARCHIVE_OK) {
+			AppLog(@"ZIP directory finish-entry error: %s", archive_error_string(write));
+		}
+
+	} else if ([fileType isEqualToString:NSFileTypeRegular]) {
+		// Regular file entry
+		unsigned long long fileSize = [attributes[NSFileSize] unsignedLongLongValue];
+
+		archive_entry_set_filetype(entry, AE_IFREG);
+		archive_entry_set_perm(entry, 0644);
+		archive_entry_set_size(entry, fileSize);
+
+		// Write file header
+		int r = archive_write_header(write, entry);
+		if (r < ARCHIVE_OK) {
+			AppLog(@"ZIP file header error: %s", archive_error_string(write));
+			archive_entry_free(entry);
+			return -1;
+		}
+
+		// Open and read the file
+		FILE* file = fopen(filePath.fileSystemRepresentation, "rb");
+		if (!file) {
+			AppLog(@"Failed to open file for reading: %@", filePath);
+			archive_entry_free(entry);
+			return -1;
+		}
+
+		// Write file data
+		char buffer[8192];
+		size_t bytesRead;
+		while ((bytesRead = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+			if (archive_write_data(write, buffer, bytesRead) < 0) {
+				AppLog(@"ZIP data write error: %s", archive_error_string(write));
+				fclose(file);
+				archive_entry_free(entry);
+				return -1;
+			}
+			completedUnitCount += bytesRead;
+			progress.completedUnitCount += bytesRead;
+		}
+
+		fclose(file);
+
+		// Finish file entry
+		if (archive_write_finish_entry(write) < ARCHIVE_OK) {
+			AppLog(@"ZIP file finish-entry error: %s", archive_error_string(write));
+		}
+	}
+
+	archive_entry_free(entry);
+	return 0;
+}
+
+// https://github.com/libarchive/libarchive/wiki/Examples#user-content-A_Basic_Write_Example
+int compress(NSString* directoryToCompress, NSString* zipPath, NSProgress* progress) {
+	NSFileManager* fm = [NSFileManager defaultManager];
+	forceProgress = false;
+	comp_completedUnitCount = 0;
+	comp_totalUnitCount = 0;
+
+	struct archive* write = archive_write_new();
+	archive_write_set_format_zip(write);
+	if (archive_write_open_filename(write, zipPath.fileSystemRepresentation) != ARCHIVE_OK) {
+		AppLog(@"Failed to open zip output: %@", zipPath);
+		forceProgress = true;
+		archive_write_free(write);
+		return 1;
+	}
+
+	NSString* basePath = [directoryToCompress stringByDeletingLastPathComponent];
+
+	NSDirectoryEnumerator* enumerator = [fm enumeratorAtPath:directoryToCompress];
+	NSDirectoryEnumerator* enumerator2 = [fm enumeratorAtPath:directoryToCompress];
+	NSString* file;
+
+	if (addFileToArchive(write, directoryToCompress, basePath, progress) < 0) {
+		archive_write_close(write);
+		archive_write_free(write);
+		forceProgress = true;
+		return 1;
+	}
+	while ((file = [enumerator2 nextObject])) {
+		comp_totalUnitCount++;
+	}
+	while ((file = [enumerator nextObject])) {
+		comp_completedUnitCount++;
+		NSString* fullPath = [directoryToCompress stringByAppendingPathComponent:file];
+
+		if (addFileToArchive(write, fullPath, basePath, progress) < 0) {
+			archive_write_close(write);
+			archive_write_free(write);
+			forceProgress = true;
+			return 1;
+		}
+	}
+
+	archive_write_close(write);
+	archive_write_free(write);
 	return 0;
 }

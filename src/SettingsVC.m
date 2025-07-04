@@ -1,14 +1,12 @@
 #import "AppDelegate.h"
 #import "GeodeInstaller.h"
 #import "IconView.h"
-#import "src/JITLessVC.h"
-#include "src/LCUtils/unarchive.h"
-#import "components/FileBrowserVC.h"
-// #import "src/components/DropdownView.h"
 #import "LogsView.h"
 #import "SettingsVC.h"
 #import "VerifyInstall.h"
+#import "components/FileBrowserVC.h"
 #import "components/LogUtils.h"
+#import "src/JITLessVC.h"
 #import "src/LCUtils/LCUtils.h"
 #import "src/LCUtils/Shared.h"
 #import "src/Theming.h"
@@ -101,7 +99,7 @@
 	case 1: // Gameplay
 		return 4;
 	case 2: // JIT
-		if ([Utils isSandboxed] && !([self isIOSVersionGreaterThanOrEqualTo:@"19"]) && ![[Utils getPrefs] integerForKey:@"JITLESS"]) {
+		if ([Utils isSandboxed] && !([self isIOSVersionGreaterThanOrEqualTo:@"19"]) && ![[Utils getPrefs] integerForKey:@"JITLESS"] && [Utils isDevCert]) {
 			if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 4) {
 				return 3;
 			} else if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 3) {
@@ -113,7 +111,15 @@
 		return 1;
 	case 3: // JIT-Less
 		if ([Utils isSandboxed]) {
-			return 6;
+			if ([Utils isDevCert]) {
+				return 6;
+			} else {
+				if ([[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
+					return 3;
+				} else {
+					return 7;
+				}
+			}
 		} else {
 			return 0;
 		}
@@ -124,7 +130,7 @@
 	case 6: // Credits
 		return [self.creditsArray count];
 	case 7: // Developer
-		return 17;
+		return 21;
 	default:
 		return 0;
 	}
@@ -162,7 +168,7 @@
 	UITableViewCell* cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
 	UITableViewCell* cellval1 = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
 
-	BOOL disableJITLess = ![Utils isSandboxed];
+	BOOL disableJITLess = ![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"];
 	// i wish i could case(0,0) :(
 	switch (indexPath.section) {
 	case 0:
@@ -219,19 +225,21 @@
 		} else if (indexPath.row == 2) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"gameplay.fix-rotation".loc;
-			if (![Utils isSandboxed]) {
+			if (![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
 			}
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_ROTATION"] tag:5 disable:![Utils isSandboxed]];
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_ROTATION"] tag:5
+												disable:![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]];
 			return cellval1;
 		}
 		if (indexPath.row == 3) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"gameplay.fix-black-screen".loc;
-			if (![Utils isSandboxed]) {
+			if (![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
 			}
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_BLACKSCREEN"] tag:8 disable:![Utils isSandboxed]];
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_BLACKSCREEN"] tag:8
+												disable:![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]];
 			return cellval1;
 		}
 		break;
@@ -278,7 +286,19 @@
 		break;
 	}
 	case 3: {
-		if (indexPath.row == 0) {
+		NSInteger row = indexPath.row;
+		if (![Utils isDevCert])
+			row--;
+		if (row == -1) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.textLabel.text = @"jitless.enterprise".loc;
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"] tag:16 disable:NO];
+			return cellval1;
+		} else if (row == 0 && [[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+			cell.textLabel.text = @"Launch without patching";
+			cell.textLabel.textColor = [Theming getAccentColor];
+			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (row == 0 && ![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"jitless.enable".loc;
 			if (disableJITLess) {
@@ -286,11 +306,14 @@
 			}
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"JITLESS"] tag:9 disable:disableJITLess];
 			return cellval1;
-			// TODO: check if signed on enterprise cert, if so then remove all of these because therell be another option for them
-		} else if (indexPath.row == 1) {
+		} else if (row == 1 && [[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+			cell.textLabel.text = @"Install Helper";
+			cell.textLabel.textColor = [Theming getAccentColor];
+			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (row == 1 && ![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 			cell.textLabel.text = @"jitless.diag".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 2) {
+		} else if (row == 2) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"jitless.certstatus".loc;
 			if ([LCUtils certificateData] != nil) {
@@ -323,7 +346,7 @@
 				cellval1.detailTextLabel.text = @"jitless.certstatus.notimport".loc;
 			}
 			return cellval1;
-		} else if (indexPath.row == 3) {
+		} else if (row == 3) {
 			if (![LCUtils isAppGroupAltStoreLike] && [LCUtils appGroupID] == nil) {
 				if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
 					cell.textLabel.text = @"Remove Certificate";
@@ -349,11 +372,11 @@
 				cell.selectionStyle = UITableViewCellSelectionStyleNone;
 				cell.textLabel.textColor = [UIColor systemGrayColor];
 			}
-		} else if (indexPath.row == 4) {
+		} else if (row == 4) {
 			cell.textLabel.text = @"Test JIT-Less Mode";
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 5) {
+		} else if (row == 5) {
 			cell.textLabel.text = @"Force Resign";
 			if (![[Utils getPrefs] boolForKey:@"JITLESS"]) {
 				cell.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -370,9 +393,10 @@
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7
 												disable:![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils") || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) ||
-														[[Utils getPrefs] integerForKey:@"JITLESS"]];
+														[[Utils getPrefs] integerForKey:@"JITLESS"] || [Utils isDevCert]];
 			cellval1.textLabel.text = @"advanced.manual-reopen-jit".loc;
-			if (![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils") || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"]) {
+			if (![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils") || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"] ||
+				[Utils isDevCert]) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
 			}
 			return cellval1;
@@ -493,18 +517,23 @@
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"DONT_PATCH_SAFEMODE"] tag:15 disable:NO];
 			return cellval1;
 		} else if (indexPath.row == 8) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.textLabel.text = @"Force Enterprise Mode".loc;
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FORCE_ENTERPRISE"] tag:17 disable:NO];
+			return cellval1;
+		} else if (indexPath.row == 9) {
 			cell.textLabel.text = @"developer.testbundleaccess".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 9) {
+		} else if (indexPath.row == 10) {
 			cell.textLabel.text = @"developer.importipa".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 10) {
+		} else if (indexPath.row == 11) {
 			cell.textLabel.text = @"App Reinstall".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 11) {
+		} else if (indexPath.row == 12) {
 			cell.textLabel.text = @"Copy Current Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			if ([[NSFileManager defaultManager]
@@ -514,11 +543,11 @@
 			} else {
 				cell.accessoryType = UITableViewCellAccessoryNone;
 			}
-		} else if (indexPath.row == 12) {
+		} else if (indexPath.row == 13) {
 			cell.textLabel.text = @"Patch Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 13) {
+		} else if (indexPath.row == 14) {
 			cell.textLabel.text = @"Restore Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			if (![[NSFileManager defaultManager]
@@ -528,15 +557,26 @@
 			} else {
 				cell.accessoryType = UITableViewCellAccessoryNone;
 			}
-		} else if (indexPath.row == 14) {
+		} else if (indexPath.row == 15) {
 			cell.textLabel.text = @"Clear App Logs".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 15) {
+		} else if (indexPath.row == 16) {
+			cell.textLabel.text = @"Patch & Share IPA".loc;
+			cell.textLabel.textColor = [Theming getAccentColor];
+			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (indexPath.row == 17) {
+			cell.textLabel.text = @"Restore IPA Patch".loc;
+			cell.textLabel.textColor = [Theming getAccentColor];
+			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (indexPath.row == 18) {
 			cell.textLabel.text = @"View Bundle Dir".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 16) {
+		} else if (indexPath.row == 19) {
 			cell.textLabel.text = @"View Documents Dir".loc;
+			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+		} else if (indexPath.row == 20) {
+			cell.textLabel.text = @"View Helper Dir".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		}
 		break;
@@ -561,7 +601,7 @@
 	case 1:
 		return @"gameplay".loc;
 	case 2:
-		if ([Utils isSandboxed] && !([self isIOSVersionGreaterThanOrEqualTo:@"19"]) && ![[Utils getPrefs] integerForKey:@"JITLESS"]) {
+		if ([Utils isSandboxed] && !([self isIOSVersionGreaterThanOrEqualTo:@"19"]) && ![[Utils getPrefs] integerForKey:@"JITLESS"] && [Utils isDevCert]) {
 			return @"jit".loc;
 		} else {
 			return @"";
@@ -631,7 +671,7 @@
 	case 1:
 		return @"gameplay.footer".loc;
 	case 2:
-		if (![Utils isSandboxed] || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"])
+		if (![Utils isSandboxed] || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert])
 			return @"";
 		if (NSClassFromString(@"LCSharedUtils"))
 			return @"jit.footer.livecontainer".loc;
@@ -703,6 +743,7 @@
 			break;
 		}
 		case 6: { // Check for updates
+			[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
 			if ([VerifyInstall verifyGeodeInstalled]) {
 				[[GeodeInstaller alloc] checkUpdates:_root download:YES];
 				[self dismissViewControllerAnimated:YES completion:nil];
@@ -760,6 +801,10 @@
 							}
 						});
 					}];
+				} else if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+					[self dismissViewControllerAnimated:YES completion:nil];
+					[_root.launchButton setEnabled:NO];
+					[_root bundleIPAWithPatch:YES withLaunch:YES];
 				} else {
 					NSString* openURL = [NSString stringWithFormat:@"%@://safe-mode", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
 					NSURL* url = [NSURL URLWithString:openURL];
@@ -816,8 +861,32 @@
 	} else if (indexPath.section == 3) {
 		switch (indexPath.row) {
 		case 1: { // JIT-Less diagnose
-			JITLessVC* view = [[JITLessVC alloc] init];
-			[[self navigationController] pushViewController:view animated:YES];
+			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+				JITLessVC* view = [[JITLessVC alloc] init];
+				[[self navigationController] pushViewController:view animated:YES];
+			} else {
+				[_root launchHelper:NO];
+			}
+			break;
+		}
+		case 2: {
+			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"])
+				break;
+			NSFileManager* fm = [NSFileManager defaultManager];
+			NSString* extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Helper.ipa"].path;
+			NSURL* extractionPathURL = [NSURL fileURLWithPath:extractionPath];
+			if (![fm fileExistsAtPath:extractionPath]) {
+				[Utils showError:self title:@"Helper IPA doesn't exist! Tap Launch to generate one." error:nil];
+				break;
+			}
+			UIActivityViewController* activityViewController = [[UIActivityViewController alloc] initWithActivityItems:@[ extractionPathURL ] applicationActivities:nil];
+			// not sure if this is even necessary because ive never seen anyone complain about app logs
+			if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+				activityViewController.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds), 0, 0);
+				activityViewController.popoverPresentationController.permittedArrowDirections = 0;
+			}
+			activityViewController.popoverPresentationController.sourceView = self.view;
+			[self presentViewController:activityViewController animated:YES completion:nil];
 			break;
 		}
 		case 3: { // Patch / Import
@@ -962,27 +1031,11 @@
 		NSFileManager* fm = [NSFileManager defaultManager];
 		NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 		switch (indexPath.row) {
-		case 8: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
+		case 9: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
 			[Utils showNotice:self title:[Utils getGDDocPath]];
-			// NSFileManager* fm = [NSFileManager defaultManager];
-			/*NSURL *infoPath;
-			if ([fm fileExistsAtPath:@""]) {
-				NSMutableDictionary* infoDict = [NSMutableDictionary dictionaryWithContentsOfURL:infoPath];
-				if (!infoDict)
-					return;
-
-				infoDict[@"CFBundleExecutable"] = exec;
-				[infoDict writeToURL:infoPath error:error];
-			}*/
-			/*NSString* fileToExtract = [[LCPath bundlePath] URLByAppendingPathComponent:@"Pirata.app"].path;
-			NSString* extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Pirata.ipa"].path;
-			AppLog(@"Starting compression of %@ to %@", fileToExtract, extractionPath);
-			[[NSFileManager defaultManager] createFileAtPath:extractionPath contents:nil attributes:nil];
-			int res = compress(fileToExtract, extractionPath, nil);
-			AppLog(@"res: %i", res);*/
 			break;
 		}
-		case 9: { // Import IPA
+		case 10: { // Import IPA
 			_isImportIPA = true;
 			UTType* type = [UTType typeWithIdentifier:@"com.apple.itunes.ipa"];
 			if (!type) {
@@ -1002,14 +1055,14 @@
 			[self presentViewController:picker animated:YES completion:nil];
 			break;
 		}
-		case 10: { // TS App Reinstall
+		case 11: { // TS App Reinstall
 			NSURL* url = [NSURL URLWithString:[[NSUserDefaults standardUserDefaults] stringForKey:@"DEV_REINSTALL_ADDR"]];
 			if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
 				[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
 			}
 			break;
 		}
-		case 11: { // Copy Current Binary
+		case 12: { // Copy Current Binary
 			if ([fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				break;
 			} else {
@@ -1024,7 +1077,7 @@
 			}
 			break;
 		}
-		case 12: { // Patch
+		case 13: { // Patch
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				[Utils showError:self title:@"Original Binary not found." error:nil];
 			} else {
@@ -1032,7 +1085,7 @@
 					withHandlerAddress:0x88d000
 								 force:YES
 						  withSafeMode:NO
-					  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) {
+					  withEntitlements:YES completionHandler:^(BOOL success, NSString* error) {
 						  dispatch_async(dispatch_get_main_queue(), ^{
 							  if (success) {
 								  [Utils showNotice:self title:@"Patched!"];
@@ -1044,7 +1097,7 @@
 			}
 			break;
 		}
-		case 13: { // Restore Binary
+		case 14: { // Restore Binary
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				break;
 			} else {
@@ -1064,25 +1117,132 @@
 			}
 			break;
 		}
-		case 14: { // Clear App Log
+		case 15: { // Clear App Log
 			[LogUtils clearLogs:YES];
 			[Utils showNotice:self title:@"App Logs Cleared!"];
 			break;
 		}
-		case 15: { // View Bundle Dir
+		case 16: { // Patch & Share IPA
+			NSFileManager* fm = [NSFileManager defaultManager];
+			NSString* infoPath = [bundlePath URLByAppendingPathComponent:@"Info.plist"].path;
+			NSString* infoBackupPath = [bundlePath URLByAppendingPathComponent:@"InfoBackup.plist"].path;
+			NSError* err;
+			if (![fm fileExistsAtPath:infoBackupPath]) {
+				[fm copyItemAtPath:infoPath toPath:infoBackupPath error:&err];
+				if (err) {
+					[Utils showError:self title:@"Failed to copy Info.plist" error:err];
+					break;
+				}
+			}
+			if ([fm fileExistsAtPath:infoBackupPath]) {
+				NSMutableDictionary* infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:infoBackupPath];
+				if (!infoDict)
+					break;
+
+				infoDict[@"CFBundleDisplayName"] = @"Geode Helper";
+				infoDict[@"CFBundleIdentifier"] = @"com.geode.helper";
+				infoDict[@"GCSupportsControllerUserInteraction"] = @YES;
+				infoDict[@"GCSupportsGameMode"] = @YES;
+				infoDict[@"LSApplicationCategoryType"] = @"public.app-category.games";
+				infoDict[@"CADisableMinimumFrameDurationOnPhone"] = @YES;
+				infoDict[@"UISupportsDocumentBrowser"] = @YES; // is this necessary? dunno
+				infoDict[@"UIFileSharingEnabled"] = @YES;
+				infoDict[@"LSSupportsOpeningDocumentsInPlace"] = @YES;
+				infoDict[@"MinimumOSVersion"] = @"13.0";
+
+				// permissions
+				infoDict[@"NSMicrophoneUsageDescription"] = @"A mod you are using is requesting this permission.";
+				infoDict[@"NSCameraUsageDescription"] = @"A mod you are using is requesting this permission.";
+				[infoDict writeToFile:infoPath atomically:YES];
+			}
+			NSString* docPath = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject.path;
+			NSString* tweakPath = [NSString stringWithFormat:@"%@/Tweaks/Geode.ios.dylib", docPath];
+			NSString* tweakBundlePath = [bundlePath URLByAppendingPathComponent:@"Geode.ios.dylib"].path;
+			if ([fm fileExistsAtPath:tweakBundlePath]) {
+				NSError* removeError;
+				[fm removeItemAtPath:tweakBundlePath error:&removeError];
+				if (removeError) {
+					[Utils showError:self title:@"Failed to delete old Geode library" error:removeError];
+					break;
+				}
+			}
+			NSString* tweakLoaderPath = [bundlePath URLByAppendingPathComponent:@"EnterpriseLoader.dylib"].path;
+			if (![fm fileExistsAtPath:tweakLoaderPath]) {
+				AppLog(@"invokeAppMain - Creating TweakLoader.dylib symlink");
+				NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"EnterpriseLoader.dylib"];
+				[fm copyItemAtPath:target toPath:tweakLoaderPath error:nil];
+			}
+			[fm copyItemAtPath:tweakPath toPath:tweakBundlePath error:&err];
+			if (err) {
+				[Utils showError:self title:@"Failed to copy Geode library" error:err];
+				break;
+			}
+			[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
+				withHandlerAddress:0x88d000
+							 force:YES
+					  withSafeMode:YES
+				  withEntitlements:YES completionHandler:^(BOOL success, NSString* error) {
+					  dispatch_async(dispatch_get_main_queue(), ^{
+						  if (success) {
+							  [Utils bundleIPA:self];
+						  } else {
+							  [Utils showError:self title:error error:nil];
+						  }
+					  });
+				  }];
+
+			break;
+		}
+		case 17: { // Restore IPA Patch
+			NSFileManager* fm = [NSFileManager defaultManager];
+			NSString* infoPath = [bundlePath URLByAppendingPathComponent:@"Info.plist"].path;
+			NSString* infoBackupPath = [bundlePath URLByAppendingPathComponent:@"InfoBackup.plist"].path;
+			if ([fm fileExistsAtPath:infoBackupPath]) {
+				NSMutableDictionary* infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:infoBackupPath];
+				[infoDict writeToFile:infoPath atomically:YES];
+			} else {
+				[Utils showError:self title:@"InfoBackup.plist missing!" error:nil];
+				break;
+			}
+			[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
+				withHandlerAddress:0x88d000
+							 force:YES
+					  withSafeMode:YES
+				  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) {
+					  dispatch_async(dispatch_get_main_queue(), ^{
+						  if (success) {
+							  [Utils showNotice:self title:@"Binary restored and Info.plist restored! Launching should be safe now..."];
+						  } else {
+							  [Utils showError:self title:error error:nil];
+						  }
+					  });
+				  }];
+
+			break;
+		}
+		case 18: { // View Bundle Dir
 			FileBrowserViewController* browser = [[FileBrowserViewController alloc] initWithPath:[[NSBundle mainBundle] bundlePath]];
-			// Present in navigation controller
 			UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:browser];
 			[self presentViewController:navController animated:YES completion:nil];
 			break;
 		}
-		case 16: { // View Doc Dir
+		case 19: { // View Doc Dir
 			FileBrowserViewController* browser = [[FileBrowserViewController alloc] init];
-			// Present in navigation controller
 			UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:browser];
 			[self presentViewController:navController animated:YES completion:nil];
 			break;
 		}
+		case 20: // View Other Group Dir
+			[Utils accessHelper:YES completionHandler:^(NSURL* url, BOOL success, NSString* error) {
+				if (success) {
+					FileBrowserViewController* browser = [[FileBrowserViewController alloc] initWithPath:url.path];
+					UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:browser];
+					[self presentViewController:navController animated:YES completion:nil];
+				} else {
+					[Utils showError:self title:error error:nil];
+				}
+			}];
+			break;
 		}
 	}
 
@@ -1190,6 +1350,59 @@
 		break;
 	case 15:
 		[Utils toggleKey:@"DONT_PATCH_SAFEMODE"];
+		break;
+	case 16: {
+		if ([sender isOn]) {
+			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Warning" message:@"jitless.enterprise.warning".loc preferredStyle:UIAlertControllerStyleAlert];
+			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"Yes I do" style:UIAlertActionStyleDestructive handler:^(UIAlertAction* _Nonnull action) {
+				[Utils toggleKey:@"ENTERPRISE_MODE"];
+				[self.tableView reloadData];
+			}];
+			UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+			[alert addAction:okAction];
+			[alert addAction:cancelAction];
+			[self presentViewController:alert animated:YES completion:nil];
+		} else {
+			[Utils toggleKey:@"ENTERPRISE_MODE"];
+			[[Utils getPrefs] setBool:NO forKey:@"IS_COMPRESSING_IPA"];
+			[[Utils getPrefs] setBool:NO forKey:@"HAS_IMPORTED_BOOKMARK"];
+			[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
+			NSFileManager* fm = [NSFileManager defaultManager];
+			NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
+			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
+				AppLog(@"Not restoring binary.");
+			} else {
+				NSError* err;
+				[fm removeItemAtURL:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] error:&err];
+				if (err) {
+					AppLog(@"Couldn't remove patched binary: %@", err);
+				} else {
+					[fm copyItemAtURL:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] toURL:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] error:&err];
+					if (err) {
+						AppLog(@"Couldn't copy binary: %@", err);
+					} else {
+						[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
+						AppLog(@"Restored original binary.");
+					}
+				}
+			}
+			[fm removeItemAtPath:[[fm temporaryDirectory] URLByAppendingPathComponent:@"Helper.ipa"].path error:nil];
+			NSString* infoPath = [bundlePath URLByAppendingPathComponent:@"Info.plist"].path;
+			NSString* infoBackupPath = [bundlePath URLByAppendingPathComponent:@"InfoBackup.plist"].path;
+			if ([fm fileExistsAtPath:infoBackupPath]) {
+				NSMutableDictionary* infoDict = [NSMutableDictionary dictionaryWithContentsOfFile:infoBackupPath];
+				[infoDict writeToFile:infoPath atomically:YES];
+				[Utils showNotice:self title:@"Restored."];
+			} else {
+				[Utils showError:self title:@"InfoBackup.plist missing!" error:nil];
+			}
+		}
+		[self.tableView reloadData];
+		break;
+	}
+	case 17:
+		[Utils toggleKey:@"FORCE_ENTERPRISE"];
+		[self.tableView reloadData];
 		break;
 	}
 }
