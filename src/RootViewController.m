@@ -983,14 +983,31 @@
 
 - (void)loadFishAnimation {
 	NSMutableArray* fishFrames = [[NSMutableArray alloc] init];
+	UIImage *spriteSheet = [UIImage imageNamed:@"fish_spritesheet"];
+	if (!spriteSheet) {
+		AppLog(@"Failed to load spritesheet");
+		return;
+	}
+	int columns = 11;
+	int rows = 13;
+	CGFloat frameWidth = spriteSheet.size.width / columns;
+	CGFloat frameHeight = spriteSheet.size.height / rows;
 	for (int frameIndex = 0; frameIndex <= 142; frameIndex++) {
-		NSString* frameName = [NSString stringWithFormat:@"fish/frame_%03d", frameIndex];
-		UIImage* frameImage = [UIImage imageNamed:frameName];
+		int col = frameIndex % columns;
+		int row = frameIndex / columns;
+		CGRect frameRect = CGRectMake(col * frameWidth, 
+									 row * frameHeight, 
+									 frameWidth, 
+									 frameHeight);
+		CGImageRef frameImageRef = CGImageCreateWithImageInRect(spriteSheet.CGImage, frameRect);
+		UIImage *frameImage = [UIImage imageWithCGImage:frameImageRef];
+		CGImageRelease(frameImageRef);
+		
 		if (frameImage) {
 			[fishFrames addObject:frameImage];
 		}
 	}
-	self.cachedFishAnimation = [[UIImage animatedImageWithImages:fishFrames duration:5.0] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+	self.cachedFishAnimation = [UIImage animatedImageWithImages:fishFrames duration:5.0];
 }
 
 - (void)startFishRain {
