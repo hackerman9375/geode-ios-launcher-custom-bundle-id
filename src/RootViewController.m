@@ -630,13 +630,8 @@
 			[self.launchButton setEnabled:YES];
 			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s2".loc
 																	preferredStyle:UIAlertControllerStyleAlert];
-			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-                UTType *folderType = [UTType typeWithIdentifier:UTTypeFolder.identifier];
-                if (!folderType) {
-                    folderType = [UTType typeWithIdentifier:@"public.folder"];
-                }
-				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[folderType]
-																													 asCopy:YES];
+			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.folder"] inMode:UIDocumentPickerModeOpen];
 				picker.delegate = self;
 				picker.allowsMultipleSelection = NO;
 				[self presentViewController:picker animated:YES completion:nil];
@@ -864,11 +859,11 @@
 			[self presentViewController:alert animated:YES completion:nil];
 		} else {
 			[self.launchButton setEnabled:YES];
+			AppLog(@"AA");
 			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s2".loc
 																	preferredStyle:UIAlertControllerStyleAlert];
 			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ [UTType typeWithIdentifier:@"public.folder"] ]
-																													 asCopy:NO];
+                UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.folder"] inMode:UIDocumentPickerModeOpen];
 				picker.delegate = self;
 				picker.allowsMultipleSelection = NO;
 				[self presentViewController:picker animated:YES completion:nil];
@@ -883,9 +878,8 @@
 				[self.launchButton setEnabled:YES];
 				UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s2".loc
 																		preferredStyle:UIAlertControllerStyleAlert];
-				UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-					UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ [UTType typeWithIdentifier:@"public.folder"] ]
-																														 asCopy:NO];
+				UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+					UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.folder"] inMode:UIDocumentPickerModeOpen];
 					picker.delegate = self;
 					picker.allowsMultipleSelection = NO;
 					[self presentViewController:picker animated:YES completion:nil];
