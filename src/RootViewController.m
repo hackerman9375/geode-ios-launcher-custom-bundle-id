@@ -631,8 +631,12 @@
 			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s2".loc
 																	preferredStyle:UIAlertControllerStyleAlert];
 			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[ [UTType typeWithIdentifier:@"public.folder"] ]
-																													 asCopy:NO];
+                UTType *folderType = [UTType typeWithIdentifier:UTTypeFolder.identifier];
+                if (!folderType) {
+                    folderType = [UTType typeWithIdentifier:@"public.folder"];
+                }
+				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[folderType]
+																													 asCopy:YES];
 				picker.delegate = self;
 				picker.allowsMultipleSelection = NO;
 				[self presentViewController:picker animated:YES completion:nil];
