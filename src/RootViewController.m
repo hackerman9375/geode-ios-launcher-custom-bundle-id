@@ -624,49 +624,78 @@
 			  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) { completionHandler(success, error); }];
 	}
 }
+- (void)launchHelper3 {
+	NSURL* url = [NSURL URLWithString:@"geode-helper://relaunch"];
+	if ([[UIApplication sharedApplication] canOpenURL:url]) {
+		[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+	} else {
+		UIAlertController* resultAlert = [UIAlertController alertControllerWithTitle:@"Error" message:@"launcher.error.enterprise-launch".loc
+																	  preferredStyle:UIAlertControllerStyleAlert];
+		UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
+		[resultAlert addAction:okAction];
+		[self presentViewController:resultAlert animated:YES completion:nil];
+	}
+}
+- (void)launchHelper2:(BOOL)safeMode {
+	NSString* env;
+	NSString* launchArgs = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
+	if (launchArgs && [launchArgs length] > 1) {
+		env = launchArgs;
+	}
+	if (safeMode) {
+		env = @"--geode:use-common-handler-offset=88d000 --geode:safe-mode";
+	} else {
+		env = @"--geode:use-common-handler-offset=88d000";
+	}
+	NSString* b64 = [[env dataUsingEncoding:NSUTF8StringEncoding] base64EncodedStringWithOptions:0];
+	NSMutableString* encodedUrl = [b64 mutableCopy];
+	[encodedUrl replaceOccurrencesOfString:@"+" withString:@"-" options:0 range:NSMakeRange(0, encodedUrl.length)];
+	[encodedUrl replaceOccurrencesOfString:@"/" withString:@"_" options:0 range:NSMakeRange(0, encodedUrl.length)];
+	while ([encodedUrl hasSuffix:@"="]) {
+		[encodedUrl deleteCharactersInRange:NSMakeRange(encodedUrl.length - 1, 1)];
+	}
+	NSString* openURL = [NSString stringWithFormat:@"geode-helper://launch?args=%@", encodedUrl];
+	NSURL* url = [NSURL URLWithString:openURL];
+	if ([[UIApplication sharedApplication] canOpenURL:url]) {
+		[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+	} else {
+		UIAlertController* resultAlert = [UIAlertController alertControllerWithTitle:@"Error" message:@"launcher.error.enterprise-launch".loc
+																	  preferredStyle:UIAlertControllerStyleAlert];
+		UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
+		[resultAlert addAction:okAction];
+		[self presentViewController:resultAlert animated:YES completion:nil];
+	}
+}
 - (void)launchHelper:(BOOL)safeMode {
-	[Utils accessHelper:NO completionHandler:^(NSURL* url, BOOL success, NSString* error) {
-		if (!success && [error isEqualToString:@"Stale"]) {
-			[self.launchButton setEnabled:YES];
-			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s2".loc
-																	preferredStyle:UIAlertControllerStyleAlert];
-			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.folder"] inMode:UIDocumentPickerModeOpen];
-				picker.delegate = self;
-				picker.allowsMultipleSelection = NO;
-				[self presentViewController:picker animated:YES completion:nil];
-			}];
-			[alert addAction:okAction];
-			[self presentViewController:alert animated:YES completion:nil];
-		} else if (!success) {
-			[Utils showError:self title:error error:nil];
-		} else if (success) {
-			NSString* geode_env = [url.path stringByAppendingString:@"/game/geode/unzipped/launch-args.txt"];
-
-			NSString* env;
-			NSString* launchArgs = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
-			if (launchArgs && [launchArgs length] > 1) {
-				env = launchArgs;
-			}
-			if (safeMode) {
-				env = @"--geode:use-common-handler-offset=88d000 --geode:safe-mode";
-			} else {
-				env = @"--geode:use-common-handler-offset=88d000";
-			}
-			NSFileManager* fm = [NSFileManager defaultManager];
-			[fm createFileAtPath:geode_env contents:[env dataUsingEncoding:NSUTF8StringEncoding] attributes:@{}];
-			BOOL canLaunch = [VerifyInstall canLaunchAppWithBundleID:@"com.geode.helper"];
-			if (!canLaunch) {
-				UIAlertController* resultAlert = [UIAlertController alertControllerWithTitle:@"Error" message:@"launcher.error.enterprise-launch".loc
-																			  preferredStyle:UIAlertControllerStyleAlert];
-				UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
-				[resultAlert addAction:okAction];
-				[self presentViewController:resultAlert animated:YES completion:nil];
-				return;
-			}
-			exit(0);
-		}
-	}];
+	NSString* env;
+	NSString* launchArgs = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
+	if (launchArgs && [launchArgs length] > 1) {
+		env = launchArgs;
+	}
+	if (safeMode) {
+		env = @"--geode:use-common-handler-offset=88d000 --geode:safe-mode";
+	} else {
+		env = @"--geode:use-common-handler-offset=88d000";
+	}
+	NSString* b64 = [[env dataUsingEncoding:NSUTF8StringEncoding] base64EncodedStringWithOptions:0];
+	NSMutableString* encodedUrl = [b64 mutableCopy];
+	[encodedUrl replaceOccurrencesOfString:@"+" withString:@"-" options:0 range:NSMakeRange(0, encodedUrl.length)];
+	[encodedUrl replaceOccurrencesOfString:@"/" withString:@"_" options:0 range:NSMakeRange(0, encodedUrl.length)];
+	while ([encodedUrl hasSuffix:@"="]) {
+		[encodedUrl deleteCharactersInRange:NSMakeRange(encodedUrl.length - 1, 1)];
+	}
+	NSString* openURL = [NSString stringWithFormat:@"geode-helper://check?safe=%d&callback=%@&args=%@", safeMode,
+												   NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0], encodedUrl];
+	NSURL* url = [NSURL URLWithString:openURL];
+	if ([[UIApplication sharedApplication] canOpenURL:url]) {
+		[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+	} else {
+		UIAlertController* resultAlert = [UIAlertController alertControllerWithTitle:@"Error" message:@"launcher.error.enterprise-launch".loc
+																	  preferredStyle:UIAlertControllerStyleAlert];
+		UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
+		[resultAlert addAction:okAction];
+		[self presentViewController:resultAlert animated:YES completion:nil];
+	}
 }
 - (BOOL)bundleIPAWithPatch:(BOOL)safeMode withLaunch:(BOOL)launch {
 	[UIApplication sharedApplication].idleTimerDisabled = YES;
@@ -731,16 +760,14 @@
 		}
 		ipadPrimaryIconDict[@"CFBundleIconFiles"] = iconFiles2;
 
+		// uri scheme
+		infoDict[@"LSApplicationQueriesSchemes"] = @[ @"geode-helper" ];
+		NSDictionary* urlTypeDict = @{ @"CFBundleURLName" : @"com.geode.helper.urlscheme", @"CFBundleURLSchemes" : @[ @"geode-helper" ] };
+		infoDict[@"CFBundleURLTypes"] = @[ urlTypeDict ];
+
 		[infoDict writeToFile:infoPath atomically:YES];
 
 		if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"HelperIcon60x60@2x.png"].path]) {
-			//[fm moveItemAtURL:[bundlePath URLByAppendingPathComponent:@"AppIcon60x60@2x.png"] toURL:[bundlePath URLByAppendingPathComponent:@"Old-AppIcon60x60@2x.png"]
-			//error:nil]; [fm moveItemAtURL:[bundlePath URLByAppendingPathComponent:@"AppIcon76x76@2x~ipad.png"] toURL:[bundlePath
-			//URLByAppendingPathComponent:@"Old-AppIcon76x76@2x~ipad.png"] error:nil]; [fm copyItemAtPath:[[[NSBundle mainBundle] resourcePath]
-			//stringByAppendingPathComponent:@"GD/AppIcon76x76@2x~ipad.png"] toPath:[bundlePath URLByAppendingPathComponent:@"AppIcon76x76@2x~ipad.png"].path error:nil]; [fm
-			//copyItemAtPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"GD/AppIcon60x60@2x.png"] toPath:[bundlePath
-			//URLByAppendingPathComponent:@"AppIcon60x60@2x.png"].path error:nil];
-
 			[fm copyItemAtPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"GD/AppIcon76x76@2x~ipad.png"]
 						toPath:[bundlePath URLByAppendingPathComponent:@"HelperIcon76x76@2x~ipad.png"].path
 						 error:nil];
@@ -846,8 +873,8 @@
 		}
 		return;
 	}
-	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"] && ![[Utils getPrefs] boolForKey:@"HAS_IMPORTED_BOOKMARK"]) {
-		NSFileManager* fm = [NSFileManager defaultManager];
+	NSFileManager* fm = [NSFileManager defaultManager];
+	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 		if (![fm fileExistsAtPath:[[fm temporaryDirectory] URLByAppendingPathComponent:@"Helper.ipa"].path]) {
 			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s1".loc
 																	preferredStyle:UIAlertControllerStyleAlert];
@@ -858,39 +885,8 @@
 			[alert addAction:cancelAction];
 			[self presentViewController:alert animated:YES completion:nil];
 		} else {
-			[self.launchButton setEnabled:YES];
-			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s2".loc
-																	preferredStyle:UIAlertControllerStyleAlert];
-			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-				UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.folder"] inMode:UIDocumentPickerModeOpen];
-				picker.delegate = self;
-				picker.allowsMultipleSelection = NO;
-				[self presentViewController:picker animated:YES completion:nil];
-			}];
-			[alert addAction:okAction];
-			[self presentViewController:alert animated:YES completion:nil];
+			[self bundleIPAWithPatch:NO withLaunch:YES];
 		}
-		return;
-	} else if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
-		[Utils accessHelper:YES completionHandler:^(NSURL* url, BOOL success, NSString* error) {
-			if (!success && [error isEqualToString:@"Stale"]) {
-				[self.launchButton setEnabled:YES];
-				UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"launcher.notice.enterprise.s2".loc
-																		preferredStyle:UIAlertControllerStyleAlert];
-				UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-					UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.folder"] inMode:UIDocumentPickerModeOpen];
-					picker.delegate = self;
-					picker.allowsMultipleSelection = NO;
-					[self presentViewController:picker animated:YES completion:nil];
-				}];
-				[alert addAction:okAction];
-				[self presentViewController:alert animated:YES completion:nil];
-			} else if (!success) {
-				[Utils showError:self title:error error:nil];
-			} else if (success) {
-				[self bundleIPAWithPatch:NO withLaunch:YES];
-			}
-		}];
 		return;
 	}
 	if (![Utils isSandboxed]) {
@@ -980,7 +976,7 @@
 
 - (void)loadFishAnimation {
 	NSMutableArray* fishFrames = [[NSMutableArray alloc] init];
-	UIImage *spriteSheet = [UIImage imageNamed:@"fish_spritesheet"];
+	UIImage* spriteSheet = [UIImage imageNamed:@"fish_spritesheet"];
 	if (!spriteSheet) {
 		AppLog(@"Failed to load spritesheet");
 		return;
@@ -992,14 +988,11 @@
 	for (int frameIndex = 0; frameIndex <= 142; frameIndex++) {
 		int col = frameIndex % columns;
 		int row = frameIndex / columns;
-		CGRect frameRect = CGRectMake(col * frameWidth, 
-									 row * frameHeight, 
-									 frameWidth, 
-									 frameHeight);
+		CGRect frameRect = CGRectMake(col * frameWidth, row * frameHeight, frameWidth, frameHeight);
 		CGImageRef frameImageRef = CGImageCreateWithImageInRect(spriteSheet.CGImage, frameRect);
-		UIImage *frameImage = [UIImage imageWithCGImage:frameImageRef];
+		UIImage* frameImage = [UIImage imageWithCGImage:frameImageRef];
 		CGImageRelease(frameImageRef);
-		
+
 		if (frameImage) {
 			[fishFrames addObject:frameImage];
 		}

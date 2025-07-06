@@ -127,8 +127,73 @@ static NSString* certPassword = nil;
 		return YES;
 	}
 
-	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+	if ([url.host isEqualToString:@"launchent"]) {
+		AppLog(@"force open helper3");
+		[((RootViewController*)self.window.rootViewController) launchHelper3];
+		return YES;
+	}
+	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"] && ![url.host isEqualToString:@"import"]) {
 		[Utils showNoticeGlobal:@"Any app scheme is not supported. This includes restarting Geode."];
+        return YES;
+	} else if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"] && [url.host isEqualToString:@"import"]) {
+		NSFileManager* fm = [NSFileManager defaultManager];
+		// yeah i could optimize it but...
+		NSURL* dataPath = [[LCPath docPath] URLByAppendingPathComponent:@"shared"];
+		NSError* err;
+		[fm removeItemAtURL:dataPath error:&err];
+		[fm createDirectoryAtURL:dataPath withIntermediateDirectories:YES attributes:nil error:&err];
+		AppLog(@"an error %@", err);
+		NSURLComponents* components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+		__block BOOL needsPatch = NO;
+		__block BOOL hasError = NO;
+		for (NSURLQueryItem* item in components.queryItems) {
+			if ([item.name isEqualToString:@"data"]) {
+				NSMutableString* encodedUrl = [item.value mutableCopy];
+				[encodedUrl replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, encodedUrl.length)];
+				[encodedUrl replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, encodedUrl.length)];
+				// padding go brrr
+				while (encodedUrl.length % 4 != 0) {
+					[encodedUrl appendString:@"="];
+				}
+				NSData* zipData = [[NSData alloc] initWithBase64EncodedString:encodedUrl options:0];
+				if (zipData) {
+					[zipData writeToFile:[[fm temporaryDirectory] URLByAppendingPathComponent:@"tmp.zip"].path atomically:YES];
+					[Utils decompress:[[fm temporaryDirectory] URLByAppendingPathComponent:@"tmp.zip"].path extractionPath:[LCPath dataPath].path completion:^(int decompError) {
+						dispatch_async(dispatch_get_main_queue(), ^{
+							if (decompError != 0) {
+								[Utils showErrorGlobal:[NSString stringWithFormat:@"Decompressing ZIP for mods failed.\nStatus Code: %d\nView app logs for more information.",
+																				  decompError]
+												 error:nil];
+								hasError = YES;
+								return AppLog(@"Error trying to decompress ZIP for tmp.zip: (Code %@)", decompError);
+							}
+						});
+					}];
+				}
+			} else if ([item.name isEqualToString:@"force"]) { // if it exists in binaries dir
+				if ([[Utils getPrefs] boolForKey:@"DONE_FORCEPATCH"]) {
+					[[Utils getPrefs] setBool:NO forKey:@"DONE_FORCEPATCH"];
+					needsPatch = YES;
+				} else {
+					AppLog(@"Force patching is enabled!");
+					[[Utils getPrefs] setBool:YES forKey:@"DONE_FORCEPATCH"];
+					[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
+					needsPatch = YES;
+				}
+			} else if ([item.name isEqualToString:@"dontCallback"]) {
+				hasError = YES;
+			}
+		}
+		if (!hasError) {
+			if (needsPatch) {
+				[Utils showNoticeGlobal:@"launcher.notice.enterprise.s3".loc];
+				[[((RootViewController*)self.window.rootViewController) launchButton] setEnabled:YES];
+			} else {
+				AppLog(@"force open helper3");
+				// this is funny
+				[((RootViewController*)self.window.rootViewController) launchHelper3];
+			}
+		}
 		return YES;
 	}
 	if ([url.host isEqualToString:@"open-web-page"]) {
@@ -144,6 +209,7 @@ static NSString* certPassword = nil;
 				}
 			}
 		}
+		return YES;
 	} else if ([url.host isEqualToString:@"geode-launch"] || [url.host isEqualToString:@"launch"] || [url.host isEqualToString:@"relaunch"]) {
 		[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 		[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
@@ -187,12 +253,14 @@ static NSString* certPassword = nil;
 				[Utils showErrorGlobal:[NSString stringWithFormat:@"launcher.error.gd".loc, @"launcher.error.app-uri".loc] error:nil];
 			}
 		}
+		return YES;
 	} else if ([url.host isEqualToString:@"safe-mode"]) {
 		AppLog(@"Launching in Safe Mode");
 		[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 		[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 		[[Utils getPrefs] setBool:YES forKey:@"safemode"];
 		[LCUtils launchToGuestApp];
+		return YES;
 	} else if ([url.host isEqualToString:@"certificate"]) {
 		NSURLComponents* components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
 		if (components) {
@@ -212,6 +280,7 @@ static NSString* certPassword = nil;
 				}
 			}
 		}
+		return YES;
 	}
 	return NO;
 }

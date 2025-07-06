@@ -305,3 +305,138 @@ int compress(NSString* directoryToCompress, NSString* zipPath, NSProgress* progr
 	archive_write_free(write);
 	return 0;
 }
+
+// == Enterprise Mode only == //
+// i cant be bothered to do this...
+int addFileToArchiveEnt(struct archive* write, NSString* filePath, NSString* basePath, BOOL includeData) {
+	NSFileManager* fm = [NSFileManager defaultManager];
+	NSError* error = nil;
+	NSDictionary* attributes = [fm attributesOfItemAtPath:filePath error:&error];
+	if (!attributes) {
+		NSLog(@"[EnterpriseLoader] Failed to get file attributes for %@: %@", filePath, error.localizedDescription);
+		return -1;
+	}
+	struct archive_entry* entry = archive_entry_new();
+	NSString* relativePath = [filePath stringByReplacingOccurrencesOfString:basePath withString:@""];
+	if ([relativePath hasPrefix:@"/"]) {
+		relativePath = [relativePath substringFromIndex:1];
+	}
+	archive_entry_set_pathname(entry, relativePath.fileSystemRepresentation);
+	NSString* fileType = attributes[NSFileType];
+	if ([fileType isEqualToString:NSFileTypeDirectory]) {
+		archive_entry_set_filetype(entry, AE_IFDIR);
+		archive_entry_set_perm(entry, 0755);
+		archive_entry_set_size(entry, 0);
+		int r = archive_write_header(write, entry);
+		if (r < ARCHIVE_OK) {
+			NSLog(@"[EnterpriseLoader] ZIP directory header error: %s", archive_error_string(write));
+			archive_entry_free(entry);
+			return -1;
+		}
+		if (archive_write_finish_entry(write) < ARCHIVE_OK) {
+			NSLog(@"[EnterpriseLoader] ZIP directory finish-entry error: %s", archive_error_string(write));
+		}
+	} else if ([fileType isEqualToString:NSFileTypeRegular]) {
+		unsigned long long fileSize = includeData ? [attributes[NSFileSize] unsignedLongLongValue] : 0;
+		archive_entry_set_filetype(entry, AE_IFREG);
+		archive_entry_set_perm(entry, 0644);
+		archive_entry_set_size(entry, fileSize);
+		int r = archive_write_header(write, entry);
+		if (r < ARCHIVE_OK) {
+			NSLog(@"[EnterpriseLoader] ZIP file header error: %s", archive_error_string(write));
+			archive_entry_free(entry);
+			return -1;
+		}
+		if (includeData) {
+			FILE* file = fopen(filePath.fileSystemRepresentation, "rb");
+			if (!file) {
+				NSLog(@"[EnterpriseLoader] Failed to open file for reading: %@", filePath);
+				archive_entry_free(entry);
+				return -1;
+			}
+			char buffer[8192];
+			size_t bytesRead;
+			while ((bytesRead = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+				if (archive_write_data(write, buffer, bytesRead) < 0) {
+					NSLog(@"[EnterpriseLoader] ZIP data write error: %s", archive_error_string(write));
+					fclose(file);
+					archive_entry_free(entry);
+					return -1;
+				}
+			}
+			fclose(file);
+		}
+		if (archive_write_finish_entry(write) < ARCHIVE_OK) {
+			NSLog(@"[EnterpriseLoader] ZIP file finish-entry error: %s", archive_error_string(write));
+		}
+	}
+	archive_entry_free(entry);
+	return 0;
+}
+
+// https://github.com/libarchive/libarchive/wiki/Examples#user-content-A_Basic_Write_Example
+int compressEnt(NSString* docPath, NSString* zipPath, BOOL* force) {
+	NSFileManager* fm = [NSFileManager defaultManager];
+	NSMutableArray<NSDictionary*>* files = [NSMutableArray array];
+
+	NSString* logsDir = [docPath stringByAppendingPathComponent:@"game/geode/logs"];
+	NSArray<NSString*>* logsContents = [fm contentsOfDirectoryAtPath:logsDir error:nil];
+	for (NSString* fname in logsContents) {
+		NSString* full = [logsDir stringByAppendingPathComponent:fname];
+		[files addObject:@{@"path" : full, @"includeData" : @YES}];
+	}
+	NSString* crashLogsDir = [docPath stringByAppendingPathComponent:@"game/geode/crashlogs"];
+	NSArray<NSString*>* crashLogsContents = [fm contentsOfDirectoryAtPath:crashLogsDir error:nil];
+	for (NSString* fname in crashLogsContents) {
+		NSString* full = [crashLogsDir stringByAppendingPathComponent:fname];
+		[files addObject:@{@"path" : full, @"includeData" : @YES}];
+	}
+	NSString* zmodsDir = [docPath stringByAppendingPathComponent:@"game/geode/mods"];
+	NSArray<NSString*>* zmodsContents = [fm contentsOfDirectoryAtPath:zmodsDir error:nil];
+	for (NSString* fname in zmodsContents) {
+		NSString* full = [zmodsDir stringByAppendingPathComponent:fname];
+		[files addObject:@{@"path" : full, @"includeData" : @NO}];
+	}
+	NSString* binsDir = [docPath stringByAppendingPathComponent:@"game/geode/unzipped/binaries"];
+	NSArray<NSString*>* binsContents = [fm contentsOfDirectoryAtPath:binsDir error:nil];
+	for (NSString* fname in binsContents) {
+		*force = YES;
+		NSString* full = [binsDir stringByAppendingPathComponent:fname];
+		[files addObject:@{@"path" : full, @"includeData" : @YES}];
+	}
+
+	NSString* unzipDir = [docPath stringByAppendingPathComponent:@"game/geode/unzipped"];
+	NSArray<NSString*>* modsDir = [fm contentsOfDirectoryAtPath:unzipDir error:nil];
+	for (NSString* modId in modsDir) {
+		NSString* modPath = [unzipDir stringByAppendingPathComponent:modId];
+		NSString* modBinPath = [modPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.ios.dylib", [modPath lastPathComponent]]];
+		if ([fm fileExistsAtPath:modBinPath]) {
+			[files addObject:@{@"path" : modBinPath, @"includeData" : @YES}];
+		}
+	}
+
+	NSString* savedJsonPath = [docPath stringByAppendingPathComponent:@"save/geode/mods/geode.loader/saved.json"];
+	if ([fm fileExistsAtPath:savedJsonPath]) {
+		[files addObject:@{@"path" : savedJsonPath, @"includeData" : @YES}];
+	}
+	struct archive* write = archive_write_new();
+	archive_write_set_format_zip(write);
+	if (archive_write_open_filename(write, zipPath.fileSystemRepresentation) != ARCHIVE_OK) {
+		NSLog(@"[EnterpriseLoader] Failed to open zip output: %@", zipPath);
+		archive_write_free(write);
+		return 1;
+	}
+	NSLog(@"[EnterpriseLoader] Now compressing %lu files", (unsigned long)files.count);
+	for (NSDictionary* item in files) {
+		NSString* path = item[@"path"];
+		BOOL includeData = [item[@"includeData"] boolValue];
+		if (addFileToArchiveEnt(write, path, docPath, includeData) < 0) {
+			archive_write_close(write);
+			archive_write_free(write);
+			return 1;
+		}
+	}
+	archive_write_close(write);
+	archive_write_free(write);
+	return 0;
+}

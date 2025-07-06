@@ -925,11 +925,12 @@ for func in list:
 			[fm removeItemAtURL:[bundlePath URLByAppendingPathComponent:@"o_mods"] error:nil];
 		}
 		if (modDict.count > 1 && !safeMode) {
+			AppLog(@"Add mods dir in bundle")
 		    [fm createDirectoryAtURL:[bundlePath URLByAppendingPathComponent:@"mods"] withIntermediateDirectories:YES attributes:nil error:nil];
 		}
 	}
 	for (int i = 0; i < modDict.count; i++) {
-		AppLog(@"Patching functions... (%i/%i)", (i + 1), modDict.count);
+		AppLog(@"Patching functions... (%i/%i) [%@]", (i + 1), modDict.count, [[modDict objectAtIndex:i] lastPathComponent]);
 		NSData* mdata = [NSData dataWithContentsOfFile:[modDict objectAtIndex:i] options:0 error:nil];
 		if (mdata == nil) continue;
 		NSString* dataString = [[NSString alloc] initWithData:mdata encoding:NSASCIIStringEncoding];

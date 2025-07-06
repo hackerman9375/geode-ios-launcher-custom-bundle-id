@@ -9,8 +9,9 @@ typedef NS_ENUM(NSInteger, LogLevel) { LogUnk, LogInfo, LogWarn, LogError, LogDe
 + (void)clearLogs:(BOOL)force;
 
 @end
-#define AppLogUnknown(x...) [LogUtils log:x];
-#define AppLog(x...) [LogUtils logWithLevel:LogInfo log:x];
-#define AppLogWarn(x...) [LogUtils logWithLevel:LogWarn log:x];
-#define AppLogError(x...) [LogUtils logWithLevel:LogError log:x];
-#define AppLogDebug(x...) [LogUtils logWithLevel:LogDebug log:x];
+
+#define AppLogUnknown(x...) [NSClassFromString(@"LogUtils") log:x];
+#define AppLog(x...) [NSClassFromString(@"LogUtils") logWithLevel:LogInfo log:x];
+#define AppLogWarn(x...) [NSClassFromString(@"LogUtils") logWithLevel:LogWarn log:x];
+#define AppLogError(x...) [NSClassFromString(@"LogUtils") logWithLevel:LogError log:x];
+#define AppLogDebug(x...) [NSClassFromString(@"LogUtils") logWithLevel:LogDebug log:x];

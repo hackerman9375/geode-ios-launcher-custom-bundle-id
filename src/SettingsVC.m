@@ -864,8 +864,8 @@
 			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 				JITLessVC* view = [[JITLessVC alloc] init];
 				[[self navigationController] pushViewController:view animated:YES];
-			} else {
-				[_root launchHelper:NO];
+			} else { // launch without patching
+				[_root launchHelper2:NO];
 			}
 			break;
 		}
@@ -1365,7 +1365,7 @@
 		} else {
 			[Utils toggleKey:@"ENTERPRISE_MODE"];
 			[[Utils getPrefs] setBool:NO forKey:@"IS_COMPRESSING_IPA"];
-			[[Utils getPrefs] setBool:NO forKey:@"HAS_IMPORTED_BOOKMARK"];
+			[[Utils getPrefs] setBool:NO forKey:@"DONE_FORCEPATCH"];
 			[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
 			NSFileManager* fm = [NSFileManager defaultManager];
 			NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];

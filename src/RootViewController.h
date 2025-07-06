@@ -26,5 +26,7 @@
 - (void)signAppWithSafeMode:(void (^)(BOOL success, NSString* error))completionHandler;
 - (void)refreshTheme;
 - (BOOL)bundleIPAWithPatch:(BOOL)safeMode withLaunch:(BOOL)launch;
+- (void)launchHelper3;
+- (void)launchHelper2:(BOOL)safeMode;
 - (void)launchHelper:(BOOL)safeMode;
 @end

@@ -226,6 +226,7 @@
 		<string>sidestore</string>
 		<string>stikjit</string>
 		<string>geode</string>
+		<string>geode-helper</string>
 	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
