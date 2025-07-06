@@ -761,7 +761,7 @@
 		ipadPrimaryIconDict[@"CFBundleIconFiles"] = iconFiles2;
 
 		// uri scheme
-		infoDict[@"LSApplicationQueriesSchemes"] = @[ @"geode-helper" ];
+		infoDict[@"LSApplicationQueriesSchemes"] = @[ @"geode", @"geode-helper" ];
 		NSDictionary* urlTypeDict = @{ @"CFBundleURLName" : @"com.geode.helper.urlscheme", @"CFBundleURLSchemes" : @[ @"geode-helper" ] };
 		infoDict[@"CFBundleURLTypes"] = @[ urlTypeDict ];
 

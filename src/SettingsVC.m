@@ -115,7 +115,7 @@
 				return 6;
 			} else {
 				if ([[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
-					return 3;
+					return 4;
 				} else {
 					return 7;
 				}
@@ -307,13 +307,13 @@
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"JITLESS"] tag:9 disable:disableJITLess];
 			return cellval1;
 		} else if (row == 1 && [[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
-			cell.textLabel.text = @"Install Helper";
+			cell.textLabel.text = @"Force Reset Patching";
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
 		} else if (row == 1 && ![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 			cell.textLabel.text = @"jitless.diag".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (row == 2) {
+		} else if (row == 2 && ![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.textLabel.text = @"jitless.certstatus".loc;
 			if ([LCUtils certificateData] != nil) {
@@ -346,6 +346,10 @@
 				cellval1.detailTextLabel.text = @"jitless.certstatus.notimport".loc;
 			}
 			return cellval1;
+		} else if (row == 2 && [[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+			cell.textLabel.text = @"Install Helper";
+			cell.textLabel.textColor = [Theming getAccentColor];
+			cell.accessoryType = UITableViewCellAccessoryNone;
 		} else if (row == 3) {
 			if (![LCUtils isAppGroupAltStoreLike] && [LCUtils appGroupID] == nil) {
 				if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
@@ -870,26 +874,29 @@
 			break;
 		}
 		case 2: {
-			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"])
-				break;
-			NSFileManager* fm = [NSFileManager defaultManager];
-			NSString* extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Helper.ipa"].path;
-			NSURL* extractionPathURL = [NSURL fileURLWithPath:extractionPath];
-			if (![fm fileExistsAtPath:extractionPath]) {
-				[Utils showError:self title:@"Helper IPA doesn't exist! Tap Launch to generate one." error:nil];
-				break;
-			}
-			UIActivityViewController* activityViewController = [[UIActivityViewController alloc] initWithActivityItems:@[ extractionPathURL ] applicationActivities:nil];
-			// not sure if this is even necessary because ive never seen anyone complain about app logs
-			if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-				activityViewController.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds), 0, 0);
-				activityViewController.popoverPresentationController.permittedArrowDirections = 0;
-			}
-			activityViewController.popoverPresentationController.sourceView = self.view;
-			[self presentViewController:activityViewController animated:YES completion:nil];
-			break;
+			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) break;
+			[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
+			[Utils showNotice:self title:@"Forced! Now the lanucher will start patching again upon tapping launch."];
 		}
 		case 3: { // Patch / Import
+			if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+				NSFileManager* fm = [NSFileManager defaultManager];
+				NSString* extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Helper.ipa"].path;
+				NSURL* extractionPathURL = [NSURL fileURLWithPath:extractionPath];
+				if (![fm fileExistsAtPath:extractionPath]) {
+					[Utils showError:self title:@"Helper IPA doesn't exist! Tap Launch to generate one." error:nil];
+					break;
+				}
+				UIActivityViewController* activityViewController = [[UIActivityViewController alloc] initWithActivityItems:@[ extractionPathURL ] applicationActivities:nil];
+				// not sure if this is even necessary because ive never seen anyone complain about app logs
+				if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+					activityViewController.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds), 0, 0);
+					activityViewController.popoverPresentationController.permittedArrowDirections = 0;
+				}
+				activityViewController.popoverPresentationController.sourceView = self.view;
+				[self presentViewController:activityViewController animated:YES completion:nil];
+				break;
+			}
 			if (NSClassFromString(@"LCSharedUtils")) {
 				break;
 			}
@@ -1233,15 +1240,6 @@
 			break;
 		}
 		case 20: // View Other Group Dir
-			[Utils accessHelper:YES completionHandler:^(NSURL* url, BOOL success, NSString* error) {
-				if (success) {
-					FileBrowserViewController* browser = [[FileBrowserViewController alloc] initWithPath:url.path];
-					UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:browser];
-					[self presentViewController:navController animated:YES completion:nil];
-				} else {
-					[Utils showError:self title:error error:nil];
-				}
-			}];
 			break;
 		}
 	}

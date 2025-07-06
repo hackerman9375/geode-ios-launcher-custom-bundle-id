@@ -20,14 +20,8 @@
 }
 
 + (NSURL*)dataPath {
-	//__block NSURL* ans;
 	NSURL* ans;
 	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
-		/*[Utils accessHelper:NO completionHandler:^(NSURL* url, BOOL success, NSString* error) {
-			if ((!success && [error isEqualToString:@"Stale"]) || success) {
-				ans = url;
-			}
-		}];*/
 		ans = [[self docPath] URLByAppendingPathComponent:@"shared"];
 	} else {
 		ans = [[self docPath] URLByAppendingPathComponent:@"Data/Application/GeometryDash/Documents"];

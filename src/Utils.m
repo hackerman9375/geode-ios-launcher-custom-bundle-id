@@ -243,26 +243,6 @@ extern SecTaskRef SecTaskCreateFromSelf(CFAllocatorRef allocator) __attribute__(
 	NSFileManager* fileManager = [NSFileManager defaultManager];
 	return [fileManager fileExistsAtPath:path isDirectory:nil];
 }
-+ (void)accessHelper:(BOOL)urlOnly completionHandler:(void (^)(NSURL* url, BOOL success, NSString* error))completionHandler {
-	NSData* bookmark = [[Utils getPrefs] objectForKey:@"GEODE_HELPER_BOOKMARK"];
-	if (bookmark == nil)
-		return completionHandler(nil, NO, @"Bookmark not set.");
-	BOOL stale;
-	NSError* err;
-	NSURL* folderURL = [NSURL URLByResolvingBookmarkData:bookmark options:0 relativeToURL:nil bookmarkDataIsStale:&stale error:&err];
-	if (err) {
-		AppLog(@"Couldn't read bookmarked dir: %@", err);
-		return completionHandler(folderURL, NO, err.localizedDescription);
-	} else if (stale && !urlOnly) {
-		return completionHandler(folderURL, NO, @"Stale");
-	} else if (urlOnly) {
-		return completionHandler(folderURL, YES, nil);
-	}
-	if (folderURL && [folderURL startAccessingSecurityScopedResource]) {
-		completionHandler(folderURL, YES, nil);
-		[folderURL stopAccessingSecurityScopedResource];
-	}
-}
 + (void)bundleIPA:(UIViewController*)root {
 	[[Utils getPrefs] setBool:YES forKey:@"IS_COMPRESSING_IPA"];
 	NSFileManager* fm = [NSFileManager defaultManager];
