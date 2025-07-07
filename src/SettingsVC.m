@@ -1322,7 +1322,7 @@
 	case 9: {
 		[Utils toggleKey:@"JITLESS"];
 		if ([sender isOn]) {
-			[[Utils getPrefs] setBool:NO forKey:@"MANUAL_REOPEN"];
+			//[[Utils getPrefs] setBool:NO forKey:@"MANUAL_REOPEN"];
 			[[UIApplication sharedApplication] setAlternateIconName:@"Pride" completionHandler:^(NSError* _Nullable error) {
 				if (error) {
 					AppLog(@"Failed to set alternate icon: %@", error);
