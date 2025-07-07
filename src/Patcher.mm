@@ -709,11 +709,17 @@ for func in list:
 		} else {
 			if (!force) {
 				AppLog(@"Binary already patched, skipping...");
+				if (entitlements) {
+					[[Utils getPrefs] setBool:NO forKey:@"NEEDS_PATCHING_ENTERPRISE"];
+				}
 				return completionHandler(YES, nil);
 			}
 		}
 	} else {
 		AppLog(@"Got hash %@, now writing to binary...", hash)
+		if (entitlements) {
+			[[Utils getPrefs] setBool:YES forKey:@"NEEDS_PATCHING_ENTERPRISE"];
+		}
 		[[Utils getPrefs] setObject:hash forKey:@"PATCH_CHECKSUM"];
 	}
 

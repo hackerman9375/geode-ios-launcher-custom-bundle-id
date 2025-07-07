@@ -129,7 +129,7 @@ static NSString* certPassword = nil;
 
 	if ([url.host isEqualToString:@"launchent"]) {
 		AppLog(@"force open helper3");
-		[((RootViewController*)self.window.rootViewController) launchHelper3];
+		[((RootViewController*)self.window.rootViewController) launchHelper2:NO];
 		return YES;
 	}
 	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"] && ![url.host isEqualToString:@"import"]) {
@@ -142,10 +142,13 @@ static NSString* certPassword = nil;
 		NSError* err;
 		[fm removeItemAtURL:dataPath error:&err];
 		[fm createDirectoryAtURL:dataPath withIntermediateDirectories:YES attributes:nil error:&err];
-		AppLog(@"an error %@", err);
+		if ([fm fileExistsAtPath:[[fm temporaryDirectory] URLByAppendingPathComponent:@"tmp.zip"].path]) {
+			[fm removeItemAtPath:[[fm temporaryDirectory] URLByAppendingPathComponent:@"tmp.zip"].path error:nil];
+		}
 		NSURLComponents* components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
 		__block BOOL needsPatch = NO;
 		__block BOOL hasError = NO;
+		__block BOOL safeMode = NO;
 		for (NSURLQueryItem* item in components.queryItems) {
 			if ([item.name isEqualToString:@"data"]) {
 				NSMutableString* encodedUrl = [item.value mutableCopy];
@@ -171,19 +174,17 @@ static NSString* certPassword = nil;
 					}];
 				}
 			} else if ([item.name isEqualToString:@"force"]) { // if it exists in binaries dir
-				if ([[Utils getPrefs] boolForKey:@"DONE_FORCEPATCH"]) {
-					[[Utils getPrefs] setBool:NO forKey:@"DONE_FORCEPATCH"];
-					needsPatch = YES;
-				} else {
-					AppLog(@"Force patching is enabled!");
-					[[Utils getPrefs] setBool:YES forKey:@"DONE_FORCEPATCH"];
-					[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
-					needsPatch = YES;
-				}
+				AppLog(@"Force patching is enabled!");
+				[[Utils getPrefs] setBool:YES forKey:@"DONE_FORCEPATCH"];
+				[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
+				needsPatch = YES;
 			} else if ([item.name isEqualToString:@"dontCallback"]) {
 				hasError = YES;
+			} else if ([item.name isEqualToString:@"safeMode"]) {
+				safeMode = YES;
 			}
 		}
+		[((RootViewController*)self.window.rootViewController) updatePatchStatus];
 		if (!hasError) {
 			if (needsPatch) {
 				[Utils showNoticeGlobal:@"launcher.notice.enterprise.s3".loc];
@@ -191,7 +192,7 @@ static NSString* certPassword = nil;
 			} else {
 				AppLog(@"force open helper3");
 				// this is funny
-				[((RootViewController*)self.window.rootViewController) launchHelper3];
+				[((RootViewController*)self.window.rootViewController) launchHelper2:safeMode];
 			}
 		}
 		return YES;

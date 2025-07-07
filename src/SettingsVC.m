@@ -115,7 +115,7 @@
 				return 6;
 			} else {
 				if ([[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
-					return 4;
+					return 5;
 				} else {
 					return 7;
 				}
@@ -130,7 +130,7 @@
 	case 6: // Credits
 		return [self.creditsArray count];
 	case 7: // Developer
-		return 21;
+		return 22;
 	default:
 		return 0;
 	}
@@ -350,7 +350,11 @@
 			cell.textLabel.text = @"Install Helper";
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (row == 3) {
+		} else if (row == 3 && [[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+			cell.textLabel.text = @"Setup Steps";
+			cell.textLabel.textColor = [Theming getAccentColor];
+			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (row == 3 && ![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 			if (![LCUtils isAppGroupAltStoreLike] && [LCUtils appGroupID] == nil) {
 				if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
 					cell.textLabel.text = @"Remove Certificate";
@@ -526,18 +530,23 @@
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FORCE_ENTERPRISE"] tag:17 disable:NO];
 			return cellval1;
 		} else if (indexPath.row == 9) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.textLabel.text = @"Is Compressing IPA".loc;
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"IS_COMPRESSING_IPA"] tag:18 disable:NO];
+			return cellval1;
+		} else if (indexPath.row == 10) {
 			cell.textLabel.text = @"developer.testbundleaccess".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 10) {
+		} else if (indexPath.row == 11) {
 			cell.textLabel.text = @"developer.importipa".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 11) {
+		} else if (indexPath.row == 12) {
 			cell.textLabel.text = @"App Reinstall".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 12) {
+		} else if (indexPath.row == 13) {
 			cell.textLabel.text = @"Copy Current Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			if ([[NSFileManager defaultManager]
@@ -547,11 +556,11 @@
 			} else {
 				cell.accessoryType = UITableViewCellAccessoryNone;
 			}
-		} else if (indexPath.row == 13) {
+		} else if (indexPath.row == 14) {
 			cell.textLabel.text = @"Patch Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 14) {
+		} else if (indexPath.row == 15) {
 			cell.textLabel.text = @"Restore Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			if (![[NSFileManager defaultManager]
@@ -561,25 +570,25 @@
 			} else {
 				cell.accessoryType = UITableViewCellAccessoryNone;
 			}
-		} else if (indexPath.row == 15) {
+		} else if (indexPath.row == 16) {
 			cell.textLabel.text = @"Clear App Logs".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 16) {
+		} else if (indexPath.row == 17) {
 			cell.textLabel.text = @"Patch & Share IPA".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 17) {
+		} else if (indexPath.row == 18) {
 			cell.textLabel.text = @"Restore IPA Patch".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 18) {
+		} else if (indexPath.row == 19) {
 			cell.textLabel.text = @"View Bundle Dir".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 19) {
+		} else if (indexPath.row == 20) {
 			cell.textLabel.text = @"View Documents Dir".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 20) {
+		} else if (indexPath.row == 21) {
 			cell.textLabel.text = @"View Helper Dir".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		}
@@ -968,6 +977,10 @@
 			break;
 		}
 		case 4: { // Test JIT-Less
+			if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+				[Utils showNotice:self title:@"launcher.notice.enterprise.s2".loc];
+				break;
+			}
 			if ([LCUtils certificateData]) {
 				[LCUtils validateCertificate:^(int status, NSDate* expirationDate, NSString* errorC) {
 					if (errorC) {
@@ -1039,11 +1052,11 @@
 		NSFileManager* fm = [NSFileManager defaultManager];
 		NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 		switch (indexPath.row) {
-		case 9: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
+		case 10: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
 			[Utils showNotice:self title:[Utils getGDDocPath]];
 			break;
 		}
-		case 10: { // Import IPA
+		case 11: { // Import IPA
 			_isImportIPA = true;
 			UTType* type = [UTType typeWithIdentifier:@"com.apple.itunes.ipa"];
 			if (!type) {
@@ -1063,14 +1076,14 @@
 			[self presentViewController:picker animated:YES completion:nil];
 			break;
 		}
-		case 11: { // TS App Reinstall
+		case 12: { // TS App Reinstall
 			NSURL* url = [NSURL URLWithString:[[NSUserDefaults standardUserDefaults] stringForKey:@"DEV_REINSTALL_ADDR"]];
 			if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
 				[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
 			}
 			break;
 		}
-		case 12: { // Copy Current Binary
+		case 13: { // Copy Current Binary
 			if ([fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				break;
 			} else {
@@ -1085,7 +1098,7 @@
 			}
 			break;
 		}
-		case 13: { // Patch
+		case 14: { // Patch
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				[Utils showError:self title:@"Original Binary not found." error:nil];
 			} else {
@@ -1105,7 +1118,7 @@
 			}
 			break;
 		}
-		case 14: { // Restore Binary
+		case 15: { // Restore Binary
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				break;
 			} else {
@@ -1125,12 +1138,12 @@
 			}
 			break;
 		}
-		case 15: { // Clear App Log
+		case 16: { // Clear App Log
 			[LogUtils clearLogs:YES];
 			[Utils showNotice:self title:@"App Logs Cleared!"];
 			break;
 		}
-		case 16: { // Patch & Share IPA
+		case 17: { // Patch & Share IPA
 			NSFileManager* fm = [NSFileManager defaultManager];
 			NSString* infoPath = [bundlePath URLByAppendingPathComponent:@"Info.plist"].path;
 			NSString* infoBackupPath = [bundlePath URLByAppendingPathComponent:@"InfoBackup.plist"].path;
@@ -1201,7 +1214,7 @@
 
 			break;
 		}
-		case 17: { // Restore IPA Patch
+		case 18: { // Restore IPA Patch
 			NSFileManager* fm = [NSFileManager defaultManager];
 			NSString* infoPath = [bundlePath URLByAppendingPathComponent:@"Info.plist"].path;
 			NSString* infoBackupPath = [bundlePath URLByAppendingPathComponent:@"InfoBackup.plist"].path;
@@ -1228,19 +1241,19 @@
 
 			break;
 		}
-		case 18: { // View Bundle Dir
+		case 19: { // View Bundle Dir
 			FileBrowserViewController* browser = [[FileBrowserViewController alloc] initWithPath:[[NSBundle mainBundle] bundlePath]];
 			UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:browser];
 			[self presentViewController:navController animated:YES completion:nil];
 			break;
 		}
-		case 19: { // View Doc Dir
+		case 20: { // View Doc Dir
 			FileBrowserViewController* browser = [[FileBrowserViewController alloc] init];
 			UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:browser];
 			[self presentViewController:navController animated:YES completion:nil];
 			break;
 		}
-		case 20: // View Other Group Dir
+		case 21: // View Other Group Dir
 			break;
 		}
 	}
@@ -1402,6 +1415,9 @@
 	case 17:
 		[Utils toggleKey:@"FORCE_ENTERPRISE"];
 		[self.tableView reloadData];
+		break;
+	case 18:
+		[Utils toggleKey:@"IS_COMPRESSING_IPA"];
 		break;
 	}
 }

@@ -101,6 +101,7 @@
 }
 
 - (void)updateState {
+	[self updatePatchStatus];
 	self.logoImageView.frame = CGRectMake(self.view.center.x - 75, self.view.center.y - 130, 150, 150);
 	self.titleLabel.frame = CGRectMake(0, CGRectGetMaxY(self.logoImageView.frame) + 15, self.view.bounds.size.width, 35);
 	self.optionalTextLabel.frame = CGRectMake(0, CGRectGetMaxY(self.titleLabel.frame) + 10, self.view.bounds.size.width, 40);
@@ -171,6 +172,29 @@
 	}
 }
 
+// TODO: Add another "patching" function which will patch but not write, that way it knows ahead of time whether it will need patching
+- (void)updatePatchStatus {
+	self.patchStatus.backgroundColor = [UIColor systemGreenColor];
+	[self.patchStatus setHidden:![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]];
+	NSString* patchChecksum = [[Utils getPrefs] stringForKey:@"PATCH_CHECKSUM"];
+	if ([[Utils getPrefs] boolForKey:@"NEEDS_PATCHING_ENTERPRISE"]) {
+		self.patchStatus.backgroundColor = [UIColor systemYellowColor];
+	}
+	if ([patchChecksum isEqualToString:@"NO"]) {
+		self.patchStatus.backgroundColor = [UIColor systemRedColor];
+	}
+	if ([[Utils getPrefs] boolForKey:@"IS_COMPRESSING_IPA"]) {
+		self.patchStatus.backgroundColor = [UIColor systemOrangeColor];
+	}
+}
+
+- (void)showPatchStatusMsg:(UITapGestureRecognizer*)gestureRecognizer {
+	if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
+		[self updatePatchStatus];
+		[Utils showNotice:self title:@"launcher.notice.enterprise.status".loc];
+	}
+}
+
 - (void)viewDidLoad {
 	[super viewDidLoad];
 	[Utils increaseLaunchCount];
@@ -212,6 +236,17 @@
 	self.optionalTextLabel.font = [UIFont systemFontOfSize:16];
 	[self.optionalTextLabel setHidden:YES];
 	[self.view addSubview:self.optionalTextLabel];
+
+	CGFloat dotSize = 20.0;
+	self.patchStatus = [[UIView alloc] initWithFrame:CGRectMake(CGRectGetWidth(self.view.frame) - dotSize - 20.0, 60.0, dotSize, dotSize)];
+	self.patchStatus.backgroundColor = [UIColor systemGreenColor];
+	self.patchStatus.layer.cornerRadius = dotSize / 2;
+	self.patchStatus.layer.masksToBounds = YES;
+	[self.view addSubview:self.patchStatus];
+	self.patchStatus.userInteractionEnabled = YES;
+	UITapGestureRecognizer* pressGR = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(showPatchStatusMsg:)];
+	[self.patchStatus addGestureRecognizer:pressGR];
+	[self updatePatchStatus];
 
 	// Launch or install button
 	self.launchButton = [UIButton buttonWithType:UIButtonTypeSystem];
@@ -332,6 +367,7 @@
 }
 
 - (void)showSettings {
+	[self updatePatchStatus];
 	if (self.launchTimer != nil) {
 		[self.launchTimer invalidate];
 		self.launchTimer = nil;
@@ -624,18 +660,6 @@
 			  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) { completionHandler(success, error); }];
 	}
 }
-- (void)launchHelper3 {
-	NSURL* url = [NSURL URLWithString:@"geode-helper://relaunch"];
-	if ([[UIApplication sharedApplication] canOpenURL:url]) {
-		[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-	} else {
-		UIAlertController* resultAlert = [UIAlertController alertControllerWithTitle:@"Error" message:@"launcher.error.enterprise-launch".loc
-																	  preferredStyle:UIAlertControllerStyleAlert];
-		UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:nil];
-		[resultAlert addAction:okAction];
-		[self presentViewController:resultAlert animated:YES completion:nil];
-	}
-}
 - (void)launchHelper2:(BOOL)safeMode {
 	NSString* env;
 	NSString* launchArgs = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
@@ -880,7 +904,8 @@
 																	preferredStyle:UIAlertControllerStyleAlert];
 			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"common.yes".loc style:UIAlertActionStyleDefault
 															 handler:^(UIAlertAction* _Nonnull action) { [self bundleIPAWithPatch:NO withLaunch:NO]; }];
-			UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"common.no".loc style:UIAlertActionStyleCancel handler:nil];
+			UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"common.no".loc style:UIAlertActionStyleCancel
+																 handler:^(UIAlertAction* _Nonnull action) { [self.launchButton setEnabled:YES]; }];
 			[alert addAction:okAction];
 			[alert addAction:cancelAction];
 			[self presentViewController:alert animated:YES completion:nil];
