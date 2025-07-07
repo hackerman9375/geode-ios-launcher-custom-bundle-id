@@ -238,7 +238,7 @@
 				if (signatureValid) {
 					completetionHandler(YES, nil);
 				} else {
-					completetionHandler(NO, @"Invalid signature");
+					completetionHandler(NO, @"Invalid signature. Try force resigning. If that doesn't work, try refreshing the certificate, deleting the .app file, reinstalling, or use LiveContainer instead.");
 				}
 			}
 		});

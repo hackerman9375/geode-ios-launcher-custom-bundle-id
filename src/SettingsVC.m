@@ -112,12 +112,12 @@
 	case 3: // JIT-Less
 		if ([Utils isSandboxed]) {
 			if ([Utils isDevCert]) {
-				return 6;
+				return 7;
 			} else {
 				if ([[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
 					return 5;
 				} else {
-					return 7;
+					return 8;
 				}
 			}
 		} else {
@@ -355,7 +355,7 @@
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
 		} else if (row == 3 && ![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
-			if (![LCUtils isAppGroupAltStoreLike] && [LCUtils appGroupID] == nil) {
+			if ((![LCUtils isAppGroupAltStoreLike] && [LCUtils appGroupID] == nil) || [[Utils getPrefs] boolForKey:@"MANUAL_IMPORT_CERT"]) {
 				if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
 					cell.textLabel.text = @"Remove Certificate";
 				} else {
@@ -393,6 +393,14 @@
 				cell.textLabel.textColor = [Theming getAccentColor];
 			}
 			cell.accessoryType = UITableViewCellAccessoryNone;
+		} else if (row == 6) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.textLabel.text = @"Allow Importing Cert".loc;
+			if (disableJITLess) {
+				cellval1.textLabel.textColor = [UIColor systemGrayColor];
+			}
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_IMPORT_CERT"] tag:19 disable:disableJITLess];
+			return cellval1;
 		}
 		break;
 	}
@@ -872,7 +880,10 @@
 		}
 		}
 	} else if (indexPath.section == 3) {
-		switch (indexPath.row) {
+		NSInteger row = indexPath.row;
+		if (![Utils isDevCert])
+			row--;
+		switch (row) {
 		case 1: { // JIT-Less diagnose
 			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 				JITLessVC* view = [[JITLessVC alloc] init];
@@ -1418,6 +1429,10 @@
 		break;
 	case 18:
 		[Utils toggleKey:@"IS_COMPRESSING_IPA"];
+		break;
+	case 19:
+		[Utils toggleKey:@"MANUAL_IMPORT_CERT"];
+		[self.tableView reloadData];
 		break;
 	}
 }
