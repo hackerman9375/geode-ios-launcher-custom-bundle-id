@@ -12,7 +12,7 @@ typedef void (^DecompressCompletion)(NSError* _Nullable error);
 	NSString* updateDate;
 }
 - (void)startInstall:(RootViewController*)root ignoreRoot:(BOOL)ignoreRoot {
-    [[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
+	[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
 	if (!ignoreRoot) {
 		_root = root;
 	}

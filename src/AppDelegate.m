@@ -134,7 +134,7 @@ static NSString* certPassword = nil;
 	}
 	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"] && ![url.host isEqualToString:@"import"]) {
 		[Utils showNoticeGlobal:@"Any app scheme is not supported. This includes restarting Geode."];
-        return YES;
+		return YES;
 	} else if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"] && [url.host isEqualToString:@"import"]) {
 		NSFileManager* fm = [NSFileManager defaultManager];
 		// yeah i could optimize it but...

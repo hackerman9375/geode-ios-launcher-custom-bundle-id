@@ -33,53 +33,6 @@ void exitNotice(NSString * msg) {
 }
 
 @implementation NSObject(modif_AppController)
-- (void)moveModOutOfBundle:(BOOL)omods modsBinDir:(NSArray<NSString*>*)modsBinDir {
-	NSLog(@"[EnterpriseLoader] moveModOutOfBundle(%d)", omods);
-	NSFileManager* fm = [NSFileManager defaultManager];
-	NSURL* docDir = [[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject;
-	NSURL* gameDir = [docDir URLByAppendingPathComponent:@"game/geode"];
-	NSURL* unzippedDir = [gameDir URLByAppendingPathComponent:@"unzipped"];
-	NSString* bundleMods = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"mods"];
-	if (omods) {
-		//bundleMods = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"o_mods"];
-	}
-	NSURL* unzippedBinDir = [unzippedDir URLByAppendingPathComponent:@"binaries"];
-	if ([fm fileExistsAtPath:bundleMods isDirectory:nil]) {
-		if ([fm fileExistsAtPath:unzippedBinDir.path isDirectory:nil] && !omods) {
-			NSLog(@"[EnterpriseLoader] Removing binaries dir");
-			[fm removeItemAtPath:unzippedBinDir.path error:nil];
-			return;
-		}
-		NSLog(@"[EnterpriseLoader] moveModOutOfBundle s1");
-		if (!modsBinDir) {
-			NSLog(@"[EnterpriseLoader] Error retrieving files in bundle mods dir");
-		} else {
-			NSLog(@"[EnterpriseLoader] Creating directories if they don't exist...");
-			if (![fm fileExistsAtPath:unzippedDir.path isDirectory:nil]) {
-				[fm createDirectoryAtURL:unzippedDir withIntermediateDirectories:YES attributes:nil error:nil];
-			}
-			if (![fm fileExistsAtPath:unzippedBinDir.path isDirectory:nil]) {
-				[fm createDirectoryAtURL:unzippedBinDir withIntermediateDirectories:YES attributes:nil error:nil];
-			}
-			NSLog(@"[EnterpriseLoader] Checking mod binaries dir...");
-			for (NSString *file in modsBinDir) {
-				NSURL *srcURL = [[NSURL fileURLWithPath:bundleMods isDirectory:YES] URLByAppendingPathComponent:file];
-				NSURL *destURL = [unzippedBinDir URLByAppendingPathComponent:file];
-				if ([fm fileExistsAtPath:destURL.path]) {
-					[fm removeItemAtURL:destURL error:nil];
-				}
-				[fm copyItemAtURL:srcURL toURL:destURL error:nil];
-			}
-			/*if (omods) {
-				NSLog(@"[EnterpriseLoader] o_mods -> oo_mods");
-				[fm moveItemAtPath:bundleMods toPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"oo_mods"] error:nil];
-			} else {
-				NSLog(@"[EnterpriseLoader] mods -> o_mods");
-				[fm moveItemAtPath:bundleMods toPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"o_mods"] error:nil];
-			}*/
-		}
-	}
-}
 - (void)reallyLaunch:(UIApplication*)application {
 
 }
@@ -100,7 +53,9 @@ void exitNotice(NSString * msg) {
 				loadGeode = NO;
 				NSLog(@"[EnterpriseLoader] launch-args.txt doesn't exist! assuming haven't launched with launcher...");
 			}
-		}
+		} else {
+            [fm createDirectoryAtPath:unzippedDir.path withIntermediateDirectories:YES attributes:nil error:nil];
+        }
 	} else {
 		firstTimeLoad = YES;
 	}
@@ -117,7 +72,6 @@ void exitNotice(NSString * msg) {
 			exitNotice(@"Unable to verify. Please ensure both the launcher and helper are signed with the same certificate and installed with the same method.");
 			return YES;
 		}
-		[self moveModOutOfBundle:YES modsBinDir:[fm contentsOfDirectoryAtPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"mods"] error:nil]];
 		NSLog(@"[EnterpriseLoader] dlopen(\"@executable_path/Geode.ios.dylib\", RTLD_LAZY | RTLD_GLOBAL)");
 		void *handle = dlopen("@executable_path/Geode.ios.dylib", RTLD_LAZY | RTLD_GLOBAL);
 		const char *error = dlerror();
@@ -169,11 +123,11 @@ void exitNotice(NSString * msg) {
 					if (decodedData) {
 						NSString* decodedString = [[NSString alloc] initWithData:decodedData encoding:NSUTF8StringEncoding];
 						NSString* geode_env = [docDir.path stringByAppendingString:@"/game/geode/unzipped/launch-args.txt"];
+						decodedString = [NSString stringWithFormat:@"%@ --geode:binary-dir=\"%@/mods\"", decodedString, [[NSBundle mainBundle] resourcePath]];
 						[fm createFileAtPath:geode_env contents:[decodedString dataUsingEncoding:NSUTF8StringEncoding] attributes:@{}];
 					}
 				}
 			}
-			[self moveModOutOfBundle:NO modsBinDir:nil];
 			NSURL *url = [NSURL URLWithString:@"geode://launchent"];
 			if ([[UIApplication sharedApplication] canOpenURL:url]) {
 				for (int i = 0; i < 1; i++) {
@@ -216,6 +170,7 @@ void exitNotice(NSString * msg) {
 					dontCallBack = YES;
 				}
 			}
+			[fm removeItemAtPath:geode_env error:nil];
 			NSString *zipPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"data_tmp.zip"].path;
 			if ([fm fileExistsAtPath:zipPath]) {
 				[fm removeItemAtPath:zipPath error:nil];
@@ -228,6 +183,7 @@ void exitNotice(NSString * msg) {
 			}
 			NSLog(@"[EnterpriseLoader] Finish compressing");
 			if (decodedString && geode_env && !force) {
+				decodedString = [NSString stringWithFormat:@"%@ --geode:binary-dir=\"%@/mods\"", decodedString, [[NSBundle mainBundle] resourcePath]];
 				[fm createFileAtPath:geode_env contents:[decodedString dataUsingEncoding:NSUTF8StringEncoding] attributes:@{}];
 			}
 			dispatch_async(dispatch_get_main_queue(), ^{
@@ -246,9 +202,9 @@ void exitNotice(NSString * msg) {
 					(safeMode) ? @"safeMode=1" : @"",
 					(dontCallBack) ? @"dontCallback=1" : @""
 				];
-				NSLog(@"[EnterpriseLoader] Moving mods out of bundle...");
-				[self moveModOutOfBundle:NO modsBinDir:nil];
-				NSLog(@"[EnterpriseLoader] Moved mods out of bundle!");
+				if ([fm fileExistsAtPath:[docDir URLByAppendingPathComponent:@"game/geode/unzipped/binaries"].path]) {
+					[fm removeItemAtURL:[docDir URLByAppendingPathComponent:@"game/geode/unzipped/binaries"] error:nil];
+				}
 				NSURL *url = [NSURL URLWithString:urlString];
 				if ([[UIApplication sharedApplication] canOpenURL:url]) {
 					for (int i = 0; i < 1; i++) {

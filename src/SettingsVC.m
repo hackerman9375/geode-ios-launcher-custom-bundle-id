@@ -874,7 +874,8 @@
 			break;
 		}
 		case 2: {
-			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) break;
+			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"])
+				break;
 			[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
 			[Utils showNotice:self title:@"Forced! Now the lanucher will start patching again upon tapping launch."];
 		}
