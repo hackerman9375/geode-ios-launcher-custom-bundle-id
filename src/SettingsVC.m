@@ -409,10 +409,10 @@
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7
 												disable:![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils") || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) ||
-														[[Utils getPrefs] integerForKey:@"JITLESS"] || [Utils isDevCert]];
+														[[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert]];
 			cellval1.textLabel.text = @"advanced.manual-reopen-jit".loc;
 			if (![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils") || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"] ||
-				[Utils isDevCert]) {
+				![Utils isDevCert]) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
 			}
 			return cellval1;
