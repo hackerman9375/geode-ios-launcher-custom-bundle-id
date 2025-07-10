@@ -883,7 +883,7 @@
 	[self.launchTimer invalidate];
 	self.launchTimer = nil;
 	[self.launchButton setEnabled:NO];
-	if (([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] && [Utils isSandboxed]) || (NSClassFromString(@"LCSharedUtils") && ![[Utils getPrefs] boolForKey:@"JITLESS"])) {
+	if (([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] && [Utils isSandboxed])) {
 		[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 		[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 		[[Utils getPrefs] setBool:NO forKey:@"safemode"];
@@ -935,13 +935,7 @@
 				[self updateState];
 				return;
 			}
-			NSString* openURL = [NSString stringWithFormat:@"%@://launch", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
-			NSURL* url = [NSURL URLWithString:openURL];
-			if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
-				[self.optionalTextLabel setHidden:YES];
-				[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
-				return;
-			} else if (NSClassFromString(@"LCSharedUtils")) {
+			if (NSClassFromString(@"LCSharedUtils")) {
 				// since we told the user you cant use TweakLoader
 				[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 				[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
@@ -949,6 +943,14 @@
 				AppLog(@"Launching Geometry Dash");
 				if (![LCUtils launchToGuestApp]) {
 					[Utils showErrorGlobal:[NSString stringWithFormat:@"launcher.error.gd".loc, @"launcher.error.app-uri".loc] error:nil];
+				}
+			} else {
+				NSString* openURL = [NSString stringWithFormat:@"%@://launch", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
+				NSURL* url = [NSURL URLWithString:openURL];
+				if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
+					[self.optionalTextLabel setHidden:YES];
+					[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
+					return;
 				}
 			}
 		});

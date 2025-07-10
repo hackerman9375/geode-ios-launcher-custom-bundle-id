@@ -27,8 +27,6 @@ After these steps:
 - Press **"Verify Geometry Dash"**
 - Press **"Download"**
 - Press **"Launch"**
-- Close LiveContainer from the app switcher when prompted to reopen the launcher
-- Open Geode **with JIT** in LiveContainer
 
 # JIT-Less
 ## Prerequisites

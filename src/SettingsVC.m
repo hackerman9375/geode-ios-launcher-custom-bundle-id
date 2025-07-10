@@ -407,12 +407,11 @@
 	case 4:
 		if (indexPath.row == 0) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7
-												disable:![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils") || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) ||
-														[[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert]];
+			cellval1.accessoryView =
+				[self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7
+						   disable:![Utils isSandboxed] || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert]];
 			cellval1.textLabel.text = @"advanced.manual-reopen-jit".loc;
-			if (![Utils isSandboxed] || NSClassFromString(@"LCSharedUtils") || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"] ||
-				![Utils isDevCert]) {
+			if (![Utils isSandboxed] || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert]) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
 			}
 			return cellval1;
@@ -787,7 +786,7 @@
 				[Utils showError:self title:@"The game is already launching! Please wait." error:nil];
 				break;
 			}
-			if (([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] || NSClassFromString(@"LCSharedUtils")) && ![[Utils getPrefs] boolForKey:@"JITLESS"]) {
+			if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] && ![[Utils getPrefs] boolForKey:@"JITLESS"]) {
 				[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 				[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 				[[Utils getPrefs] setBool:YES forKey:@"safemode"];
@@ -808,17 +807,22 @@
 								[_root.launchButton setEnabled:YES];
 								return;
 							}
-							NSString* openURL = [NSString stringWithFormat:@"%@://safe-mode", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
-							NSURL* url = [NSURL URLWithString:openURL];
-							if ([[UIApplication sharedApplication] canOpenURL:url]) {
-								[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-								[self dismissViewControllerAnimated:YES completion:nil];
-							} else if (NSClassFromString(@"LCSharedUtils")) {
-								AppLog(@"Launching in Safe Mode");
+							if (NSClassFromString(@"LCSharedUtils")) {
 								[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 								[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 								[[Utils getPrefs] setBool:YES forKey:@"safemode"];
-								[LCUtils launchToGuestApp];
+								AppLog(@"Launching in Safe Mode");
+								if (![LCUtils launchToGuestApp]) {
+									[Utils showErrorGlobal:[NSString stringWithFormat:@"launcher.error.gd".loc, @"launcher.error.app-uri".loc] error:nil];
+								}
+							} else {
+								NSString* openURL =
+									[NSString stringWithFormat:@"%@://safe-mode", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
+								NSURL* url = [NSURL URLWithString:openURL];
+								if ([[UIApplication sharedApplication] canOpenURL:url]) {
+									[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+									[self dismissViewControllerAnimated:YES completion:nil];
+								}
 							}
 						});
 					}];
@@ -827,12 +831,23 @@
 					[_root.launchButton setEnabled:NO];
 					[_root bundleIPAWithPatch:YES withLaunch:YES];
 				} else {
-					NSString* openURL = [NSString stringWithFormat:@"%@://safe-mode", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
-					NSURL* url = [NSURL URLWithString:openURL];
-					if ([[UIApplication sharedApplication] canOpenURL:url]) {
-						[_root.launchButton setEnabled:NO];
-						[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-						[self dismissViewControllerAnimated:YES completion:nil];
+
+					if (NSClassFromString(@"LCSharedUtils")) {
+						[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
+						[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+						[[Utils getPrefs] setBool:YES forKey:@"safemode"];
+						AppLog(@"Launching in Safe Mode");
+						if (![LCUtils launchToGuestApp]) {
+							[Utils showErrorGlobal:[NSString stringWithFormat:@"launcher.error.gd".loc, @"launcher.error.app-uri".loc] error:nil];
+						}
+					} else {
+						NSString* openURL = [NSString stringWithFormat:@"%@://safe-mode", NSBundle.mainBundle.infoDictionary[@"CFBundleURLTypes"][0][@"CFBundleURLSchemes"][0]];
+						NSURL* url = [NSURL URLWithString:openURL];
+						if ([[UIApplication sharedApplication] canOpenURL:url]) {
+							[_root.launchButton setEnabled:NO];
+							[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+							[self dismissViewControllerAnimated:YES completion:nil];
+						}
 					}
 				}
 			}
@@ -1322,7 +1337,7 @@
 	case 9: {
 		[Utils toggleKey:@"JITLESS"];
 		if ([sender isOn]) {
-			//[[Utils getPrefs] setBool:NO forKey:@"MANUAL_REOPEN"];
+			[[Utils getPrefs] setBool:NO forKey:@"MANUAL_REOPEN"];
 			[[UIApplication sharedApplication] setAlternateIconName:@"Pride" completionHandler:^(NSError* _Nullable error) {
 				if (error) {
 					AppLog(@"Failed to set alternate icon: %@", error);

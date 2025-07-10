@@ -173,29 +173,29 @@ extern NSBundle* gcMainBundle;
 	UIApplication* application = [NSClassFromString(@"UIApplication") sharedApplication];
 	NSString* urlScheme;
 	int tries = 1;
-	if (NSClassFromString(@"LCSharedUtils") && ![gcUserDefaults boolForKey:@"JITLESS"]) {
-		// urlScheme = @"livecontainer://livecontainer-launch?bundle-name=%@.app";
+	NSInteger jitEnabler = [gcUserDefaults integerForKey:@"JIT_ENABLER"];
+	if (!jitEnabler)
+		jitEnabler = 0;
+	NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", gcMainBundle.bundlePath];
+	if ((jitEnabler == 0 && !access(tsPath.UTF8String, F_OK)) || jitEnabler == 1) {
+		urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
+	} else if (self.certificatePassword && [gcUserDefaults boolForKey:@"JITLESS"]) {
+		tries = 2;
+		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
+	} else if ((jitEnabler == 0 && [application canOpenURL:[NSURL URLWithString:@"stikjit://"]]) || jitEnabler == 2) {
+		urlScheme = @"stikjit://enable-jit?bundle-id=%@";
+	} else if ((jitEnabler == 0 && [application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) || jitEnabler == 5) {
+		urlScheme = @"sidestore://sidejit-enable?bid=%@";
 	} else {
-		NSInteger jitEnabler = [gcUserDefaults integerForKey:@"JIT_ENABLER"];
-		if (!jitEnabler)
-			jitEnabler = 0;
-		NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", gcMainBundle.bundlePath];
-		if ((jitEnabler == 0 && !access(tsPath.UTF8String, F_OK)) || jitEnabler == 1) {
-			urlScheme = @"apple-magnifier://enable-jit?bundle-id=%@";
-		} else if (self.certificatePassword && [gcUserDefaults boolForKey:@"JITLESS"]) {
-			tries = 2;
-			urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
-			if (NSClassFromString(@"LCSharedUtils")) {
-				// but... what about if the user installs multiple geode!?!?!?! sorry... ill deal with that later!
-				urlScheme = @"livecontainer://livecontainer-launch?bundle-name=com.geode.launcher.app";
-			}
-		} else if ((jitEnabler == 0 && [application canOpenURL:[NSURL URLWithString:@"stikjit://"]]) || jitEnabler == 2) {
-			urlScheme = @"stikjit://enable-jit?bundle-id=%@";
-		} else if ((jitEnabler == 0 && [application canOpenURL:[NSURL URLWithString:@"sidestore://"]]) || jitEnabler == 5) {
-			urlScheme = @"sidestore://sidejit-enable?bid=%@";
-		} else {
-			tries = 2;
-			urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
+		tries = 2;
+		urlScheme = [NSString stringWithFormat:@"%@://geode-relaunch", gcAppUrlScheme];
+	}
+	if (NSClassFromString(@"LCSharedUtils")) {
+		tries = 2;
+		// but... what about if the user installs multiple geode!?!?!?! sorry... ill deal with that later!
+		urlScheme = @"livecontainer://livecontainer-launch?bundle-name=com.geode.launcher.app";
+		if (![application canOpenURL:[NSURL URLWithString:urlScheme]]) {
+			urlScheme = @"livecontainer2://livecontainer-launch?bundle-name=com.geode.launcher.app";
 		}
 	}
 	NSURL* launchURL = [NSURL URLWithString:[NSString stringWithFormat:urlScheme, gcMainBundle.bundleIdentifier]];
