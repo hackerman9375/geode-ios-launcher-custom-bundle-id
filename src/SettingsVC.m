@@ -830,7 +830,8 @@
 				} else if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 					[self dismissViewControllerAnimated:YES completion:nil];
 					[_root.launchButton setEnabled:NO];
-					[_root bundleIPAWithPatch:YES withLaunch:YES];
+					[_root launchHelper2:YES];
+					//[_root bundleIPAWithPatch:YES withLaunch:YES];
 				} else {
 
 					if (NSClassFromString(@"LCSharedUtils")) {

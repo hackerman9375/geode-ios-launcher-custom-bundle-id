@@ -1,6 +1,6 @@
 # Installation Guide (JIT-Less)
 > [!WARNING]
-> Enterprise Certificates, and certificates without the entitlement `get-task-allow` currently do not work. A developer certficate (or one from SideStore) is required for you to follow this guide. In the future, this notice will be removed after support is implemented.
+> This guide will not work for Enterprise Certificates ("free certificates"), and certificates without the entitlement `get-task-allow`. A developer certficate (or one from SideStore) is required for you to follow this guide. If you wish to use certificates without entitlements, follow the [Enterprise Certificate](./ENTERPRISE-INSTALL-GUIDE.md) guide instead.
 
 This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but it should theoretically work for any iOS version. This guide is also for those that wish to use Geode, but don't have a computer.
 
@@ -18,7 +18,7 @@ This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but i
 - **Full version of Geometry Dash installed**
 - **An internet connection**
 - **SideStore** (Ensure you are on the latest version. If you are on a version below 0.6.0 and you are receiving issues with updating, get [this version](https://github.com/geode-sdk/ios-launcher/raw/refs/heads/main/screenshots/SideStore-0.6.2-pr.959+4534534.ipa))
-- **IPA file** of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases)
+- **IPA file** of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases/latest)
 
 ## Apple Developer Certificate Method
 > [!WARNING]
@@ -29,7 +29,7 @@ This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but i
 - **Full version of Geometry Dash installed**
 - **An internet connection**
 - An **Apple developer certificate** (you can get one from services like [KravaSign](https://kravasign.com) or [Signulous](https://www.signulous.com))
-- **IPA file** of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases)
+- **IPA file** of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases/latest)
 
 # Enable JIT-Less
 A new section has been added to the Geode launcher's settings for JIT-less. Here's how to use it:

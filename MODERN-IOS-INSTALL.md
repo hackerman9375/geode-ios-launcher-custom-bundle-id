@@ -12,7 +12,7 @@
 - Full version of Geometry Dash installed
 - An internet connection
 - A passcode on your device (required for pairing file)
-- IPA file of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases) (If you don't want to use this, follow the **AltSource** method below)
+- IPA file of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases/latest) (If you don't want to use this, follow the **AltSource** method below)
 
 ## Install SideStore
 

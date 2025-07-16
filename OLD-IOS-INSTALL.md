@@ -12,13 +12,13 @@ This guide is for devices that are compatible with TrollStore (and optionally a 
 - USB Cable to connect your device (Lightning / USB C)
 - TrollStore
 - Full version of Geometry Dash installed
-- IPA file of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases)
+- IPA file of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases/latest)
 
 ## Below iOS 17.0
 - TrollStore (or **if you're on an iOS version where TrollStore is not supported** but you're able to jailbreak, **[TrollStore Lite](https://havoc.app/package/trollstorelite))**
 - A jailbreak like Dopamine (optional, only if you want to use the jailbreak tweak)
 - Full version of Geometry Dash installed
-- IPA / TIPA file of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases) (only get the TIPA file if you want to use the jailbreak tweak)
+- IPA / TIPA file of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases/latest) (only get the TIPA file if you want to use the jailbreak tweak)
 - Jailbreak tweak (optional, you need to be jailbroken)
 
 ## Installing TrollStore
