@@ -575,6 +575,7 @@ for func in list:
 	NSDictionary* savedJSONDict;
 	BOOL canParseJSON = NO;
 	NSMutableSet<NSString*>* modIDs = [NSMutableSet new];
+	NSMutableSet<NSString*>* modIDsHash = [NSMutableSet new];
 	NSMutableArray<NSString*>* modEnabledDict = [NSMutableArray new];
 
 	NSArray* modsDir = [fm contentsOfDirectoryAtPath:unzipModsPath error:&error];
@@ -664,10 +665,20 @@ for func in list:
 		    [fm createDirectoryAtURL:[bundlePath URLByAppendingPathComponent:@"mods"] withIntermediateDirectories:YES attributes:nil error:nil];
 		}
 	}
+	NSMutableArray* modIDSorted = [[[modIDs allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] mutableCopy];
+	for (int i = 0; i < modIDSorted.count; i++) {
+		NSString *item = modIDSorted[i];
+		if (item == nil || [item isEqualToString:@""]) {
+			[modIDSorted removeObjectAtIndex:i];
+		}
+	}
 	for (int i = 0; i < modDictSort.count; i++) {
 		AppLog(@"Patching functions... (%i/%i) [%@]", (i + 1), modDictSort.count, [[modDictSort objectAtIndex:i] lastPathComponent]);
 		NSData* mdata = [NSData dataWithContentsOfFile:[modDictSort objectAtIndex:i] options:0 error:nil];
 		if (mdata == nil) continue;
+		if (entitlements) {
+			[modIDsHash addObject:[Utils sha256sumWithData:mdata]];
+		}
 		NSString* dataString = [[NSString alloc] initWithData:mdata encoding:NSASCIIStringEncoding];
 		for (NSString* offset in [Patcher getHookOffsetsFromData:dataString]) {
 			if (![offset hasPrefix:@"0x"])
@@ -699,14 +710,12 @@ for func in list:
 	}
 	NSString* patchChecksum = [[Utils getPrefs] stringForKey:@"PATCH_CHECKSUM"];
 	NSArray* keys = [self.originalBytes allKeys];
-	NSMutableArray* modIDSorted = [[[modIDs allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] mutableCopy];
-	for (int i = 0; i < modIDSorted.count; i++) {
-		NSString *item = modIDSorted[i];
-		if (item == nil || [item isEqualToString:@""]) {
-			[modIDSorted removeObjectAtIndex:i];
-		}
-	}
-	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]];
+    NSString* hash;
+    if (entitlements) {
+        hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@-%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","], [[modIDsHash allObjects] componentsJoinedByString:@","]]];
+    } else {
+        hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]];
+    }
 	if (patchChecksum != nil) {
 		if (![patchChecksum isEqualToString:hash]) {
 			AppLog(@"Hash mismatch (%@ vs %@), now writing to binary...", patchChecksum, hash)
@@ -765,6 +774,7 @@ for func in list:
 	NSDictionary* savedJSONDict;
 	BOOL canParseJSON = NO;
 	NSMutableSet<NSString*>* modIDs = [NSMutableSet new];
+	NSMutableSet<NSString*>* modIDsHash = [NSMutableSet new];
 	NSMutableArray<NSString*>* modEnabledDict = [NSMutableArray new];
 
 	NSArray* modsDir = [fm contentsOfDirectoryAtPath:unzipModsPath error:nil];
@@ -836,6 +846,13 @@ for func in list:
 	NSMutableDictionary<NSString*, NSString*>* bytes;
 	bytes = [NSMutableDictionary dictionary];
 	NSArray<NSString*>* modDictSort = [[modDict allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+	NSMutableArray* modIDSorted = [[[modIDs allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] mutableCopy];
+	for (int i = 0; i < modIDSorted.count; i++) {
+		NSString *item = modIDSorted[i];
+		if (item == nil || [item isEqualToString:@""]) {
+			[modIDSorted removeObjectAtIndex:i];
+		}
+	}
 	for (int i = 0; i < modDictSort.count; i++) {
 		NSData* mdata = [NSData dataWithContentsOfFile:[modDictSort objectAtIndex:i] options:0 error:nil];
 		if (mdata == nil) continue;
@@ -850,15 +867,8 @@ for func in list:
 		}
 	}
 	NSArray* keys = [bytes allKeys];
-	NSMutableArray* modIDSorted = [[[modIDs allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] mutableCopy];
-	for (int i = 0; i < modIDSorted.count; i++) {
-		NSString *item = modIDSorted[i];
-		if (item == nil || [item isEqualToString:@""]) {
-			[modIDSorted removeObjectAtIndex:i];
-		}
-	}
 	//AppLog(@"keys %@", [NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]);
-	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]];
+	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@-%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","], [[modIDsHash allObjects] componentsJoinedByString:@","]]];
 	return hash;
 }
 
