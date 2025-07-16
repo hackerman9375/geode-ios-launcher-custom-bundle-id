@@ -17,7 +17,7 @@ This tutorial is for people who cannot afford to purchase a Developer Certificat
 - At least 400 MB of storage available
 
 > [!WARNING]
-> Currently, this method only works if you have Geode on nightly release. To enable this in the launcher, open settings, enable **Use Nightly Release**, and tap **Check for Updates**
+> Currently, this method only works if you have Geode on nightly release, and the [Development Release](https://github.com/geode-sdk/ios-launcher/releases/tag/nightly) of the launcher. To enable this in the launcher, open settings, enable **Use Nightly Release**, and tap **Check for Updates**
 
 ## Setting up Enterprise Mode
 After setting up Geode, verifying you own Geometry Dash, and downloaded the libraries, you will need to enable **Enterprise Mode** in settings.
@@ -39,7 +39,7 @@ When the patching is complete, an **IPA file** named "Helper.ipa" will be shown 
 
 ## Post Setup Steps
 After installing the Helper, you **must** open it with the launcher. Otherwise an error like this will show up:
-![](./screenshots/enterprise-s3.png)
+<img src="./screenshots/enterprise-s3.png" alt="Launch Error" width="300"/>
 
 This is because it is a **requirement** to use the launcher to open the Helper. Otherwise it won't be able to properly know if you want to launch in safe mode, and assume you are running it with JIT, which is not what you have.
 
