@@ -146,7 +146,6 @@ static NSString* certPassword = nil;
 			[fm removeItemAtPath:[[fm temporaryDirectory] URLByAppendingPathComponent:@"tmp.zip"].path error:nil];
 		}
 		NSURLComponents* components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
-		__block BOOL needsPatch = NO;
 		__block BOOL hasError = NO;
 		__block BOOL safeMode = NO;
 		for (NSURLQueryItem* item in components.queryItems) {
@@ -173,20 +172,17 @@ static NSString* certPassword = nil;
 						});
 					}];
 				}
-			} else if ([item.name isEqualToString:@"force"]) { // if it exists in binaries dir
-				AppLog(@"Force patching is enabled!");
-				[[Utils getPrefs] setBool:YES forKey:@"DONE_FORCEPATCH"];
-				[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
-				needsPatch = YES;
 			} else if ([item.name isEqualToString:@"dontCallback"]) {
 				hasError = YES;
 			} else if ([item.name isEqualToString:@"safeMode"]) {
 				safeMode = YES;
 			}
 		}
+		NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
+		NSString* checksum = [Patcher getPatchChecksum:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] withSafeMode:safeMode];
 		[((RootViewController*)self.window.rootViewController) updatePatchStatus];
 		if (!hasError) {
-			if (needsPatch) {
+			if (checksum != nil && ![checksum isEqualToString:[[Utils getPrefs] stringForKey:@"PATCH_CHECKSUM"]]) {
 				[Utils showNoticeGlobal:@"launcher.notice.enterprise.s3".loc];
 				[[((RootViewController*)self.window.rootViewController) launchButton] setEnabled:YES];
 			} else {

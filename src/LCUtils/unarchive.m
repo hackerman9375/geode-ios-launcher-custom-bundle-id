@@ -400,7 +400,6 @@ int compressEnt(NSString* docPath, NSString* zipPath, BOOL* force) {
 	NSString* binsDir = [docPath stringByAppendingPathComponent:@"game/geode/unzipped/binaries"];
 	NSArray<NSString*>* binsContents = [fm contentsOfDirectoryAtPath:binsDir error:nil];
 	for (NSString* fname in binsContents) {
-		*force = YES;
 		NSString* full = [binsDir stringByAppendingPathComponent:fname];
 		[files addObject:@{@"path" : full, @"includeData" : @YES}];
 	}

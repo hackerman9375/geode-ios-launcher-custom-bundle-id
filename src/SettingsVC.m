@@ -11,6 +11,7 @@
 #import "src/LCUtils/Shared.h"
 #import "src/Theming.h"
 #import "src/Utils.h"
+#import "src/components/NSUDBrowserVC.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <UIKit/UIKit.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
@@ -596,7 +597,7 @@
 			cell.textLabel.text = @"View Documents Dir".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		} else if (indexPath.row == 21) {
-			cell.textLabel.text = @"View Helper Dir".loc;
+			cell.textLabel.text = @"View NSUserDefaults".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 		}
 		break;
@@ -895,10 +896,7 @@
 		}
 		}
 	} else if (indexPath.section == 3) {
-		NSInteger row = indexPath.row;
-		if (![Utils isDevCert])
-			row--;
-		switch (row) {
+		switch (indexPath.row) {
 		case 1: { // JIT-Less diagnose
 			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 				JITLessVC* view = [[JITLessVC alloc] init];
@@ -1279,7 +1277,8 @@
 			[self presentViewController:navController animated:YES completion:nil];
 			break;
 		}
-		case 21: // View Other Group Dir
+		case 21: // View NSUserDefaults
+			[self.navigationController pushViewController:[[NSUDBrowserVC alloc] init] animated:YES];
 			break;
 		}
 	}
@@ -1403,9 +1402,13 @@
 		} else {
 			[Utils toggleKey:@"ENTERPRISE_MODE"];
 			[[Utils getPrefs] setBool:NO forKey:@"IS_COMPRESSING_IPA"];
-			[[Utils getPrefs] setBool:NO forKey:@"DONE_FORCEPATCH"];
 			[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
 			NSFileManager* fm = [NSFileManager defaultManager];
+			NSURL* dataPath = [[LCPath docPath] URLByAppendingPathComponent:@"shared"];
+			[fm removeItemAtURL:dataPath error:nil];
+			if ([fm fileExistsAtPath:[[fm temporaryDirectory] URLByAppendingPathComponent:@"tmp.zip"].path]) {
+				[fm removeItemAtPath:[[fm temporaryDirectory] URLByAppendingPathComponent:@"tmp.zip"].path error:nil];
+			}
 			NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				AppLog(@"Not restoring binary.");

@@ -177,7 +177,11 @@
 	self.patchStatus.backgroundColor = [UIColor systemGreenColor];
 	[self.patchStatus setHidden:![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]];
 	NSString* patchChecksum = [[Utils getPrefs] stringForKey:@"PATCH_CHECKSUM"];
-	if ([[Utils getPrefs] boolForKey:@"NEEDS_PATCHING_ENTERPRISE"]) {
+
+	NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
+	NSString* checksum = [Patcher getPatchChecksum:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] withSafeMode:NO];
+	if ((checksum != nil && ![checksum isEqualToString:patchChecksum])) {
+		AppLog(@"Patch diff: %@ vs %@", checksum, patchChecksum);
 		self.patchStatus.backgroundColor = [UIColor systemYellowColor];
 	}
 	if ([patchChecksum isEqualToString:@"NO"]) {
@@ -187,7 +191,6 @@
 		self.patchStatus.backgroundColor = [UIColor systemOrangeColor];
 	}
 }
-
 - (void)showPatchStatusMsg:(UITapGestureRecognizer*)gestureRecognizer {
 	if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
 		[self updatePatchStatus];
@@ -821,14 +824,6 @@
 	if (err) {
 		[Utils showError:self title:@"Failed to copy Geode library" error:err];
 		return NO;
-	}
-
-	NSUserDefaults* shared = [[NSUserDefaults alloc] initWithSuiteName:@"group.com.geode.launcher"];
-	NSString* bbUID = [shared objectForKey:@"BB"];
-	if (!bbUID) {
-		bbUID = [NSUUID UUID].UUIDString;
-		[shared setObject:bbUID forKey:@"BB"];
-		[shared synchronize];
 	}
 	NSString* uniqId = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
 	[fm createFileAtPath:[bundlePath URLByAppendingPathComponent:@"sf.bd"].path contents:[uniqId dataUsingEncoding:NSUTF8StringEncoding] attributes:@{}];

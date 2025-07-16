@@ -231,33 +231,27 @@ BOOL appendNewSection(NSMutableData* data) {
 	return YES;
 }
 // ^^^
-
 @implementation Patcher
-
 static NSMutableDictionary* _originalBytes = nil;
 static NSMutableArray* _patchedFuncs = nil;
-
 + (NSMutableDictionary<NSString*, NSData*>*)originalBytes {
 	if (!_originalBytes) {
 		_originalBytes = [NSMutableDictionary dictionary];
 	}
 	return _originalBytes;
 }
-
 + (NSMutableArray<NSNumber*>*)patchedFuncs {
 	if (!_patchedFuncs) {
 		_patchedFuncs = [NSMutableArray new];
 	}
 	return _patchedFuncs;
 }
-
 + (void)setPatchedFuncs:(NSMutableArray<NSNumber*>*)patchedFuncs {
 	_patchedFuncs = patchedFuncs;
 }
 + (void)setOriginalBytes:(NSMutableDictionary<NSString*, NSData*>*)originalBytes {
 	_originalBytes = originalBytes;
 }
-
 + (BOOL)loadTulipHook {
 	// it definitely makes sense
 	void* handle = dlopen("@loader_path/Frameworks/libTulipHook.dylib", RTLD_LAZY | RTLD_GLOBAL);
@@ -339,7 +333,6 @@ for func in list:
 	[data replaceBytesInRange:NSMakeRange(addr, size) withBytes:patchData.bytes];
 	return YES;
 }
-
 + (NSArray<NSString*>*)getHookOffsetsFromData:(NSString*)data {
 	// \[GEODE_MODIFY_ADDRESS\] base::get\(\) \+ (0x[0-9a-fA-F]+) \[GEODE_MODIFY_END\]
 	NSMutableArray<NSString*>* offsets = [NSMutableArray array];
@@ -357,7 +350,6 @@ for func in list:
 	}
 	return [offsets copy];
 }
-
 + (NSArray<NSString*>*)getStaticHookOffsetsFromData:(NSString*)data {
 	// \[GEODE_MODIFY_NAME\](.+?)\[GEODE_MODIFY_OFFSET\]([0-9a-fA-F]+)\[GEODE_MODIFY_END\]
 	NSMutableArray<NSString*>* offsets = [NSMutableArray array];
@@ -410,7 +402,6 @@ for func in list:
 
 	return [hexString copy];
 }
-
 + (void)startUnzip:(void (^)(NSString* doForce))completionHandler {
 	return completionHandler(nil);
 	NSFileManager* fm = [NSFileManager defaultManager];
@@ -460,7 +451,6 @@ for func in list:
 	}
 	completionHandler(forceSign);
 }
-
 // handler addr being that textHandlerStorage
 + (void)patchGDBinary:(NSURL*)from to:(NSURL*)to withHandlerAddress:(uint64_t)handlerAddress force:(BOOL)force withSafeMode:(BOOL)safeMode withEntitlements:(BOOL)entitlements completionHandler:(void (^)(BOOL success, NSString* error))completionHandler {
 	NSFileManager* fm = [NSFileManager defaultManager];
@@ -576,7 +566,6 @@ for func in list:
 		AppLog(@"Couldn't patch! getCommonHandlerBytes function is null!");
 		return completionHandler(NO, @"TulipHook failed find getCommonHandlerBytes");
 	}
-
 	// === PATCH STEP 2 ====
 	NSString* unzipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"game/geode/unzipped"].path;
 	NSString* unzipBinModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"game/geode/unzipped/binaries"].path;
@@ -585,6 +574,7 @@ for func in list:
 	NSData* savedJSONData = [NSData dataWithContentsOfURL:savedJSONURL options:0 error:&error];
 	NSDictionary* savedJSONDict;
 	BOOL canParseJSON = NO;
+	NSMutableSet<NSString*>* modIDs = [NSMutableSet new];
 	NSMutableArray<NSString*>* modEnabledDict = [NSMutableArray new];
 
 	NSArray* modsDir = [fm contentsOfDirectoryAtPath:unzipModsPath error:&error];
@@ -607,18 +597,22 @@ for func in list:
 					if (value) {
 						NSString *modID = [key substringFromIndex:12];
 						if ([fm fileExistsAtPath:[zipModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.geode", modID]]]) {
+							[modIDs addObject:modID];
 							[modEnabledDict addObject:[NSString stringWithFormat:@"%@.ios.dylib", modID]];
 						}
 					}
 				}
 			}
 			for (NSString *file in modsBinDir) {
-				NSString *modID = [file stringByDeletingPathExtension];
+				NSString *modID = [[file stringByDeletingPathExtension] stringByDeletingPathExtension];
 				NSString *key = [NSString stringWithFormat:@"should-load-%@", modID];
 				if (!savedJSONDict[key]) {
-					AppLog(@"%@ doesn't exist in saved.json, but exists in the bin directory, assuming true", modID);
 					if (![modEnabledDict containsObject:file]) {
-						[modEnabledDict addObject:file];
+						if ([fm fileExistsAtPath:[zipModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.geode", modID]]]) {
+							AppLog(@"%@ doesn't exist in saved.json, but exists in the bin directory, assuming true", modID);
+							[modIDs addObject:modID];
+							[modEnabledDict addObject:file];
+						}
 					}
 				}
 			}
@@ -627,9 +621,10 @@ for func in list:
             AppLog(@"Couldn't read saved.json, assuming Geode has never been opened before");
         }
 	}
-	NSMutableArray<NSString*>* modDict = [NSMutableArray new];
+	NSMutableSet<NSString*>* modDict = [NSMutableSet new];
 	NSString* geodePath = [Utils getTweakDir];
 	if (geodePath) {
+		[modIDs addObject:@"geode.loader"];
 		[modDict addObject:geodePath];
 	}
 	if (canParseJSON && !safeMode) {
@@ -637,6 +632,7 @@ for func in list:
 		NSMutableArray<NSString*>* modConflictDict = [NSMutableArray new];
 		for (NSString* modId in modsBinDir) {
 			if ([modEnabledDict containsObject:modId]) {
+				[modIDs addObject:[[modId stringByDeletingLastPathComponent] stringByDeletingLastPathComponent]];
 				[modDict addObject:[unzipBinModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", modId]]];
 				[modConflictDict addObject:modId];
 			}
@@ -650,25 +646,27 @@ for func in list:
 			for (NSString* file in modDir) {
 				if ([file hasSuffix:@"ios.dylib"]) {
 					if ([modEnabledDict containsObject:file] && ![modConflictDict containsObject:file]) {
+						[modIDs addObject:modId];
 						[modDict addObject:[modPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", file]]];
 					}
 				}
 			}
 		}
 	}
+	NSArray<NSString*>* modDictSort = [[modDict allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
 	NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 	if (entitlements) {
 		if ([fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"mods"].path]) {
 			[fm removeItemAtURL:[bundlePath URLByAppendingPathComponent:@"mods"] error:nil];
 		}
-		if (modDict.count > 1 && !safeMode) {
+		if (modDictSort.count > 1 && !safeMode) {
 			AppLog(@"Add mods dir in bundle")
 		    [fm createDirectoryAtURL:[bundlePath URLByAppendingPathComponent:@"mods"] withIntermediateDirectories:YES attributes:nil error:nil];
 		}
 	}
-	for (int i = 0; i < modDict.count; i++) {
-		AppLog(@"Patching functions... (%i/%i) [%@]", (i + 1), modDict.count, [[modDict objectAtIndex:i] lastPathComponent]);
-		NSData* mdata = [NSData dataWithContentsOfFile:[modDict objectAtIndex:i] options:0 error:nil];
+	for (int i = 0; i < modDictSort.count; i++) {
+		AppLog(@"Patching functions... (%i/%i) [%@]", (i + 1), modDictSort.count, [[modDictSort objectAtIndex:i] lastPathComponent]);
+		NSData* mdata = [NSData dataWithContentsOfFile:[modDictSort objectAtIndex:i] options:0 error:nil];
 		if (mdata == nil) continue;
 		NSString* dataString = [[NSString alloc] initWithData:mdata encoding:NSASCIIStringEncoding];
 		for (NSString* offset in [Patcher getHookOffsetsFromData:dataString]) {
@@ -695,13 +693,20 @@ for func in list:
 			[data replaceBytesInRange:NSMakeRange(addr, patchSize) withBytes:patchData.bytes];
 			AppLogDebug(@"Patched Offset %#llx with %i bytes (%@)", addr, patchSize, [Patcher hexStringWithSpaces:patchData includeSpaces:YES]);
 		}
-        if (i > 0 && entitlements) {
-            [fm copyItemAtPath:[modDict objectAtIndex:i] toPath:[[bundlePath URLByAppendingPathComponent:@"mods"] URLByAppendingPathComponent:[[modDict objectAtIndex:i] lastPathComponent]].path error:nil];
-        }
+		if (entitlements && ![[[modDictSort objectAtIndex:i] lastPathComponent] isEqualToString:@"Geode.ios.dylib"]) {
+			[fm copyItemAtPath:[modDictSort objectAtIndex:i] toPath:[[bundlePath URLByAppendingPathComponent:@"mods"] URLByAppendingPathComponent:[[modDictSort objectAtIndex:i] lastPathComponent]].path error:nil];
+		}
 	}
 	NSString* patchChecksum = [[Utils getPrefs] stringForKey:@"PATCH_CHECKSUM"];
 	NSArray* keys = [self.originalBytes allKeys];
-	NSString* hash = [Utils sha256sumWithString:[keys componentsJoinedByString:@","]];
+	NSMutableArray* modIDSorted = [[[modIDs allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] mutableCopy];
+	for (int i = 0; i < modIDSorted.count; i++) {
+		NSString *item = modIDSorted[i];
+		if (item == nil || [item isEqualToString:@""]) {
+			[modIDSorted removeObjectAtIndex:i];
+		}
+	}
+	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]];
 	if (patchChecksum != nil) {
 		if (![patchChecksum isEqualToString:hash]) {
 			AppLog(@"Hash mismatch (%@ vs %@), now writing to binary...", patchChecksum, hash)
@@ -709,17 +714,11 @@ for func in list:
 		} else {
 			if (!force) {
 				AppLog(@"Binary already patched, skipping...");
-				if (entitlements) {
-					[[Utils getPrefs] setBool:NO forKey:@"NEEDS_PATCHING_ENTERPRISE"];
-				}
 				return completionHandler(YES, nil);
 			}
 		}
 	} else {
 		AppLog(@"Got hash %@, now writing to binary...", hash)
-		if (entitlements) {
-			[[Utils getPrefs] setBool:YES forKey:@"NEEDS_PATCHING_ENTERPRISE"];
-		}
 		[[Utils getPrefs] setObject:hash forKey:@"PATCH_CHECKSUM"];
 	}
 
@@ -735,6 +734,7 @@ for func in list:
 		AppLog(@"Couldn't patch binary: %@", error);
 		return completionHandler(NO, [NSString stringWithFormat:@"Patch failed: %@", error.localizedDescription]);
 	}
+	// why i have to do it twice? i have NO idea but it works
 	if (entitlements) {
 		NSString* execPath = to.path;
 		NSString* error = LCParseMachO(execPath.UTF8String, false, ^(const char* path, struct mach_header_64* header, int fd, void* filePtr) {
@@ -747,4 +747,119 @@ for func in list:
 	AppLog(@"Binary has been patched!");
 	return completionHandler(YES, @"force");
 }
++ (NSString*)getPatchChecksum:(NSURL*)from withSafeMode:(BOOL)safeMode {
+	NSFileManager* fm = [NSFileManager defaultManager];
+	NSError* error;
+	if (![fm fileExistsAtPath:from.path]) return nil;
+	NSMutableData* data = [NSMutableData dataWithContentsOfURL:from options:0 error:&error];
+	if (!data || error) {
+		AppLog(@"Couldn't read binary: %@", error);
+		return nil;
+	}
+
+	NSString* unzipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"game/geode/unzipped"].path;
+	NSString* unzipBinModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"game/geode/unzipped/binaries"].path;
+	NSString* zipModsPath = [[LCPath dataPath] URLByAppendingPathComponent:@"game/geode/mods"].path;
+	NSURL* savedJSONURL = [[LCPath dataPath] URLByAppendingPathComponent:@"save/geode/mods/geode.loader/saved.json"];
+	NSData* savedJSONData = [NSData dataWithContentsOfURL:savedJSONURL options:0 error:&error];
+	NSDictionary* savedJSONDict;
+	BOOL canParseJSON = NO;
+	NSMutableSet<NSString*>* modIDs = [NSMutableSet new];
+	NSMutableArray<NSString*>* modEnabledDict = [NSMutableArray new];
+
+	NSArray* modsDir = [fm contentsOfDirectoryAtPath:unzipModsPath error:nil];
+	NSArray* modsBinDir = [fm contentsOfDirectoryAtPath:unzipBinModsPath error:nil];
+	if (!safeMode && savedJSONData != nil) {
+		savedJSONDict = [NSJSONSerialization JSONObjectWithData:savedJSONData options:kNilOptions error:&error];
+		if (!error && savedJSONDict && [savedJSONDict isKindOfClass:[NSDictionary class]]) {
+			canParseJSON = YES;
+			for (NSString *key in savedJSONDict.allKeys) {
+				if ([key hasPrefix:@"should-load-"]) {
+					BOOL value = [savedJSONDict[key] boolValue];
+					if (value) {
+						NSString *modID = [key substringFromIndex:12];
+						if ([fm fileExistsAtPath:[zipModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.geode", modID]]]) {
+							[modIDs addObject:modID];
+							[modEnabledDict addObject:[NSString stringWithFormat:@"%@.ios.dylib", modID]];
+						}
+					}
+				}
+			}
+			for (NSString *file in modsBinDir) {
+				NSString *modID = [[file stringByDeletingPathExtension] stringByDeletingPathExtension];
+				NSString *key = [NSString stringWithFormat:@"should-load-%@", modID];
+				if (!savedJSONDict[key]) {
+					if (![modEnabledDict containsObject:file]) {
+						if ([fm fileExistsAtPath:[zipModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.geode", modID]]]) {
+							[modIDs addObject:modID];
+							[modEnabledDict addObject:file];
+						}
+					}
+				}
+			}
+		} else {
+			canParseJSON = NO;
+			AppLog(@"Couldn't read saved.json, assuming Geode has never been opened before");
+		}
+	}
+	NSMutableSet<NSString*>* modDict = [NSMutableSet new];
+	NSString* geodePath = [Utils getTweakDir];
+	if (geodePath) {
+		[modIDs addObject:@"geode.loader"];
+		[modDict addObject:geodePath];
+	}
+	if (canParseJSON && !safeMode) {
+		NSMutableArray<NSString*>* modConflictDict = [NSMutableArray new];
+		for (NSString* modId in modsBinDir) {
+			if ([modEnabledDict containsObject:modId]) {
+				[modIDs addObject:[[modId stringByDeletingLastPathComponent] stringByDeletingLastPathComponent]];
+				[modDict addObject:[unzipBinModsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", modId]]];
+				[modConflictDict addObject:modId];
+			}
+		}
+		for (NSString* modId in modsDir) {
+			NSString* modPath = [unzipModsPath stringByAppendingPathComponent:modId];
+			BOOL isDir;
+			if (![fm fileExistsAtPath:modPath isDirectory:&isDir] || !isDir) continue;
+			NSArray* modDir = [fm contentsOfDirectoryAtPath:modPath error:&error];
+			if (error) continue;
+			for (NSString* file in modDir) {
+				if ([file hasSuffix:@"ios.dylib"]) {
+					if ([modEnabledDict containsObject:file] && ![modConflictDict containsObject:file]) {
+						[modIDs addObject:modId];
+						[modDict addObject:[modPath stringByAppendingPathComponent:[NSString stringWithFormat:@"/%@", file]]];
+					}
+				}
+			}
+		}
+	}
+	NSMutableDictionary<NSString*, NSString*>* bytes;
+	bytes = [NSMutableDictionary dictionary];
+	NSArray<NSString*>* modDictSort = [[modDict allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+	for (int i = 0; i < modDictSort.count; i++) {
+		NSData* mdata = [NSData dataWithContentsOfFile:[modDictSort objectAtIndex:i] options:0 error:nil];
+		if (mdata == nil) continue;
+		NSString* dataString = [[NSString alloc] initWithData:mdata encoding:NSASCIIStringEncoding];
+		for (NSString* offset in [Patcher getHookOffsetsFromData:dataString]) {
+			if (![offset hasPrefix:@"0x"])
+				continue;
+			bytes[offset] = @"data";
+		}
+		for (NSString* offset in [Patcher getStaticHookOffsetsFromData:dataString]) {
+			bytes[offset] = @"data";
+		}
+	}
+	NSArray* keys = [bytes allKeys];
+	NSMutableArray* modIDSorted = [[[modIDs allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] mutableCopy];
+	for (int i = 0; i < modIDSorted.count; i++) {
+		NSString *item = modIDSorted[i];
+		if (item == nil || [item isEqualToString:@""]) {
+			[modIDSorted removeObjectAtIndex:i];
+		}
+	}
+	//AppLog(@"keys %@", [NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]);
+	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]];
+	return hash;
+}
+
 @end

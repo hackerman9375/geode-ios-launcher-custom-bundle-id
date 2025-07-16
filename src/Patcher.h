@@ -6,6 +6,7 @@
 @property(class, nonatomic, strong) NSMutableDictionary<NSString*, NSData*>* originalBytes;
 
 + (void)startUnzip:(void (^)(NSString* doForce))completionHandler;
++ (NSString*)getPatchChecksum:(NSURL*)from withSafeMode:(BOOL)safeMode;
 + (void)patchGDBinary:(NSURL*)from
 					to:(NSURL*)to
 	withHandlerAddress:(uint64_t)handlerAddress

@@ -4,31 +4,59 @@
 #include <dlfcn.h>
 #include <objc/runtime.h>
 
-void exitNotice(NSString* msg) {
-	NSLog(@"[EnterpriseLoader] Exit Notice");
-	dispatch_async(dispatch_get_main_queue(), ^{
-		UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Notice" message:msg preferredStyle:UIAlertControllerStyleAlert];
-		UIAlertAction* ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) { exit(0); }];
-		[alert addAction:ok];
-		id anyScene = [UIApplication.sharedApplication.connectedScenes allObjects].firstObject;
-		UIWindowScene* scene = [anyScene isKindOfClass:UIWindowScene.class] ? anyScene : nil;
-		UIWindow* alertWindow;
-		if (scene) {
-			alertWindow = [[UIWindow alloc] initWithWindowScene:scene];
-		} else {
-			alertWindow = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
-		}
-		alertWindow.windowLevel = UIWindowLevelAlert + 1;
-		UIViewController* vc = [UIViewController new];
-		alertWindow.rootViewController = vc;
-		[alertWindow makeKeyAndVisible];
-		[vc presentViewController:alert animated:YES completion:nil];
-	});
+
+NSString* exitMsg = nil;
+BOOL showNothing = NO;
+
+@interface RootViewController : UIViewController
+@end
+
+@implementation RootViewController
+
+- (void)viewDidAppear:(BOOL)animated {
+	NSLog(@"[EnterpriseLoader] viewDidAppear");
+	[super viewDidAppear:animated];
+	if (exitMsg != nil) {
+		static dispatch_once_t onceToken;
+		dispatch_once(&onceToken, ^{
+			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Notice" message:exitMsg preferredStyle:UIAlertControllerStyleAlert];
+			UIAlertAction* ok = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) { exit(0); }];
+			[alert addAction:ok];
+			[self presentViewController:alert animated:YES completion:nil];
+		});
+	}
+}
+@end
+@implementation NSObject (modif_AppController)
+- (void)overrideToWindow {
+	showNothing = YES;
+	id anyScene = [UIApplication.sharedApplication.connectedScenes allObjects].firstObject;
+	UIWindowScene* scene = [anyScene isKindOfClass:UIWindowScene.class] ? anyScene : nil;
+	UIWindow* window;
+	if (scene) {
+		window = [[UIWindow alloc] initWithWindowScene:scene];
+	} else {
+		window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+	}
+	if (!window) {
+		NSLog(@"[EnterpriseLoader] Couldn't find window");
+		// something terribly went wrong here
+		return;
+	}
+	window.backgroundColor = [UIColor blackColor];
+	window.rootViewController = [[RootViewController alloc] init];
+	[window makeKeyAndVisible];
+}
+- (void)rly_application_didBecomeActive:(UIApplication*)application {
+	// robert why do you use deprecated funcs
+	NSLog(@"[EnterpriseLoader] AppController:applicationDidBecomeActive swizzled!");
+	if (!showNothing) {
+		[self rly_application_didBecomeActive:application];
+	} else {
+		NSLog(@"[EnterpriseLoader] AppController:applicationDidBecomeActive prevented from called!");
+	}
 }
 
-@implementation NSObject (modif_AppController)
-- (void)reallyLaunch:(UIApplication*)application {
-}
 - (BOOL)rly_application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions {
 	NSLog(@"[EnterpriseLoader] application:didFinishLaunchingWithOptions swizzled!");
 	NSURL* url = launchOptions[UIApplicationLaunchOptionsURLKey];
@@ -81,7 +109,6 @@ void exitNotice(NSString* msg) {
 					[fm removeItemAtPath:zipPath error:nil];
 				}
 				BOOL force = NO;
-				exitNotice(@"Do not press OK.");
 				int result = compressEnt(docDir.path, zipPath, &force);
 				if (result != 0) {
 					NSLog(@"[EnterpriseLoader] Couldn't create zip file: %d", result);
@@ -100,12 +127,9 @@ void exitNotice(NSString* msg) {
 					NSString* encodedParam = [encoded stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet];
 					NSString* urlString = [NSString stringWithFormat:@"%@://import?data=%@%@%@%@", uri, encodedParam, (force) ? @"&force=1" : @"", (safeMode) ? @"safeMode=1" : @"",
 																	 (dontCallBack) ? @"dontCallback=1" : @""];
-					if ([fm fileExistsAtPath:[docDir URLByAppendingPathComponent:@"game/geode/unzipped/binaries"].path]) {
-						[fm removeItemAtURL:[docDir URLByAppendingPathComponent:@"game/geode/unzipped/binaries"] error:nil];
-					}
 					NSURL* url = [NSURL URLWithString:urlString];
 					if ([[UIApplication sharedApplication] canOpenURL:url]) {
-						for (int i = 0; i < 1; i++) {
+						for (int i = 0; i < 2; i++) {
 							[application openURL:url options:@{} completionHandler:^(BOOL b) { exit(0); }];
 						}
 					} else {
@@ -113,6 +137,7 @@ void exitNotice(NSString* msg) {
 						abort();
 					}
 				});
+				[self overrideToWindow];
 				return YES;
 			}
 		}
@@ -123,29 +148,38 @@ void exitNotice(NSString* msg) {
 		NSString* sfBdPath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"sf.bd"];
 		NSString* sfBd = [NSString stringWithContentsOfURL:[NSURL fileURLWithPath:sfBdPath] encoding:NSUTF8StringEncoding error:nil];
 		if (sfBd == nil) {
-			exitNotice(@"sf missing. Please reinstall the helper.");
-			return YES;
+			exitMsg = @"sf missing. Please reinstall the helper.";
 		}
 		if (![bbUID isEqualToString:bbUID]) {
-			exitNotice(@"Unable to verify. Please ensure both the launcher and helper are signed with the same certificate and installed with the same method.");
-			return YES;
+			exitMsg = @"Unable to verify. Please ensure both the launcher and helper are signed with the same certificate and installed with the same method.";
 		}
+	} else {
+		NSLog(@"[EnterpriseLoader] Geode won't load");
+		exitMsg = @"You must launch the helper with the launcher.";
+	}
+	if (exitMsg != nil) {
+		[self overrideToWindow];
+		return YES;
+	}
+	if (exitMsg == nil) {
 		NSLog(@"[EnterpriseLoader] dlopen(\"@executable_path/Geode.ios.dylib\", RTLD_LAZY | RTLD_GLOBAL)");
 		void* handle = dlopen("@executable_path/Geode.ios.dylib", RTLD_LAZY | RTLD_GLOBAL);
 		const char* error = dlerror();
 		if (handle) {
 			NSLog(@"[EnterpriseLoader] Loaded Geode.ios.dylib");
 		} else if (error) {
+			exitMsg = [NSString stringWithFormat:@"Failed to dlopen Geode.ios.dylib: %s", error];
 			NSLog(@"[EnterpriseLoader] Failed to dlopen Geode.ios.dylib: %s", error);
 		} else {
+			exitMsg = @"Failed to dlopen Geode.ios.dylib: Unknown error because dlerror() returns NULL";
 			NSLog(@"[EnterpriseLoader] Failed to dlopen Geode.ios.dylib: Unknown error because dlerror() returns NULL");
 		}
-		return [self rly_application:application didFinishLaunchingWithOptions:nil];
-	} else {
-		NSLog(@"[EnterpriseLoader] Geode won't load");
-		exitNotice(@"You must launch the helper with the launcher.");
+	}
+	if (exitMsg != nil) {
+		[self overrideToWindow];
 		return YES;
 	}
+	return [self rly_application:application didFinishLaunchingWithOptions:nil];
 }
 
 - (BOOL)rly_application:(UIApplication*)application openURL:(nonnull NSURL*)url options:(nonnull NSDictionary<UIApplicationOpenURLOptionsKey, id>*)options {
@@ -171,6 +205,17 @@ __attribute__((constructor)) static void EnterpriseLoaderConstructor() {
 				class_addMethod(appCtrl, swizzled, method_getImplementation(swzMethod), method_getTypeEncoding(swzMethod));
 				method_exchangeImplementations(origMethod, class_getInstanceMethod(appCtrl, swizzled));
 				NSLog(@"[EnterpriseLoader] Swizzling (AppController) application:didFinishLaunchingWithOptions");
+			}
+		}
+		{
+			SEL orig = @selector(applicationDidBecomeActive:);
+			SEL swizzled = @selector(rly_application_didBecomeActive:);
+			Method origMethod = class_getInstanceMethod(appCtrl, orig);
+			Method swzMethod = class_getInstanceMethod([NSObject class], swizzled);
+			if (origMethod && swzMethod) {
+				class_addMethod(appCtrl, swizzled, method_getImplementation(swzMethod), method_getTypeEncoding(swzMethod));
+				method_exchangeImplementations(origMethod, class_getInstanceMethod(appCtrl, swizzled));
+				NSLog(@"[EnterpriseLoader] Swizzling (AppController) applicationDidBecomeActive");
 			}
 		}
 		{
