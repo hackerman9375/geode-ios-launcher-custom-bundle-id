@@ -856,6 +856,7 @@ for func in list:
 	for (int i = 0; i < modDictSort.count; i++) {
 		NSData* mdata = [NSData dataWithContentsOfFile:[modDictSort objectAtIndex:i] options:0 error:nil];
 		if (mdata == nil) continue;
+		[modIDsHash addObject:[Utils sha256sumWithData:mdata]];
 		NSString* dataString = [[NSString alloc] initWithData:mdata encoding:NSASCIIStringEncoding];
 		for (NSString* offset in [Patcher getHookOffsetsFromData:dataString]) {
 			if (![offset hasPrefix:@"0x"])
