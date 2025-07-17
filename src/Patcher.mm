@@ -711,7 +711,7 @@ for func in list:
 	NSString* patchChecksum = [[Utils getPrefs] stringForKey:@"PATCH_CHECKSUM"];
 	NSArray* keys = [self.originalBytes allKeys];
     NSString* hash;
-    if (entitlements) {
+    if (NO) { //entitlements
         hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@-%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","], [[modIDsHash allObjects] componentsJoinedByString:@","]]];
     } else {
         hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]];
@@ -869,7 +869,8 @@ for func in list:
 	}
 	NSArray* keys = [bytes allKeys];
 	//AppLog(@"keys %@", [NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]);
-	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@-%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","], [[modIDsHash allObjects] componentsJoinedByString:@","]]];
+	//NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@-%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","], [[modIDsHash allObjects] componentsJoinedByString:@","]]];
+	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]];
 	return hash;
 }
 
