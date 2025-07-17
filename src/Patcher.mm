@@ -711,10 +711,13 @@ for func in list:
 	NSString* patchChecksum = [[Utils getPrefs] stringForKey:@"PATCH_CHECKSUM"];
 	NSArray* keys = [self.originalBytes allKeys];
     NSString* hash;
-    if (NO) { //entitlements
-        hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@-%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","], [[modIDsHash allObjects] componentsJoinedByString:@","]]];
+    if (entitlements) {
+		NSString* modHashSorted = [[[modIDsHash allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] componentsJoinedByString:@","];
+		NSString* toHash = [NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], modHashSorted];
+        hash = [Utils sha256sumWithString:toHash];
+		AppLog(@"sha256sum(\"%@\")", toHash);
     } else {
-        hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]];
+        hash = [Utils sha256sumWithString:[keys componentsJoinedByString:@","]];
     }
 	if (patchChecksum != nil) {
 		if (![patchChecksum isEqualToString:hash]) {
@@ -867,10 +870,10 @@ for func in list:
 			bytes[offset] = @"data";
 		}
 	}
-	NSArray* keys = [bytes allKeys];
+	//NSArray* keys = [bytes allKeys];
 	//AppLog(@"keys %@", [NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]);
-	//NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@-%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","], [[modIDsHash allObjects] componentsJoinedByString:@","]]];
-	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]];
+	NSString* modHashSorted = [[[modIDsHash allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] componentsJoinedByString:@","];
+	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], modHashSorted]];
 	return hash;
 }
 
