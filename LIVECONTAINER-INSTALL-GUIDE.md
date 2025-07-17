@@ -29,6 +29,9 @@ After these steps:
 - Press **"Launch"**
 
 # JIT-Less
+> [!WARNING]
+> Currently, this method only works if you have the [Development Release](https://github.com/geode-sdk/ios-launcher/releases/tag/nightly) of the launcher.
+
 ## Prerequisites
 - LiveContainer (Latest)
 - Confirming JIT-less works on LiveContainer
@@ -57,5 +60,6 @@ Finally, the last steps are:
 - Press **"Verify Geometry Dash"**
 - Press **"Download"**
 - Open Settings
+- Make sure **Enable JIT-Less** is on
 - Press **"Test JIT-Less Mode"** to test if JIT-less mode works properly
 - Exit settings & press **"Launch"**
