@@ -935,7 +935,7 @@
 			if (NSClassFromString(@"LCSharedUtils")) {
 				break;
 			}
-			if (![LCUtils isAppGroupAltStoreLike]) {
+			if (![LCUtils isAppGroupAltStoreLike] || [[Utils getPrefs] boolForKey:@"MANUAL_IMPORT_CERT"]) {
 				if ([[Utils getPrefs] boolForKey:@"LCCertificateImported"]) {
 					UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Warning" message:@"Are you sure you want to remove your certificate?"
 																			preferredStyle:UIAlertControllerStyleAlert];

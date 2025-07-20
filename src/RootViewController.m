@@ -819,8 +819,21 @@
 	if ([fm fileExistsAtPath:tweakLoaderPath]) {
 		[fm removeItemAtPath:tweakLoaderPath error:nil];
 	}
+
 	[fm copyItemAtPath:target toPath:tweakLoaderPath error:nil];
 	[fm copyItemAtPath:tweakPath toPath:tweakBundlePath error:&err];
+
+	NSData* tdata = [NSData dataWithContentsOfFile:tweakPath options:0 error:nil];
+	NSData* bdata = [NSData dataWithContentsOfFile:tweakBundlePath options:0 error:nil];
+	if (!tdata || !bdata) {
+		[Utils showError:self title:@"Failed to read Geode.ios.dylib" error:nil];
+		return NO;
+	}
+	if (![[Utils sha256sumWithData:bdata] isEqualToString:[Utils sha256sumWithData:tdata]]) {
+		[Utils showError:self title:[NSString stringWithFormat:@"Checksum mismatch (%@ & %@)", [Utils sha256sumWithData:bdata], [Utils sha256sumWithData:tdata]] error:nil];
+		return NO;
+	}
+
 	if (err) {
 		[Utils showError:self title:@"Failed to copy Geode library" error:err];
 		return NO;

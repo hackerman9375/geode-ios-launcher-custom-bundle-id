@@ -173,7 +173,15 @@
 	[view addSubview:titleLabel];
 
 	UILabel* subtitleLabel = [[UILabel alloc] init];
-	subtitleLabel.text = @"intro.warning.subtitle".loc;
+	if ([Utils isDevCert]) {
+		if (@available(iOS 26.0, *)) {
+			subtitleLabel.text = @"intro.warning.subtitle3".loc;
+		} else {
+			subtitleLabel.text = @"intro.warning.subtitle1".loc;
+		}
+	} else {
+		subtitleLabel.text = @"intro.warning.subtitle2".loc;
+	}
 	subtitleLabel.numberOfLines = 10;
 	subtitleLabel.textColor = [Theming getFooterColor];
 	subtitleLabel.textAlignment = NSTextAlignmentCenter;
@@ -690,8 +698,7 @@
 	self.colorSelectionController.color = [Theming getAccentColor];
 
 	if (self.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact) {
-		UIBarButtonItem* doneBtn = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"color.done".loc, ) style:UIBarButtonItemStyleDone target:self
-																   action:@selector(ms_dismissViewController:)];
+		UIBarButtonItem* doneBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(ms_dismissViewController:)];
 		self.colorSelectionController.navigationItem.rightBarButtonItem = doneBtn;
 	}
 	[self presentViewController:navCtrl animated:YES completion:nil];

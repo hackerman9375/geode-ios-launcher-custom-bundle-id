@@ -113,6 +113,7 @@ static NSString* certPassword = nil;
 		BOOL access = [url startAccessingSecurityScopedResource]; // to prevent ios from going "OH YOU HAVE NO PERMISSION!!!"
 		if ([fm copyItemAtURL:url toURL:destinationURL error:&error]) {
 			AppLog(@"Added new mod %@!", fileName);
+			[fm removeItemAtURL:url error:nil];
 			if (access)
 				[url stopAccessingSecurityScopedResource];
 			dispatch_async(dispatch_get_main_queue(), ^{ [Utils showNoticeGlobal:[NSString stringWithFormat:@"launcher.notice.mod-import".loc, fileName]]; });
