@@ -29,9 +29,6 @@ After these steps:
 - Press **"Launch"**
 
 # JIT-Less
-> [!WARNING]
-> Currently, this method only works if you have the [Development Release](https://github.com/geode-sdk/ios-launcher/releases/tag/nightly) of the launcher.
-
 ## Prerequisites
 - LiveContainer (Latest)
 - Confirming JIT-less works on LiveContainer
