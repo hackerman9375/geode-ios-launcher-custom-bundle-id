@@ -16,9 +16,6 @@ This tutorial is for people who cannot afford to purchase a Developer Certificat
 - **IPA file** of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases/latest)
 - At least 400 MB of storage available
 
-> [!WARNING]
-> Currently, this method only works if you have Geode on nightly release, and the [Development Release](https://github.com/geode-sdk/ios-launcher/releases/tag/nightly) of the launcher. To enable this in the launcher, open settings, enable **Use Nightly Release**, and tap **Check for Updates**
-
 ## Setting up Enterprise Mode
 After setting up Geode, verifying you own Geometry Dash, and downloaded the libraries, you will need to enable **Enterprise Mode** in settings.
 
