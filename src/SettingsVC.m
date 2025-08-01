@@ -1126,7 +1126,7 @@
 				[Utils showError:self title:@"Original Binary not found." error:nil];
 			} else {
 				[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
-					withHandlerAddress:0x88d000
+					withHandlerAddress:0x8b8000
 								 force:YES
 						  withSafeMode:NO
 					  withEntitlements:YES completionHandler:^(BOOL success, NSString* error) {
@@ -1222,7 +1222,7 @@
 				break;
 			}
 			[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
-				withHandlerAddress:0x88d000
+				withHandlerAddress:0x8b8000
 							 force:YES
 					  withSafeMode:YES
 				  withEntitlements:YES completionHandler:^(BOOL success, NSString* error) {
@@ -1249,7 +1249,7 @@
 				break;
 			}
 			[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
-				withHandlerAddress:0x88d000
+				withHandlerAddress:0x8b8000
 							 force:YES
 					  withSafeMode:YES
 				  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) {

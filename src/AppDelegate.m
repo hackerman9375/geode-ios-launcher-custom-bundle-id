@@ -232,7 +232,7 @@ static NSString* certPassword = nil;
 			if (NO) {
 				NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 				[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"]
-					withHandlerAddress:0x88d000
+					withHandlerAddress:0x8b8000
 								 force:NO
 						  withSafeMode:NO
 					  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) {

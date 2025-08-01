@@ -157,7 +157,136 @@ BOOL appendNewSection(NSMutableData* data) {
 	newSect.size = sectSize;
 	newSect.offset = newSeg.fileoff;
 	newSect.align = sectSize < 16 ? 0 : 4;
-	newSect.flags = 0x80000400; // S_REGULAR | S_ATTR_PURE_INSTRUCTIONS;
+	newSect.flags = 0x80000400; // S_REGULAR | S_ATTR_PURE_INSTRUCTIONS | S_ATTR_SOME_INSTRUCTIONS;
+
+	linkSeg->vmaddr += alignedSize;
+	linkSeg->fileoff += alignedSize;
+
+	// i love mach-o (most of this was assist because this has been giving me a headache) just to shift the linkedit cmds
+	searchPtr = lcPtr;
+	for (uint32_t i = 0; i < ncmds; i++) {
+		struct load_command* lc = (struct load_command*)searchPtr;
+		if (lc->cmd == LC_DYLD_INFO_ONLY || lc->cmd == LC_DYLD_INFO) {
+			struct dyld_info_command* dc = (struct dyld_info_command*)searchPtr;
+			#define SHIFT(field) if (dc->field >= linkFileOff) dc->field += alignedSize
+			SHIFT(rebase_off);
+			SHIFT(bind_off);
+			SHIFT(weak_bind_off);
+			SHIFT(lazy_bind_off);
+			SHIFT(export_off);
+			#undef SHIFT
+		} else if (lc->cmd == LC_SYMTAB) {
+			struct symtab_command* sc = (struct symtab_command*)searchPtr;
+			if (sc->symoff >= linkFileOff)
+				sc->symoff += alignedSize;
+			if (sc->stroff >= linkFileOff)
+				sc->stroff += alignedSize;
+		} else if (lc->cmd == LC_DYSYMTAB) {
+			struct dysymtab_command* dc = (struct dysymtab_command*)searchPtr;
+			#define DS(field) if (dc->field >= linkFileOff) dc->field += alignedSize
+			DS(tocoff);
+			DS(modtaboff);
+			DS(extrefsymoff);
+			DS(indirectsymoff);
+			DS(extreloff);
+			DS(locreloff);
+			#undef DS
+		} else if (lc->cmd == LC_CODE_SIGNATURE || lc->cmd == LC_SEGMENT_SPLIT_INFO || lc->cmd == LC_FUNCTION_STARTS || lc->cmd == LC_DATA_IN_CODE ||
+				   lc->cmd == LC_DYLIB_CODE_SIGN_DRS) {
+			struct linkedit_data_command* ld = (struct linkedit_data_command*)searchPtr;
+			if (ld->dataoff >= linkFileOff)
+				ld->dataoff += alignedSize;
+		}
+		searchPtr += lc->cmdsize;
+	}
+	header->ncmds += 1;
+	header->sizeofcmds += newSeg.cmdsize;
+
+	// rebuilding just in case because binary shifts are wacky
+	NSMutableData* out = [NSMutableData data];
+	[out appendBytes:buf length:sizeof(*header)];
+	lcPtr = buf + sizeof(*header);
+	for (uint32_t i = 0; i < ncmds; i++) {
+		struct load_command* lc = (struct load_command*)lcPtr;
+		if (i == linkIndex) {
+			[out appendBytes:&newSeg length:sizeof(newSeg)];
+			[out appendBytes:&newSect length:sizeof(newSect)];
+		}
+		[out appendBytes:lcPtr length:lc->cmdsize];
+		lcPtr += lc->cmdsize;
+	}
+	NSUInteger headerLen = out.length;
+	if (headerLen < linkFileOff) {
+		NSUInteger copySize = linkFileOff - headerLen;
+		[out appendBytes:buf + headerLen length:copySize];
+	}
+	uint8_t* dead = (uint8_t*)calloc(1, alignedSize);
+	[out appendBytes:dead length:sectSize];
+	if (alignedSize > sectSize) {
+		[out appendBytes:dead + sectSize length:(alignedSize - sectSize)];
+	}
+	free(dead);
+	[out appendBytes:buf + linkFileOff length:origSize - linkFileOff];
+	[data setData:out];
+	return YES;
+}
+BOOL appendNewRWSection(NSMutableData* data) {
+	NSUInteger origSize = data.length;
+	const char* segNameC = "__STORAGE";
+	const char* sectNameC = "__storage";
+	uint64_t sectSize = sizeof(uintptr_t);
+
+	uint8_t* buf = (uint8_t*)data.mutableBytes;
+	struct mach_header_64* header = (struct mach_header_64*)buf;
+
+	uint8_t* lcPtr = buf + sizeof(*header);
+	uint32_t ncmds = header->ncmds;
+	
+	struct segment_command_64* linkSeg = NULL;
+	uint32_t linkIndex = 0;
+	uint64_t linkFileOff = 0;
+	uint8_t* searchPtr = lcPtr;
+	for (uint32_t i = 0; i < ncmds; i++) {
+		struct load_command* lc = (struct load_command*)searchPtr;
+		if (lc->cmd == LC_SEGMENT_64) {
+			struct segment_command_64* sc = (struct segment_command_64*)searchPtr;
+			if (strncmp(sc->segname, "__LINKEDIT", 16) == 0) {
+				linkSeg = sc;
+				linkIndex = i;
+				linkFileOff = sc->fileoff;
+				break;
+			}
+		}
+		searchPtr += lc->cmdsize;
+	}
+	if (!linkSeg) {
+		AppLog(@"Couldn't find __LINKEDIT segment.");
+		return NO;
+	}
+
+	uint64_t alignedSize = align(MAX(sectSize, 0x4000), 0x1000);
+	struct segment_command_64 newSeg;
+	struct section_64 newSect;
+	memset(&newSeg, 0, sizeof(newSeg));
+	memset(&newSect, 0, sizeof(newSect));
+	newSeg.cmd = LC_SEGMENT_64;
+	newSeg.cmdsize = sizeof(newSeg) + sizeof(newSect);
+	strncpy(newSeg.segname, segNameC, 16);
+	newSeg.vmaddr = linkSeg->vmaddr;
+	newSeg.vmsize = alignedSize;
+	newSeg.fileoff = linkFileOff;
+	newSeg.filesize = alignedSize;
+	newSeg.maxprot = VM_PROT_READ | VM_PROT_WRITE;
+	newSeg.initprot = VM_PROT_READ | VM_PROT_WRITE;
+	newSeg.nsects = 1;
+
+	strncpy(newSect.sectname, sectNameC, 16);
+	strncpy(newSect.segname, segNameC, 16);
+	newSect.addr = newSeg.vmaddr;
+	newSect.size = sectSize;
+	newSect.offset = newSeg.fileoff;
+	newSect.align = 3;
+	newSect.flags = 0x0; // S_REGULAR
 
 	linkSeg->vmaddr += alignedSize;
 	linkSeg->fileoff += alignedSize;
@@ -495,6 +624,10 @@ for func in list:
 	if (!appendNewSection(data)) {
 		AppLog(@"Something went wrong when writing a new executable region.");
 		return completionHandler(NO, @"Couldn't write new RX region.");
+	}
+	if (!appendNewRWSection(data)) {
+		AppLog(@"Something went wrong when writing a new writable region.");
+		return completionHandler(NO, @"Couldn't write new RW region.");
 	}
 
 	// === PATCH STEP 1 ====

@@ -285,8 +285,12 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 			usleep(1000 * 100);
 		}
 		if (!checkJITEnabled()) {
-			appError = @"JIT was not enabled. Please ensure that you launched the Geode launcher with JIT. You can enable \"Manual reopen with JIT\" for manually enabling JIT "
+			if (@available(iOS 26.0, *)) {
+				appError = @"JIT is not supported on iOS 26. Please wait until a future update for this to be possible.";
+			} else {
+				appError = @"JIT was not enabled. Please ensure that you launched the Geode launcher with JIT. You can enable \"Manual reopen with JIT\" for manually enabling JIT "
 					   @"(Pressing launch, closing app, open with JIT).";
+			}
 			// appError = @"JIT was not enabled. If you want to use Geode without JIT, setup JITLess mode in settings.";
 			return appError;
 		}
@@ -442,9 +446,9 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	// safe mode
 	if ([gcUserDefaults boolForKey:@"JITLESS"] || [gcUserDefaults boolForKey:@"FORCE_PATCHING"]) {
 		if (safeMode) {
-			setenv("LAUNCHARGS", "--geode:use-common-handler-offset=88d000 --geode:safe-mode", 1);
+			setenv("LAUNCHARGS", "--geode:use-common-handler-offset=8b8000 --geode:safe-mode", 1);
 		} else {
-			setenv("LAUNCHARGS", "--geode:use-common-handler-offset=88d000", 1);
+			setenv("LAUNCHARGS", "--geode:use-common-handler-offset=8b8000", 1);
 		}
 	} else {
 		if (safeMode) {
