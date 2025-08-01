@@ -876,5 +876,4 @@ for func in list:
 	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], modHashSorted]];
 	return hash;
 }
-
 @end

@@ -130,11 +130,11 @@ static NSString* certPassword = nil;
 
 	if ([url.host isEqualToString:@"launchent"]) {
 		AppLog(@"force open helper3");
-		[((RootViewController*)self.window.rootViewController) launchHelper2:NO];
+		[((RootViewController*)self.window.rootViewController) launchHelper2:NO patchCheck:YES];
 		return YES;
 	}
 	if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"] && ![url.host isEqualToString:@"import"]) {
-		[Utils showNoticeGlobal:@"Any app scheme is not supported. This includes restarting Geode."];
+		[Utils showNoticeGlobal:@"Any app scheme is not supported. This includes restarting Geode. Tap Launch if you recently installed mods to patch the helper."];
 		return YES;
 	} else if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"] && [url.host isEqualToString:@"import"]) {
 		NSFileManager* fm = [NSFileManager defaultManager];
@@ -189,7 +189,7 @@ static NSString* certPassword = nil;
 			} else {
 				AppLog(@"force open helper3");
 				// this is funny
-				[((RootViewController*)self.window.rootViewController) launchHelper2:safeMode];
+				[((RootViewController*)self.window.rootViewController) launchHelper2:safeMode patchCheck:YES];
 			}
 		}
 		return YES;

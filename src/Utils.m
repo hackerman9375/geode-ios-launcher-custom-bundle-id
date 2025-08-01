@@ -4,11 +4,12 @@
 #import "Patcher.h"
 #import "Utils.h"
 #import "components/LogUtils.h"
-#import "src/LCUtils/UIKitPrivate.h"
+#import "LCUtils/UIKitPrivate.h"
 #import <CommonCrypto/CommonCrypto.h>
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
 #import <mach-o/arch.h>
+#import <objc/runtime.h>
 
 BOOL checkedSandboxed = NO;
 BOOL sandboxValue = NO;

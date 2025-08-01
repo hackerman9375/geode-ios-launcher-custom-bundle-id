@@ -3,7 +3,7 @@
 #import <UIKit/UIKit.h>
 #include <dlfcn.h>
 #include <objc/runtime.h>
-
+#import "../src/EnterpriseCompare.h"
 
 NSString* exitMsg = nil;
 BOOL showNothing = NO;
@@ -12,7 +12,6 @@ BOOL showNothing = NO;
 @end
 
 @implementation RootViewController
-
 - (void)viewDidAppear:(BOOL)animated {
 	NSLog(@"[EnterpriseLoader] viewDidAppear");
 	[super viewDidAppear:animated];
@@ -43,7 +42,7 @@ BOOL showNothing = NO;
 		// something terribly went wrong here
 		return;
 	}
-	window.backgroundColor = [UIColor blackColor];
+	window.backgroundColor = [UIColor grayColor];
 	window.rootViewController = [[RootViewController alloc] init];
 	[window makeKeyAndVisible];
 }
@@ -82,6 +81,13 @@ BOOL showNothing = NO;
 							NSString* decodedString = [[NSString alloc] initWithData:decodedData encoding:NSUTF8StringEncoding];
 							decodedString = [NSString stringWithFormat:@"%@ --geode:binary-dir=\"%@/mods\"", decodedString, [[NSBundle mainBundle] resourcePath]];
 							setenv("LAUNCHARGS", decodedString.UTF8String, 1);
+						}
+					} else if ([item.name isEqualToString:@"checksum"]) {
+						NSString* currChecksum = [EnterpriseCompare getChecksum:YES];
+						NSString* otherChecksum = [item.value mutableCopy];
+						NSLog(@"[EnterpriseLoader] curr-checksum %@ vs other-checksum %@", currChecksum, otherChecksum);
+						if (![currChecksum isEqualToString:otherChecksum]) {
+							exitMsg = @"You must update the Helper to use any new mods. If you accidentally skipped the step to save the IPA, go back to the launcher, settings, and tap \"Install Helper\".";
 						}
 					}
 				}

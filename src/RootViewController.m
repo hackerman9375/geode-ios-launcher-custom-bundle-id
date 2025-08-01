@@ -22,6 +22,7 @@
 #include <dlfcn.h>
 #include <mach-o/dyld.h>
 #include <objc/runtime.h>
+#import "EnterpriseCompare.h"
 
 #define LOCAL_BUILD 0
 #define LOCAL_URL "http://192.168.1.22:3000/Geometry-2.207.ipa"
@@ -663,7 +664,7 @@
 			  withEntitlements:NO completionHandler:^(BOOL success, NSString* error) { completionHandler(success, error); }];
 	}
 }
-- (void)launchHelper2:(BOOL)safeMode {
+- (void)launchHelper2:(BOOL)safeMode patchCheck:(BOOL)patchCheck {
 	NSString* env;
 	NSString* launchArgs = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
 	if (launchArgs && [launchArgs length] > 1) {
@@ -682,6 +683,10 @@
 		[encodedUrl deleteCharactersInRange:NSMakeRange(encodedUrl.length - 1, 1)];
 	}
 	NSString* openURL = [NSString stringWithFormat:@"geode-helper://launch?args=%@", encodedUrl];
+	if (patchCheck) {
+		NSString* checksum = [EnterpriseCompare getChecksum:NO];
+		openURL = [NSString stringWithFormat:@"geode-helper://launch?checksum=%@&args=%@", checksum, encodedUrl];
+	}
 	NSURL* url = [NSURL URLWithString:openURL];
 	if ([[UIApplication sharedApplication] canOpenURL:url]) {
 		[[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];

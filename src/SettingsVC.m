@@ -830,10 +830,8 @@
 				} else if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 					[self dismissViewControllerAnimated:YES completion:nil];
 					[_root.launchButton setEnabled:NO];
-					[_root launchHelper2:YES];
-					//[_root bundleIPAWithPatch:YES withLaunch:YES];
+					[_root launchHelper2:YES patchCheck:NO];
 				} else {
-
 					if (NSClassFromString(@"LCSharedUtils")) {
 						[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 						[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
@@ -903,7 +901,7 @@
 				JITLessVC* view = [[JITLessVC alloc] init];
 				[[self navigationController] pushViewController:view animated:YES];
 			} else { // launch without patching
-				[_root launchHelper2:NO];
+				[_root launchHelper2:NO patchCheck:NO];
 			}
 			break;
 		}

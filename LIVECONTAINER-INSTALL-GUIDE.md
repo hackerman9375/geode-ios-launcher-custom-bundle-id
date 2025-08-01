@@ -33,7 +33,7 @@ After these steps:
 - LiveContainer (Latest)
 - Confirming JIT-less works on LiveContainer
 - An internet connection
-- IPA file of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases)
+- IPA file of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases/latest)
 
 ## Set Up LiveContainer for Geode
 - Sideload Geode using LiveContainer
