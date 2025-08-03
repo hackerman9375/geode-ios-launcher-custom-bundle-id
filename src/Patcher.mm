@@ -829,14 +829,14 @@ for func in list:
 		NSArray<NSTextCheckingResult*>* staticMatches = [Patcher getStaticPatchesOffsetsFromData:dataString];
 		for (NSTextCheckingResult* match in staticMatches) {
 			NSString *sizeString = [dataString substringWithRange:[match rangeAtIndex:1]];
-			NSUInteger patchSize = [sizeString integerValue];
+			NSUInteger patchSize = strtoul([sizeString UTF8String], NULL, 16);
 			NSData *patchData = [[dataString substringWithRange:[match rangeAtIndex:2]] dataUsingEncoding:NSISOLatin1StringEncoding];
 			
 			NSString *strAddr = [NSString stringWithFormat:@"0x%@", [dataString substringWithRange:[match rangeAtIndex:3]]];
 			NSUInteger addr = strtoull([strAddr UTF8String], NULL, 0);
 
 			[data replaceBytesInRange:NSMakeRange(addr, patchSize) withBytes:patchData.bytes];
-			AppLogDebug(@"Patched Offset %#llx with %i bytes (%@)", addr, patchSize, [Patcher hexStringWithSpaces:patchData includeSpaces:YES]);
+			AppLog(@"Patched Offset %#llx with %i bytes (%@)", addr, patchSize, [Patcher hexStringWithSpaces:patchData includeSpaces:YES]);
 		}
 		if (entitlements && ![[[modDictSort objectAtIndex:i] lastPathComponent] isEqualToString:@"Geode.ios.dylib"]) {
 			[fm copyItemAtPath:[modDictSort objectAtIndex:i] toPath:[[bundlePath URLByAppendingPathComponent:@"mods"] URLByAppendingPathComponent:[[modDictSort objectAtIndex:i] lastPathComponent]].path error:nil];
