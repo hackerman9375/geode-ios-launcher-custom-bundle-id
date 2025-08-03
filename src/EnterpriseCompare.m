@@ -5,7 +5,6 @@
 + (NSString*)getChecksum:(BOOL)helper {
 	NSFileManager* fm = [NSFileManager defaultManager];
 	NSMutableSet<NSString*>* modIDs = [NSMutableSet new];
-	NSMutableSet<NSString*>* modDict = [NSMutableSet new];
 	NSArray* modsDir = [fm contentsOfDirectoryAtPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"mods"] error:nil];
 	if (!helper) {
 		NSURL* docPath = [[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject;
@@ -14,10 +13,7 @@
 	}
 	for (NSString *file in modsDir) {
 		NSString *modID = [[file stringByDeletingPathExtension] stringByDeletingPathExtension];
-		if (![modDict containsObject:file]) {
-			[modIDs addObject:modID];
-			[modDict addObject:file];
-		}
+		[modIDs addObject:modID];
 	}
 	NSMutableArray* modIDSorted = [[[modIDs allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] mutableCopy];
 	for (int i = 0; i < modIDSorted.count; i++) {

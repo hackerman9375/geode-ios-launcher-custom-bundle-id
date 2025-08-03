@@ -9,6 +9,7 @@
 #import <mach-o/dyld.h>
 #import <mach-o/loader.h>
 
+#define PATCH_VER @"1"
 
 #include <dlfcn.h>
 // change to 0x1692, and max is 0x7fff
@@ -234,7 +235,7 @@ BOOL appendNewRWSection(NSMutableData* data) {
 	NSUInteger origSize = data.length;
 	const char* segNameC = "__STORAGE";
 	const char* sectNameC = "__storage";
-	uint64_t sectSize = sizeof(uintptr_t);
+	uint64_t sectSize = sizeof(uintptr_t) * 4; // this should be enough right, its just a pointer...
 
 	uint8_t* buf = (uint8_t*)data.mutableBytes;
 	struct mach_header_64* header = (struct mach_header_64*)buf;
@@ -285,7 +286,7 @@ BOOL appendNewRWSection(NSMutableData* data) {
 	newSect.addr = newSeg.vmaddr;
 	newSect.size = sectSize;
 	newSect.offset = newSeg.fileoff;
-	newSect.align = 3;
+	newSect.align = 4;
 	newSect.flags = 0x0; // S_REGULAR
 
 	linkSeg->vmaddr += alignedSize;
@@ -846,11 +847,11 @@ for func in list:
     NSString* hash;
     if (entitlements) {
 		NSString* modHashSorted = [[[modIDsHash allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] componentsJoinedByString:@","];
-		NSString* toHash = [NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], modHashSorted];
+		NSString* toHash = [NSString stringWithFormat:@"%@-%@+%@",PATCH_VER,[modIDSorted componentsJoinedByString:@","], modHashSorted];
         hash = [Utils sha256sumWithString:toHash];
 		AppLog(@"sha256sum(\"%@\")", toHash);
     } else {
-        hash = [Utils sha256sumWithString:[keys componentsJoinedByString:@","]];
+        hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@-%@",PATCH_VER,[keys componentsJoinedByString:@","]]];
     }
 	if (patchChecksum != nil) {
 		if (![patchChecksum isEqualToString:hash]) {
@@ -866,14 +867,12 @@ for func in list:
 		AppLog(@"Got hash %@, now writing to binary...", hash)
 		[[Utils getPrefs] setObject:hash forKey:@"PATCH_CHECKSUM"];
 	}
-
 	struct mach_header_64* headerNew = (struct mach_header_64*)(uint8_t*)data.mutableBytes;
 	if (data.length < sizeof(struct mach_header_64) || (headerNew->magic != MH_MAGIC && headerNew->magic != MH_MAGIC_64)) {
 		// okay how would this realistically happen
 		AppLog(@"Couldn't patch! Binary wasn't properly patched as a 64-bit Mach-O.");
 		return completionHandler(NO, @"Patched binary wasn't properly patched as a proper Mach-O binary");
 	}
-
 	[data writeToURL:to options:NSDataWritingAtomic error:&error];
 	if (error) {
 		AppLog(@"Couldn't patch binary: %@", error);
@@ -1006,7 +1005,7 @@ for func in list:
 	//NSArray* keys = [bytes allKeys];
 	//AppLog(@"keys %@", [NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], [keys componentsJoinedByString:@","]]);
 	NSString* modHashSorted = [[[modIDsHash allObjects] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] componentsJoinedByString:@","];
-	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@+%@",[modIDSorted componentsJoinedByString:@","], modHashSorted]];
+	NSString* hash = [Utils sha256sumWithString:[NSString stringWithFormat:@"%@-%@+%@",PATCH_VER,[modIDSorted componentsJoinedByString:@","], modHashSorted]];
 	return hash;
 }
 @end

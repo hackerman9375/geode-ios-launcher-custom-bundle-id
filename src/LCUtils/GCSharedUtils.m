@@ -80,17 +80,15 @@ extern NSBundle* gcMainBundle;
 }
 
 + (NSString*)certificatePassword {
+	if (NSClassFromString(@"LCSharedUtils")) {
+		NSString* passLC = [NSString stringWithContentsOfURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"pass"] encoding:NSUTF8StringEncoding error:nil];
+		if (passLC != nil)
+			return passLC;
+	}
 	if ([gcUserDefaults boolForKey:@"LCCertificateImported"]) {
-		NSString* ans = [gcUserDefaults objectForKey:@"LCCertificatePassword"];
-		return ans;
+		return [gcUserDefaults objectForKey:@"LCCertificatePassword"];
 	} else {
-		if (NSClassFromString(@"LCSharedUtils")) {
-			NSString* passLC = [NSString stringWithContentsOfURL:[[LCPath realLCDocPath] URLByAppendingPathComponent:@"pass"] encoding:NSUTF8StringEncoding error:nil];
-			if (passLC != nil)
-				return passLC;
-		}
-		NSString* pass = [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificatePassword"];
-		return pass;
+		return [[[NSUserDefaults alloc] initWithSuiteName:[self appGroupID]] objectForKey:@"LCCertificatePassword"];
 	}
 }
 
