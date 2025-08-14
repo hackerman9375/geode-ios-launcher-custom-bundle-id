@@ -7,6 +7,9 @@
 > This guide will not teach you how to go about obtaining such certificates. These certificates ("free certificates") violate [Apple's Terms of Service](https://developer.apple.com/support/terms/apple-developer-program-license-agreement/#ADPLA5), and may get your iDevice blacklisted. As such, this guide is only for educational purposes, given the consequences: Use at your own risk.
 > If you are fine with this, and acknowledge the warning, you can proceed to follow this guide.
 
+> [!CAUTION]
+> In the tutorial you will install a Helper. Uninstalling this Helper **will cause your SAVE DATA to be DELETED!!!** So please, **backup your data before planning to uninstall it** to prevent any data loss.
+
 This tutorial is for people who cannot afford to purchase a Developer Certificate, and do not have a computer, but wish to use Geode.
 
 ## Prerequisites
@@ -46,9 +49,6 @@ After that, you should be in the game!
 
 > [!NOTE]
 > Anytime you want to install the Helper IPA, assume you are updating it.
-
-> [!CAUTION]
-> Uninstalling the Helper **will cause your SAVE DATA to be DELETED!**
 
 > [!TIP]
 > If the launcher thinks you need to patch, but you do not want to, simply: Exit the Geode app, reopen the Geode app, go to settings, tap **Launch without patching**
