@@ -909,7 +909,7 @@
 			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"])
 				break;
 			[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
-			[Utils showNotice:self title:@"Forced! Now the lanucher will start patching again upon tapping launch."];
+			[Utils showNotice:self title:@"Forced! Now the launcher will start patching again upon tapping launch."];
 		}
 		case 3: { // Patch / Import
 			if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
