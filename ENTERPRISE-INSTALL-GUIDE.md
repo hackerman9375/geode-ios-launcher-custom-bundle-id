@@ -8,7 +8,7 @@
 > If you are fine with this, and acknowledge the warning, you can proceed to follow this guide.
 
 > [!CAUTION]
-> In the tutorial you will install a Helper. Uninstalling this Helper **will cause your SAVE DATA to be DELETED!!!** So please, **backup your data before planning to uninstall it** to prevent any data loss.
+> In this tutorial you will install a Helper. Uninstalling this Helper **will cause your SAVE DATA to be DELETED!!!** So please, **backup your data before planning to uninstall it** to prevent any data loss.
 
 This tutorial is for people who cannot afford to purchase a Developer Certificate, and do not have a computer, but wish to use Geode.
 
