@@ -45,7 +45,10 @@ Once you launch the **Helper** with Geode by opening Geode and tapping launch, y
 After that, you should be in the game!
 
 > [!NOTE]
-> Anytime you want to install the Helper IPA, assume you are updating it. Uninstalling the Helper will cause your save data to be deleted.
+> Anytime you want to install the Helper IPA, assume you are updating it.
+
+> [!WARNING]
+> Uninstalling the Helper **will cause your save data to be deleted!**
 
 > [!TIP]
 > If the launcher thinks you need to patch, but you do not want to, simply: Exit the Geode app, reopen the Geode app, go to settings, tap **Launch without patching**
