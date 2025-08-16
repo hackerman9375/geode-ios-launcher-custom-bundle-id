@@ -667,13 +667,14 @@
 - (void)launchHelper2:(BOOL)safeMode patchCheck:(BOOL)patchCheck {
 	NSString* env;
 	NSString* launchArgs = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
-	if (launchArgs && [launchArgs length] > 1) {
+	if (launchArgs && [launchArgs length] > 2) {
 		env = launchArgs;
-	}
-	if (safeMode) {
-		env = @"--geode:use-common-handler-offset=8b8000 --geode:safe-mode";
 	} else {
-		env = @"--geode:use-common-handler-offset=8b8000";
+		if (safeMode) {
+			env = @"--geode:use-common-handler-offset=8b8000 --geode:safe-mode";
+		} else {
+			env = @"--geode:use-common-handler-offset=8b8000";
+		}
 	}
 	NSString* b64 = [[env dataUsingEncoding:NSUTF8StringEncoding] base64EncodedStringWithOptions:0];
 	NSMutableString* encodedUrl = [b64 mutableCopy];
@@ -701,13 +702,14 @@
 - (void)launchHelper:(BOOL)safeMode {
 	NSString* env;
 	NSString* launchArgs = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
-	if (launchArgs && [launchArgs length] > 1) {
+	if (launchArgs && [launchArgs length] > 2) {
 		env = launchArgs;
-	}
-	if (safeMode) {
-		env = @"--geode:use-common-handler-offset=8b8000 --geode:safe-mode";
 	} else {
-		env = @"--geode:use-common-handler-offset=8b8000";
+		if (safeMode) {
+			env = @"--geode:use-common-handler-offset=8b8000 --geode:safe-mode";
+		} else {
+			env = @"--geode:use-common-handler-offset=8b8000";
+		}
 	}
 	NSString* b64 = [[env dataUsingEncoding:NSUTF8StringEncoding] base64EncodedStringWithOptions:0];
 	NSMutableString* encodedUrl = [b64 mutableCopy];

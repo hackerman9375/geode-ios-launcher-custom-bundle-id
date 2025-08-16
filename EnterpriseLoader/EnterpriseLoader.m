@@ -60,10 +60,11 @@ BOOL showNothing = NO;
 	NSLog(@"[EnterpriseLoader] application:didFinishLaunchingWithOptions swizzled!");
 	NSURL* url = launchOptions[UIApplicationLaunchOptionsURLKey];
 	BOOL forceLaunch = NO;
+	NSFileManager* fm = [NSFileManager defaultManager];
+	NSURL* docDir = [[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject;
 	if (url) {
 		if ([url.scheme isEqualToString:@"geode-helper"]) {
 			NSLog(@"[EnterpriseLoader] Launched with %@", url);
-			NSFileManager* fm = [NSFileManager defaultManager];
 			if ([url.host isEqualToString:@"launch-force"]) {
 				forceLaunch = YES;
 			} else if ([url.host isEqualToString:@"launch"]) {
@@ -87,12 +88,11 @@ BOOL showNothing = NO;
 						NSString* otherChecksum = [item.value mutableCopy];
 						NSLog(@"[EnterpriseLoader] curr-checksum %@ vs other-checksum %@", currChecksum, otherChecksum);
 						if (![currChecksum isEqualToString:otherChecksum]) {
-							exitMsg = @"You must update the Helper to use any new mods. If you accidentally skipped the step to save the IPA, go back to the launcher, settings, and tap \"Install Helper\".";
+							exitMsg = @"You must update the Helper to use any new mods. If you accidentally skipped the step to save the IPA, go back to the launcher, settings, and tap \"Install Helper\".\n\nYou will install that new helper IPA just like you installed it originally. Do not uninstall the Helper, update it like you would with any other app with your signer.";
 						}
 					}
 				}
 			} else if ([url.host isEqualToString:@"check"]) {
-				NSURL* docDir = [[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject;
 				if (!docDir)
 					return NO;
 				BOOL safeMode = NO;
@@ -147,6 +147,17 @@ BOOL showNothing = NO;
 				return YES;
 			}
 		}
+	} else {
+		// if (docDir) {
+		// 	if ([fm fileExistsAtPath:[docDir URLByAppendingPathComponent:@"flags.txt"].path]) {
+		// 		NSError* error;
+		// 		NSString* decodedString = [NSString stringWithContentsOfFile:[docDir URLByAppendingPathComponent:@"flags.txt"].path encoding:NSUTF8StringEncoding error:&error];
+		// 		if (!error) {
+		// 			decodedString = [NSString stringWithFormat:@"%@ --geode:binary-dir=\"%@/mods\"", decodedString, [[NSBundle mainBundle] resourcePath]];
+		// 			setenv("LAUNCHARGS", decodedString.UTF8String, 1);
+		// 		}
+		// 	}
+		// }
 	}
 	if (getenv("LAUNCHARGS") || forceLaunch) {
 		NSLog(@"[EnterpriseLoader] Geode will load. Launch args: %s", getenv("LAUNCHARGS"));

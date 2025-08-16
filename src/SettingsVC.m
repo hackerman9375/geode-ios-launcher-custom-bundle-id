@@ -131,7 +131,7 @@
 	case 6: // Credits
 		return [self.creditsArray count];
 	case 7: // Developer
-		return 22;
+		return 23;
 	default:
 		return 0;
 	}
@@ -288,7 +288,8 @@
 	}
 	case 3: {
 		NSInteger row = indexPath.row;
-		if (![Utils isDevCert])
+		BOOL isDevCert = [Utils isDevCert];
+		if (!isDevCert)
 			row--;
 		if (row == -1) {
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -599,6 +600,10 @@
 		} else if (indexPath.row == 21) {
 			cell.textLabel.text = @"View NSUserDefaults".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+		} else if (indexPath.row == 22) {
+			cell.textLabel.text = @"Obtain Launch File".loc;
+			cell.textLabel.textColor = [Theming getAccentColor];
+			cell.accessoryType = UITableViewCellAccessoryNone;
 		}
 		break;
 	}
@@ -895,23 +900,29 @@
 		}
 		}
 	} else if (indexPath.section == 3) {
-		switch (indexPath.row) {
-		case 1: { // JIT-Less diagnose
-			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
-				JITLessVC* view = [[JITLessVC alloc] init];
-				[[self navigationController] pushViewController:view animated:YES];
-			} else { // launch without patching
+		NSInteger row = indexPath.row;
+		BOOL isDevCert = [Utils isDevCert];
+		if (!isDevCert)
+			row--;
+		AppLog(@"tapped on %i", row);
+		switch (row) {
+		case 0: {
+			if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 				[_root launchHelper2:NO patchCheck:NO];
 			}
 			break;
 		}
-		case 2: {
-			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"])
-				break;
-			[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
-			[Utils showNotice:self title:@"Forced! Now the launcher will start patching again upon tapping launch."];
+		case 1: { // JIT-Less diagnose
+			if (![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+				JITLessVC* view = [[JITLessVC alloc] init];
+				[[self navigationController] pushViewController:view animated:YES];
+			} else {
+				[[Utils getPrefs] setObject:@"NO" forKey:@"PATCH_CHECKSUM"];
+				[Utils showNotice:self title:@"Forced! Now the launcher will start patching again upon tapping launch."];
+			}
+			break;
 		}
-		case 3: { // Patch / Import
+		case 2: {
 			if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 				NSFileManager* fm = [NSFileManager defaultManager];
 				NSString* extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"Helper.ipa"].path;
@@ -928,6 +939,13 @@
 				}
 				activityViewController.popoverPresentationController.sourceView = self.view;
 				[self presentViewController:activityViewController animated:YES completion:nil];
+				break;
+			}
+			break;
+		}
+		case 3: { // Patch / Import
+			if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
+				[Utils showNotice:self title:@"launcher.notice.enterprise.s2".loc];
 				break;
 			}
 			if (NSClassFromString(@"LCSharedUtils")) {
@@ -1000,10 +1018,6 @@
 			break;
 		}
 		case 4: { // Test JIT-Less
-			if ([[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
-				[Utils showNotice:self title:@"launcher.notice.enterprise.s2".loc];
-				break;
-			}
 			if ([LCUtils certificateData]) {
 				[LCUtils validateCertificate:^(int status, NSDate* expirationDate, NSString* errorC) {
 					if (errorC) {
@@ -1279,6 +1293,32 @@
 		case 21: // View NSUserDefaults
 			[self.navigationController pushViewController:[[NSUDBrowserVC alloc] init] animated:YES];
 			break;
+		case 22: { // Obtain Launch File
+			NSString* extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"flags.txt"].path;
+			NSURL* extractionPathURL = [NSURL fileURLWithPath:extractionPath];
+			NSString* env;
+			NSString* launchArgs = [[Utils getPrefs] stringForKey:@"LAUNCH_ARGS"];
+			if (launchArgs && [launchArgs length] > 2) {
+				env = launchArgs;
+			} else {
+				env = @"--geode:use-common-handler-offset=8b8000";
+			}
+			[env writeToFile:extractionPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"You will save the \"flags\" file to the Geode Helper folder, in the main directory where the .dat and mp3 files are.\nOn My iPhone -> Geode Helper\nIf you don't see it, launch the Geode Helper once." preferredStyle:UIAlertControllerStyleAlert];
+			UIAlertAction* yesAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+				UIActivityViewController* activityViewController = [[UIActivityViewController alloc] initWithActivityItems:@[ extractionPathURL ] applicationActivities:nil];
+				// not sure if this is even necessary because ive never seen anyone complain about app logs
+				if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+					activityViewController.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds), 0, 0);
+					activityViewController.popoverPresentationController.permittedArrowDirections = 0;
+				}
+				activityViewController.popoverPresentationController.sourceView = self.view;
+				[self presentViewController:activityViewController animated:YES completion:nil];
+			}];
+			[alert addAction:yesAction];
+			[self presentViewController:alert animated:YES completion:nil];
+			break;
+		}
 		}
 	}
 
