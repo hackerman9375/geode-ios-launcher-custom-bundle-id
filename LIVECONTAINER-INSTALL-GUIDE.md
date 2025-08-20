@@ -40,6 +40,7 @@ After these steps:
 - Hold on the app and go to the Geode app settings in LiveContainer, then **enable these settings:**
 
 - **Fix File Picker & Local Notification**
+- **Use LiveContainer's Bundle ID** (If on new version of LiveContainer)
 - **Don't Inject TweakLoader**
 - **Don't Load TweakLoader**
 
