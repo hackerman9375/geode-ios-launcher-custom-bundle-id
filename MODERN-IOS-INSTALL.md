@@ -49,9 +49,9 @@ After going through the setup process, you may have seen the warning that **Just
 
 ## Installing and Using StikDebug to Enable JIT
 > [!NOTE]
-> For the first time setup, you will need a computer to get a pairing file. If you installed SideStore, you likely already have a pairing file, meaning there is no need to reinstall Jitterbug Pair.
+> For the first time setup, you will need a computer to get a pairing file. If you installed SideStore, you likely already have a pairing file, meaning there is no need to reinstall iDevice Pair.
 
-#### Steps for downloading Jitterbug Pair (Skippable if you already have a Pairing File)
+#### Steps for downloading iDevice Pair (Skippable if you already have a Pairing File)
 1. Go to [iDevice Pair](https://github.com/jkcoxson/idevice_pair/releases) and download the version for your computer.
 2. Run the program with your iOS device connected to your computer. It will save a file to your computer.
 3. Use iCloud, AirDrop, [LocalSend](https://localsend.org), or a website such as [Pairdrop](https://pairdrop.net/) to upload the pairing file to your iOS device.
