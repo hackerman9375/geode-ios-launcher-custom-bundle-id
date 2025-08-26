@@ -28,7 +28,7 @@ This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but i
 
 - **Full version of Geometry Dash installed**
 - **An internet connection**
-- An **Apple developer certificate** (you can get one from services like [KravaSign](https://kravasign.com) or [Signulous](https://www.signulous.com))
+- An **Apple developer certificate**
 - **IPA file** of Geode launcher from [Releases](https://github.com/geode-sdk/ios-launcher/releases/latest)
 
 # Enable JIT-Less
