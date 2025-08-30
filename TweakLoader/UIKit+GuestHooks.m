@@ -20,11 +20,11 @@ static void UIKitGuestHooksInit() {
     swizzle(UIApplication.class, @selector(canOpenURL:), @selector(hook_canOpenURL:));
     swizzle(UIScene.class, @selector(scene:didReceiveActions:fromTransitionContext:), @selector(hook_scene:didReceiveActions:fromTransitionContext:));
     swizzle(UIScene.class, @selector(openURL:options:completionHandler:), @selector(hook_openURL:options:completionHandler:));
+    swizzle(UIViewController.class, @selector(__supportedInterfaceOrientations), @selector(hook___supportedInterfaceOrientations));
     if([UIDevice.currentDevice userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
         if ([NSUserDefaults.gcUserDefaults boolForKey:@"FIX_ROTATION"]) {
             swizzle(UIApplication.class, @selector(_handleDelegateCallbacksWithOptions:isSuspended:restoreState:), @selector(hook__handleDelegateCallbacksWithOptions:isSuspended:restoreState:));
             swizzle(FBSSceneParameters.class, @selector(initWithXPCDictionary:), @selector(hook_initWithXPCDictionary:));
-            swizzle(UIViewController.class, @selector(__supportedInterfaceOrientations), @selector(hook___supportedInterfaceOrientations));
             swizzle(UIViewController.class, @selector(shouldAutorotateToInterfaceOrientation:), @selector(hook_shouldAutorotateToInterfaceOrientation:));
             swizzle(UIWindow.class, @selector(setAutorotates:forceUpdateInterfaceOrientation:), @selector(hook_setAutorotates:forceUpdateInterfaceOrientation:));
         }
@@ -374,11 +374,84 @@ BOOL canAppOpenItself(NSURL* url) {
 
 @implementation UIViewController(GeodeHook)
 - (UIInterfaceOrientationMask)hook___supportedInterfaceOrientations {
-    return UIInterfaceOrientationMaskLandscape;
+    if ([NSUserDefaults.gcUserDefaults integerForKey:@"ASPECT_RATIO_X"] != 0) {
+        [self constrainRootViewToAspectRatio];
+    }
+    if([UIDevice.currentDevice userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
+        if ([NSUserDefaults.gcUserDefaults boolForKey:@"FIX_ROTATION"]) {
+            return UIInterfaceOrientationMaskLandscape;
+        }
+    }
+    return [self hook___supportedInterfaceOrientations];
 }
 - (BOOL)hook_shouldAutorotateToInterfaceOrientation:(NSInteger)orientation {
     return YES;
 }
+- (void)constrainRootViewToAspectRatio {
+    //CGFloat targetAspectRatio = 16.0/9.0;
+    NSInteger aspectX = [NSUserDefaults.gcUserDefaults integerForKey:@"ASPECT_RATIO_X"];
+    NSInteger aspectY = [NSUserDefaults.gcUserDefaults integerForKey:@"ASPECT_RATIO_Y"];
+    CGFloat targetAspectRatio = (CGFloat)aspectX/(CGFloat)aspectY;
+    CGRect screenBounds = [UIScreen mainScreen].bounds;
+    CGFloat screenAspectRatio = screenBounds.size.width / screenBounds.size.height;
+    if (fabs(screenAspectRatio - targetAspectRatio) < 0.1) return;
+    
+    CGRect constrainedFrame;
+    
+    // if (screenAspectRatio > targetAspectRatio) {
+    //     CGFloat newWidth = screenBounds.size.height * targetAspectRatio;
+    //     CGFloat xOffset = (screenBounds.size.width - newWidth) / 2.0;
+    //     constrainedFrame = CGRectMake(xOffset, 0, newWidth, screenBounds.size.height);
+    // } else {
+    //     CGFloat newHeight = screenBounds.size.width / targetAspectRatio;
+    //     CGFloat yOffset = (screenBounds.size.height - newHeight) / 2.0;
+    //     constrainedFrame = CGRectMake(0, yOffset, screenBounds.size.width, newHeight);
+    // }
+    
+    // yeah i quickly realized this after taking too many screenshots
+    for (UIView *subview in [self.view.superview.subviews copy]) {
+        // no memory leak!!
+        if (subview.tag == 6969) {
+            [subview removeFromSuperview];
+        }
+    }
+    if (screenAspectRatio > targetAspectRatio) {
+        // too wide
+        CGFloat newWidth = screenBounds.size.height * targetAspectRatio;
+        CGFloat xOffset = (screenBounds.size.width - newWidth) / 2.0;
+        constrainedFrame = CGRectMake(xOffset, 0, newWidth, screenBounds.size.height);
+
+        UIView *leftBox = [[UIView alloc] initWithFrame:CGRectMake(0, 0, xOffset, screenBounds.size.height)];
+        leftBox.backgroundColor = [UIColor blackColor];
+        leftBox.tag = 6969;
+
+        UIView *rightBox = [[UIView alloc] initWithFrame:CGRectMake(xOffset + newWidth, 0, xOffset, screenBounds.size.height)];
+        rightBox.backgroundColor = [UIColor blackColor]; 
+        rightBox.tag = 6969;
+
+        [self.view.superview addSubview:leftBox];
+        [self.view.superview addSubview:rightBox];
+    } else {
+        CGFloat newHeight = screenBounds.size.width / targetAspectRatio;
+        CGFloat yOffset = (screenBounds.size.height - newHeight) / 2.0;
+        constrainedFrame = CGRectMake(0, yOffset, screenBounds.size.width, newHeight);
+
+        UIView *topBox = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenBounds.size.width, yOffset)];
+        topBox.backgroundColor = [UIColor blackColor];
+        topBox.tag = 6969;
+
+        UIView *bottomBox = [[UIView alloc] initWithFrame:CGRectMake(0, yOffset + newHeight, screenBounds.size.width, yOffset)];
+        bottomBox.backgroundColor = [UIColor blackColor];
+        bottomBox.tag = 6969;
+
+        [self.view.superview addSubview:topBox];
+        [self.view.superview addSubview:bottomBox];
+    }
+    self.view.frame = constrainedFrame;
+    self.view.clipsToBounds = YES;
+    //self.view.superview.backgroundColor = [UIColor blackColor];
+}
+
 @end
 
 @implementation UIWindow(hook)

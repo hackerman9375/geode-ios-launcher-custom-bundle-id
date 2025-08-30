@@ -98,7 +98,11 @@
 	case 0: // General
 		return 7;
 	case 1: // Gameplay
-		return 4;
+		if (![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
+			return 4;
+		} else {
+			return 5;
+		}
 	case 2: // JIT
 		if ([Utils isSandboxed] && !([self isIOSVersionGreaterThanOrEqualTo:@"19"]) && ![[Utils getPrefs] integerForKey:@"JITLESS"] && [Utils isDevCert]) {
 			if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 4) {
@@ -241,6 +245,18 @@
 			}
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FIX_BLACKSCREEN"] tag:8
 												disable:![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]];
+			return cellval1;
+		}
+        if (indexPath.row == 4) {
+			cellval1.textLabel.text = @"Aspect Ratio".loc;
+            NSInteger aspectX = [[Utils getPrefs] integerForKey:@"ASPECT_RATIO_X"];
+            NSInteger aspectY = [[Utils getPrefs] integerForKey:@"ASPECT_RATIO_Y"];
+            if (aspectX == 0 || aspectY == 0) {
+                cellval1.detailTextLabel.text = @"Device Native";
+            } else {
+                cellval1.detailTextLabel.text = [NSString stringWithFormat:@"%ld:%ld", (long)aspectX, (long)aspectY];
+            }
+			cellval1.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 			return cellval1;
 		}
 		break;
@@ -858,6 +874,82 @@
 			}
 			break;
 		}
+		case 4: {
+			UIAlertController* alert = [UIAlertController
+				alertControllerWithTitle:@"Aspect Ratio".loc
+								 message:nil
+						  preferredStyle:[UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad ? UIAlertControllerStyleAlert : UIAlertControllerStyleActionSheet];
+			NSArray* defaultAspectOptions = @[
+				@"Device Native".loc,
+				@"16:9",
+				@"16:10",
+				@"4:3",
+				@"1:1",
+				@"Custom".loc
+			];
+			for (NSInteger i = 0; i < defaultAspectOptions.count; i++) {
+				[alert addAction:[UIAlertAction actionWithTitle:defaultAspectOptions[i] style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+					NSInteger aspectX = 0;
+					NSInteger aspectY = 0;
+					switch (i) {
+						case 1: // 16:9
+							aspectX = 16;
+							aspectY = 9;
+							break;
+						case 2: // 16:10
+							aspectX = 16;
+							aspectY = 10;
+							break;
+						case 3: // 4:3
+							aspectX = 4;
+							aspectY = 3;
+							break;
+						case 4: // 1:1
+							aspectX = 1;
+							aspectY = 1;
+							break;
+						case 5: { // Custom
+							UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Aspect Ratio" message:@"Please input a custom aspect ratio."
+																preferredStyle:UIAlertControllerStyleAlert];
+							[alert addTextFieldWithConfigurationHandler:^(UITextField* _Nonnull textField) {
+								textField.placeholder = @"Aspect Ratio X";
+								textField.keyboardType = UIKeyboardTypeNumberPad;
+							}];
+							[alert addTextFieldWithConfigurationHandler:^(UITextField* _Nonnull textField) {
+								textField.placeholder = @"Aspect Ratio Y";
+								textField.keyboardType = UIKeyboardTypeNumberPad;
+							}];
+							UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+								UITextField* aspectXTF = alert.textFields.firstObject;
+								UITextField* aspectYTF = alert.textFields.lastObject;
+								NSInteger aspectX = [aspectXTF.text integerValue];
+								NSInteger aspectY = [aspectYTF.text integerValue];
+								if (aspectX < 1 || aspectY < 1) return [Utils showError:self title:@"Aspect Ratio cannot be less than 1. (Or you didn't enter in a number)" error:nil];
+								if (aspectX > 10000 || aspectY > 10000) return [Utils showError:self title:@"how would this work? please explain." error:nil];
+								[[Utils getPrefs] setInteger:aspectX forKey:@"ASPECT_RATIO_X"];
+								[[Utils getPrefs] setInteger:aspectY forKey:@"ASPECT_RATIO_Y"];
+								[self.tableView reloadData];
+							}];
+
+							UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+							[alert addAction:okAction];
+							[alert addAction:cancelAction];
+							[self presentViewController:alert animated:YES completion:nil];
+							break;
+						}
+					}
+					if (i >= 5) return;
+					[[Utils getPrefs] setInteger:aspectX forKey:@"ASPECT_RATIO_X"];
+					[[Utils getPrefs] setInteger:aspectY forKey:@"ASPECT_RATIO_Y"];
+					[self.tableView reloadData];
+			    }]];
+			}
+
+			[alert addAction:[UIAlertAction actionWithTitle:@"common.cancel".loc style:UIAlertActionStyleCancel handler:nil]];
+
+			[self presentViewController:alert animated:YES completion:nil];
+			break;
+		}
 		}
 	} else if (indexPath.section == 2) {
 		switch (indexPath.row) {
@@ -883,19 +975,6 @@
 			[alert addAction:[UIAlertAction actionWithTitle:@"common.cancel".loc style:UIAlertActionStyleCancel handler:nil]];
 
 			[self presentViewController:alert animated:YES completion:nil];
-			/*UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
-
-			NSArray *options = @[@"Option 1", @"Option 2", @"Option 3", @"Option 4"];
-
-			CGPoint anchorPoint = CGPointMake(CGRectGetMidX(cell.frame), CGRectGetMaxY(cell.frame));
-
-			anchorPoint = [tableView convertPoint:anchorPoint toView:self.view];
-
-			DropdownView *dropdown = [[DropdownView alloc] initWithItems:options anchorPoint:anchorPoint width:200.0];
-			dropdown.delegate = self;
-			[dropdown show];
-
-			[tableView deselectRowAtIndexPath:indexPath animated:YES];*/
 			break;
 		}
 		}
