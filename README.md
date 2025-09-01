@@ -12,7 +12,7 @@ Manages installing and launching **Geometry Dash** with **Geode** for iOS.
 
 ## Quick Start
 1. Navigate to https://github.com/geode-sdk/ios-launcher/releases/latest, if you are not **jailbroken**, download the latest **ipa** file. If you wish to use the tweak and have **TrollStore**, download the latest **tipa** file.
-2. Install the launcher by following the [Installation Guide](./INSTALL.md), or reading the **INSTALL.md** file.
+2. Install the launcher by following the [Installation Guide](./INSTALL.md). You can also access this guide by going in to the **INSTALL.md** file in this repository.
 3. Enjoy using Geode!
 
 ## Support
