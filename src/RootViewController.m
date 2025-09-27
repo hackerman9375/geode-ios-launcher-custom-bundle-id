@@ -1,3 +1,4 @@
+#import "EnterpriseCompare.h"
 #import "GeodeInstaller.h"
 #import "LCUtils/GCSharedUtils.h"
 #import "LCUtils/LCUtils.h"
@@ -22,7 +23,6 @@
 #include <dlfcn.h>
 #include <mach-o/dyld.h>
 #include <objc/runtime.h>
-#import "EnterpriseCompare.h"
 
 #define LOCAL_BUILD 0
 #define LOCAL_URL "http://192.168.1.22:3000/Geometry-2.207.ipa"

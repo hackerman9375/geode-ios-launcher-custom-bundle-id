@@ -142,13 +142,13 @@ static int hooked___fcntl(int fildes, int cmd, void* param) {
 	return orig_fcntl(fildes, cmd, param);
 }
 
-void init_bypassDyldLibValidation() {
+void init_bypassDyldLibValidationNonTXM() {
 	static BOOL bypassed;
 	if (bypassed)
 		return;
 	bypassed = YES;
 
-	AppLog(@"init");
+	AppLog(@"init (Non-TXM)");
 
 	// Modifying exec page during execution may cause SIGBUS, so ignore it now
 	// Only comment this out if only one thread (main) is running

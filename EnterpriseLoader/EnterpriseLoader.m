@@ -1,5 +1,4 @@
 #include "../src/LCUtils/unarchive.h"
-#import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #include <dlfcn.h>
 #include <objc/runtime.h>

@@ -98,13 +98,13 @@
 	case 0: // General
 		return 7;
 	case 1: // Gameplay
-		if (![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
-			return 4;
+		if (![Utils isSandboxed]) {
+			return 2;
 		} else {
-			return 5;
+			return 6;
 		}
 	case 2: // JIT
-		if ([Utils isSandboxed] && !([self isIOSVersionGreaterThanOrEqualTo:@"19"]) && ![[Utils getPrefs] integerForKey:@"JITLESS"] && [Utils isDevCert]) {
+		if ([Utils isSandboxed] && ![[Utils getPrefs] integerForKey:@"JITLESS"] && [Utils isDevCert]) {
 			if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 4) {
 				return 3;
 			} else if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 3) {
@@ -135,7 +135,7 @@
 	case 6: // Credits
 		return [self.creditsArray count];
 	case 7: // Developer
-		return 23;
+		return 24;
 	default:
 		return 0;
 	}
@@ -247,15 +247,26 @@
 												disable:![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]];
 			return cellval1;
 		}
-        if (indexPath.row == 4) {
+		if (indexPath.row == 4) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.textLabel.text = @"Enable 120hz (Experimental)".loc;
+			if (![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
+				cellval1.textLabel.textColor = [UIColor systemGrayColor];
+			}
+            cellval1.textLabel.textColor = [UIColor systemGrayColor];
+			//cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_MAX_FPS"] tag:20 disable:![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]];
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_MAX_FPS"] tag:20 disable:YES];
+			return cellval1;
+		}
+		if (indexPath.row == 5) {
 			cellval1.textLabel.text = @"Aspect Ratio".loc;
-            NSInteger aspectX = [[Utils getPrefs] integerForKey:@"ASPECT_RATIO_X"];
-            NSInteger aspectY = [[Utils getPrefs] integerForKey:@"ASPECT_RATIO_Y"];
-            if (aspectX == 0 || aspectY == 0) {
-                cellval1.detailTextLabel.text = @"Device Native";
-            } else {
-                cellval1.detailTextLabel.text = [NSString stringWithFormat:@"%ld:%ld", (long)aspectX, (long)aspectY];
-            }
+			NSInteger aspectX = [[Utils getPrefs] integerForKey:@"ASPECT_RATIO_X"];
+			NSInteger aspectY = [[Utils getPrefs] integerForKey:@"ASPECT_RATIO_Y"];
+			if (aspectX == 0 || aspectY == 0) {
+				cellval1.detailTextLabel.text = @"Device Native";
+			} else {
+				cellval1.detailTextLabel.text = [NSString stringWithFormat:@"%ld:%ld", (long)aspectX, (long)aspectY];
+			}
 			cellval1.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 			return cellval1;
 		}
@@ -560,18 +571,23 @@
 			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"IS_COMPRESSING_IPA"] tag:18 disable:NO];
 			return cellval1;
 		} else if (indexPath.row == 10) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.textLabel.text = @"Force TXM".loc;
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"FORCE_TXM"] tag:21 disable:NO];
+			return cellval1;
+		} else if (indexPath.row == 11) {
 			cell.textLabel.text = @"developer.testbundleaccess".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 11) {
+		} else if (indexPath.row == 12) {
 			cell.textLabel.text = @"developer.importipa".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 12) {
+		} else if (indexPath.row == 13) {
 			cell.textLabel.text = @"App Reinstall".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 13) {
+		} else if (indexPath.row == 14) {
 			cell.textLabel.text = @"Copy Current Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			if ([[NSFileManager defaultManager]
@@ -581,11 +597,11 @@
 			} else {
 				cell.accessoryType = UITableViewCellAccessoryNone;
 			}
-		} else if (indexPath.row == 14) {
+		} else if (indexPath.row == 15) {
 			cell.textLabel.text = @"Patch Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 15) {
+		} else if (indexPath.row == 16) {
 			cell.textLabel.text = @"Restore Binary".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			if (![[NSFileManager defaultManager]
@@ -595,28 +611,28 @@
 			} else {
 				cell.accessoryType = UITableViewCellAccessoryNone;
 			}
-		} else if (indexPath.row == 16) {
+		} else if (indexPath.row == 17) {
 			cell.textLabel.text = @"Clear App Logs".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 17) {
+		} else if (indexPath.row == 18) {
 			cell.textLabel.text = @"Patch & Share IPA".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 18) {
+		} else if (indexPath.row == 19) {
 			cell.textLabel.text = @"Restore IPA Patch".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
-		} else if (indexPath.row == 19) {
+		} else if (indexPath.row == 20) {
 			cell.textLabel.text = @"View Bundle Dir".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 20) {
+		} else if (indexPath.row == 21) {
 			cell.textLabel.text = @"View Documents Dir".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 21) {
+		} else if (indexPath.row == 22) {
 			cell.textLabel.text = @"View NSUserDefaults".loc;
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-		} else if (indexPath.row == 22) {
+		} else if (indexPath.row == 23) {
 			cell.textLabel.text = @"Obtain Launch File".loc;
 			cell.textLabel.textColor = [Theming getAccentColor];
 			cell.accessoryType = UITableViewCellAccessoryNone;
@@ -643,7 +659,7 @@
 	case 1:
 		return @"gameplay".loc;
 	case 2:
-		if ([Utils isSandboxed] && !([self isIOSVersionGreaterThanOrEqualTo:@"19"]) && ![[Utils getPrefs] integerForKey:@"JITLESS"] && [Utils isDevCert]) {
+		if ([Utils isSandboxed] && ![[Utils getPrefs] integerForKey:@"JITLESS"] && [Utils isDevCert]) {
 			return @"jit".loc;
 		} else {
 			return @"";
@@ -678,6 +694,8 @@
 			@"jit.jit-enabler.default".loc, @"jit.jit-enabler.trollstore".loc, @"jit.jit-enabler.stikjit".loc, @"jit.jit-enabler.jitstreamereb".loc, @"jit.jit-enabler.sidejit".loc,
 			@"jit.jit-enabler.sidestore".loc, @""
 		];
+	} else if (([self isIOSVersionGreaterThanOrEqualTo:@"19"])) {
+		return @[@"jit.jit-enabler.default".loc, @"", @"jit.jit-enabler.stikjit".loc, @"", @"", @"", @""];
 	} else {
 		return @[
 			@"jit.jit-enabler.default".loc, @"", @"jit.jit-enabler.stikjit".loc, @"jit.jit-enabler.jitstreamereb".loc, @"jit.jit-enabler.sidejit".loc,
@@ -713,7 +731,7 @@
 	case 1:
 		return @"gameplay.footer".loc;
 	case 2:
-		if (![Utils isSandboxed] || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert])
+		if (![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert])
 			return @"";
 		if (NSClassFromString(@"LCSharedUtils"))
 			return @"jit.footer.livecontainer".loc;
@@ -874,75 +892,71 @@
 			}
 			break;
 		}
-		case 4: {
+		case 5: {
 			UIAlertController* alert = [UIAlertController
 				alertControllerWithTitle:@"Aspect Ratio".loc
 								 message:nil
 						  preferredStyle:[UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad ? UIAlertControllerStyleAlert : UIAlertControllerStyleActionSheet];
-			NSArray* defaultAspectOptions = @[
-				@"Device Native".loc,
-				@"16:9",
-				@"16:10",
-				@"4:3",
-				@"1:1",
-				@"Custom".loc
-			];
+			NSArray* defaultAspectOptions = @[ @"Device Native".loc, @"16:9", @"16:10", @"4:3", @"1:1", @"Custom".loc ];
 			for (NSInteger i = 0; i < defaultAspectOptions.count; i++) {
 				[alert addAction:[UIAlertAction actionWithTitle:defaultAspectOptions[i] style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-					NSInteger aspectX = 0;
-					NSInteger aspectY = 0;
-					switch (i) {
-						case 1: // 16:9
-							aspectX = 16;
-							aspectY = 9;
-							break;
-						case 2: // 16:10
-							aspectX = 16;
-							aspectY = 10;
-							break;
-						case 3: // 4:3
-							aspectX = 4;
-							aspectY = 3;
-							break;
-						case 4: // 1:1
-							aspectX = 1;
-							aspectY = 1;
-							break;
-						case 5: { // Custom
-							UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Aspect Ratio" message:@"Please input a custom aspect ratio."
-																preferredStyle:UIAlertControllerStyleAlert];
-							[alert addTextFieldWithConfigurationHandler:^(UITextField* _Nonnull textField) {
-								textField.placeholder = @"Aspect Ratio X";
-								textField.keyboardType = UIKeyboardTypeNumberPad;
-							}];
-							[alert addTextFieldWithConfigurationHandler:^(UITextField* _Nonnull textField) {
-								textField.placeholder = @"Aspect Ratio Y";
-								textField.keyboardType = UIKeyboardTypeNumberPad;
-							}];
-							UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
-								UITextField* aspectXTF = alert.textFields.firstObject;
-								UITextField* aspectYTF = alert.textFields.lastObject;
-								NSInteger aspectX = [aspectXTF.text integerValue];
-								NSInteger aspectY = [aspectYTF.text integerValue];
-								if (aspectX < 1 || aspectY < 1) return [Utils showError:self title:@"Aspect Ratio cannot be less than 1. (Or you didn't enter in a number)" error:nil];
-								if (aspectX > 10000 || aspectY > 10000) return [Utils showError:self title:@"how would this work? please explain." error:nil];
-								[[Utils getPrefs] setInteger:aspectX forKey:@"ASPECT_RATIO_X"];
-								[[Utils getPrefs] setInteger:aspectY forKey:@"ASPECT_RATIO_Y"];
-								[self.tableView reloadData];
-							}];
+						   NSInteger aspectX = 0;
+						   NSInteger aspectY = 0;
+						   switch (i) {
+						   case 1: // 16:9
+							   aspectX = 16;
+							   aspectY = 9;
+							   break;
+						   case 2: // 16:10
+							   aspectX = 16;
+							   aspectY = 10;
+							   break;
+						   case 3: // 4:3
+							   aspectX = 4;
+							   aspectY = 3;
+							   break;
+						   case 4: // 1:1
+							   aspectX = 1;
+							   aspectY = 1;
+							   break;
+						   case 5: { // Custom
+							   UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Aspect Ratio" message:@"Please input a custom aspect ratio."
+																					   preferredStyle:UIAlertControllerStyleAlert];
+							   [alert addTextFieldWithConfigurationHandler:^(UITextField* _Nonnull textField) {
+								   textField.placeholder = @"Aspect Ratio X";
+								   textField.keyboardType = UIKeyboardTypeNumberPad;
+							   }];
+							   [alert addTextFieldWithConfigurationHandler:^(UITextField* _Nonnull textField) {
+								   textField.placeholder = @"Aspect Ratio Y";
+								   textField.keyboardType = UIKeyboardTypeNumberPad;
+							   }];
+							   UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
+								   UITextField* aspectXTF = alert.textFields.firstObject;
+								   UITextField* aspectYTF = alert.textFields.lastObject;
+								   NSInteger aspectX = [aspectXTF.text integerValue];
+								   NSInteger aspectY = [aspectYTF.text integerValue];
+								   if (aspectX < 1 || aspectY < 1)
+									   return [Utils showError:self title:@"Aspect Ratio cannot be less than 1. (Or you didn't enter in a number)" error:nil];
+								   if (aspectX > 10000 || aspectY > 10000)
+									   return [Utils showError:self title:@"how would this work? please explain." error:nil];
+								   [[Utils getPrefs] setInteger:aspectX forKey:@"ASPECT_RATIO_X"];
+								   [[Utils getPrefs] setInteger:aspectY forKey:@"ASPECT_RATIO_Y"];
+								   [self.tableView reloadData];
+							   }];
 
-							UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
-							[alert addAction:okAction];
-							[alert addAction:cancelAction];
-							[self presentViewController:alert animated:YES completion:nil];
-							break;
-						}
-					}
-					if (i >= 5) return;
-					[[Utils getPrefs] setInteger:aspectX forKey:@"ASPECT_RATIO_X"];
-					[[Utils getPrefs] setInteger:aspectY forKey:@"ASPECT_RATIO_Y"];
-					[self.tableView reloadData];
-			    }]];
+							   UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+							   [alert addAction:okAction];
+							   [alert addAction:cancelAction];
+							   [self presentViewController:alert animated:YES completion:nil];
+							   break;
+						   }
+						   }
+						   if (i >= 5)
+							   return;
+						   [[Utils getPrefs] setInteger:aspectX forKey:@"ASPECT_RATIO_X"];
+						   [[Utils getPrefs] setInteger:aspectY forKey:@"ASPECT_RATIO_Y"];
+						   [self.tableView reloadData];
+					   }]];
 			}
 
 			[alert addAction:[UIAlertAction actionWithTitle:@"common.cancel".loc style:UIAlertActionStyleCancel handler:nil]];
@@ -1168,11 +1182,11 @@
 		NSFileManager* fm = [NSFileManager defaultManager];
 		NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
 		switch (indexPath.row) {
-		case 10: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
+		case 11: { // Test GD Bundle Access (testbundleaccess) why do i always use it for testing? its quicker!
 			[Utils showNotice:self title:[Utils getGDDocPath]];
 			break;
 		}
-		case 11: { // Import IPA
+		case 12: { // Import IPA
 			_isImportIPA = true;
 			UTType* type = [UTType typeWithIdentifier:@"com.apple.itunes.ipa"];
 			if (!type) {
@@ -1192,14 +1206,14 @@
 			[self presentViewController:picker animated:YES completion:nil];
 			break;
 		}
-		case 12: { // TS App Reinstall
+		case 13: { // TS App Reinstall
 			NSURL* url = [NSURL URLWithString:[[NSUserDefaults standardUserDefaults] stringForKey:@"DEV_REINSTALL_ADDR"]];
 			if ([[NSClassFromString(@"UIApplication") sharedApplication] canOpenURL:url]) {
 				[[NSClassFromString(@"UIApplication") sharedApplication] openURL:url options:@{} completionHandler:nil];
 			}
 			break;
 		}
-		case 13: { // Copy Current Binary
+		case 14: { // Copy Current Binary
 			if ([fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				break;
 			} else {
@@ -1214,7 +1228,7 @@
 			}
 			break;
 		}
-		case 14: { // Patch
+		case 15: { // Patch
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				[Utils showError:self title:@"Original Binary not found." error:nil];
 			} else {
@@ -1234,7 +1248,7 @@
 			}
 			break;
 		}
-		case 15: { // Restore Binary
+		case 16: { // Restore Binary
 			if (![fm fileExistsAtPath:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"].path]) {
 				break;
 			} else {
@@ -1254,12 +1268,12 @@
 			}
 			break;
 		}
-		case 16: { // Clear App Log
+		case 17: { // Clear App Log
 			[LogUtils clearLogs:YES];
 			[Utils showNotice:self title:@"App Logs Cleared!"];
 			break;
 		}
-		case 17: { // Patch & Share IPA
+		case 18: { // Patch & Share IPA
 			NSFileManager* fm = [NSFileManager defaultManager];
 			NSString* infoPath = [bundlePath URLByAppendingPathComponent:@"Info.plist"].path;
 			NSString* infoBackupPath = [bundlePath URLByAppendingPathComponent:@"InfoBackup.plist"].path;
@@ -1330,7 +1344,7 @@
 
 			break;
 		}
-		case 18: { // Restore IPA Patch
+		case 19: { // Restore IPA Patch
 			NSFileManager* fm = [NSFileManager defaultManager];
 			NSString* infoPath = [bundlePath URLByAppendingPathComponent:@"Info.plist"].path;
 			NSString* infoBackupPath = [bundlePath URLByAppendingPathComponent:@"InfoBackup.plist"].path;
@@ -1357,22 +1371,22 @@
 
 			break;
 		}
-		case 19: { // View Bundle Dir
+		case 20: { // View Bundle Dir
 			FileBrowserViewController* browser = [[FileBrowserViewController alloc] initWithPath:[[NSBundle mainBundle] bundlePath]];
 			UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:browser];
 			[self presentViewController:navController animated:YES completion:nil];
 			break;
 		}
-		case 20: { // View Doc Dir
+		case 21: { // View Doc Dir
 			FileBrowserViewController* browser = [[FileBrowserViewController alloc] init];
 			UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:browser];
 			[self presentViewController:navController animated:YES completion:nil];
 			break;
 		}
-		case 21: // View NSUserDefaults
+		case 22: // View NSUserDefaults
 			[self.navigationController pushViewController:[[NSUDBrowserVC alloc] init] animated:YES];
 			break;
-		case 22: { // Obtain Launch File
+		case 23: { // Obtain Launch File
 			NSString* extractionPath = [[fm temporaryDirectory] URLByAppendingPathComponent:@"flags.txt"].path;
 			NSURL* extractionPathURL = [NSURL fileURLWithPath:extractionPath];
 			NSString* env;
@@ -1383,7 +1397,11 @@
 				env = @"--geode:use-common-handler-offset=8b8000";
 			}
 			[env writeToFile:extractionPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
-			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"common.notice".loc message:@"You will save the \"flags\" file to the Geode Helper folder, in the main directory where the .dat and mp3 files are.\nOn My iPhone -> Geode Helper\nIf you don't see it, launch the Geode Helper once." preferredStyle:UIAlertControllerStyleAlert];
+			UIAlertController* alert =
+				[UIAlertController alertControllerWithTitle:@"common.notice".loc
+													message:@"You will save the \"flags\" file to the Geode Helper folder, in the main directory where the .dat and mp3 files "
+															@"are.\nOn My iPhone -> Geode Helper\nIf you don't see it, launch the Geode Helper once."
+											 preferredStyle:UIAlertControllerStyleAlert];
 			UIAlertAction* yesAction = [UIAlertAction actionWithTitle:@"common.ok".loc style:UIAlertActionStyleDefault handler:^(UIAlertAction* _Nonnull action) {
 				UIActivityViewController* activityViewController = [[UIActivityViewController alloc] initWithActivityItems:@[ extractionPathURL ] applicationActivities:nil];
 				// not sure if this is even necessary because ive never seen anyone complain about app logs
@@ -1569,6 +1587,31 @@
 	case 19:
 		[Utils toggleKey:@"MANUAL_IMPORT_CERT"];
 		[self.tableView reloadData];
+		break;
+	case 20:
+		if ([sender isOn]) {
+			if ([UIScreen mainScreen].maximumFramesPerSecond <= 60) {
+				[Utils showError:self title:@"Your device does not support refresh rates above 60 Hz (ProMotion)! You must own a Pro device (for example, iPhone 15 Pro) or another device that supports >60 Hz.\n\nIf you've enabled \"Limit Frame Rate\", disable it by opening the Settings app and navigating to Accessibility -> Motion -> turn off Limit Frame Rate. If that option isn't available, your device doesn't support ProMotion." error:nil];
+				[self.tableView reloadData];
+				return;
+			}
+			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Warning" message:@"Enabling this option is experimental, as it changes the rendering engine Geometry Dash uses to support the maximum refresh rate. While you may not notice any changes if you don't have mods, some mods will not function properly with this setting enabled. Only enable this if you do not care about graphical differences.\n\nWould you like to enable anyways? You can always disable if something goes wrong.".loc preferredStyle:UIAlertControllerStyleAlert];
+			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"Enable" style:UIAlertActionStyleDestructive handler:^(UIAlertAction* _Nonnull action) {
+				[Utils toggleKey:@"USE_MAX_FPS"];
+				[self.tableView reloadData];
+			}];
+			UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
+			[alert addAction:okAction];
+			[alert addAction:cancelAction];
+			[self presentViewController:alert animated:YES completion:nil];
+		} else {
+			[Utils toggleKey:@"USE_MAX_FPS"];
+			// do stuff that restores...
+		}
+		[self.tableView reloadData];
+		break;
+	case 21:
+		[Utils toggleKey:@"FORCE_TXM"];
 		break;
 	}
 }

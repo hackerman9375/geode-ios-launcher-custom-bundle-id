@@ -147,9 +147,6 @@ static BOOL checkJITEnabled() {
 		return YES;
 	if ([gcUserDefaults boolForKey:@"JITLESS"])
 		return NO;
-	if (@available(iOS 26.0, *)) {
-		return NO;
-	}
 	// check if jailbroken
 	if (access("/var/mobile", R_OK) == 0) {
 		return YES;
@@ -285,11 +282,11 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 			usleep(1000 * 100);
 		}
 		if (!checkJITEnabled()) {
-			if (@available(iOS 26.0, *)) {
-				appError = @"JIT is not supported on iOS 26. Please wait until a future update for this to be possible.";
+			if (![Utils isDevCert]) {
+				appError = @"JIT was not enabled. Please follow the installation guide for enabling Enterprise Mode, or sign this app with a Developer Certificate.";
 			} else {
-				appError = @"JIT was not enabled. Please ensure that you launched the Geode launcher with JIT. You can enable \"Manual reopen with JIT\" for manually enabling JIT "
-					   @"(Pressing launch, closing app, open with JIT).";
+				appError =
+					@"JIT was not enabled. Please ensure that you launched the Geode launcher with JIT. If you want to use Geode without JIT, setup JIT-Less mode in settings.";
 			}
 			// appError = @"JIT was not enabled. If you want to use Geode without JIT, setup JITLess mode in settings.";
 			return appError;
@@ -353,6 +350,15 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 				symlink(target.UTF8String, webServerPath.UTF8String);
 			}
 		}
+/*
+		NSString* platformPath = [tweakFolder stringByAppendingPathComponent:@"PlatformConsole.dylib"];
+		if (![fm fileExistsAtPath:platformPath]) {
+			AppLog(@"[invokeAppMain] Creating PlatformConsole.dylib symlink");
+			remove(platformPath.UTF8String);
+			NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"PlatformConsole.dylib"];
+			symlink(target.UTF8String, platformPath.UTF8String);
+		}
+*/
 	} else {
 		AppLog(@"[invokeAppMain] Couldn't find tweak folder!");
 	}
@@ -383,11 +389,7 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 		AppLog(@"[invokeAppMain] Skip overwriteExecPath (LC)");
 	}
 	// Overwrite NSUserDefaults
-	if ([guestAppInfo[@"doUseLCBundleId"] boolValue]) {
-		NSUserDefaults.standardUserDefaults = [[NSUserDefaults alloc] initWithSuiteName:guestAppInfo[@"LCOrignalBundleIdentifier"]];
-	} else {
-		NSUserDefaults.standardUserDefaults = [[NSUserDefaults alloc] initWithSuiteName:appBundle.bundleIdentifier];
-	}
+	NSUserDefaults.standardUserDefaults = [[NSUserDefaults alloc] initWithSuiteName:appBundle.bundleIdentifier];
 
 	// Overwrite home and tmp path
 	NSString* newHomePath = nil;
@@ -541,7 +543,7 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 	// Find main()
 	appMain = getAppEntryPoint(appHandle, appIndex);
 	if (!appMain) {
-		appError = @"Could not find the main entry point";
+		appError = @"Could not find the main entry point (Corrupted binary?)";
 		AppLog(@"[GeodeBootstrap] Error: %@", appError);
 		*path = oldPath;
 		return appError;

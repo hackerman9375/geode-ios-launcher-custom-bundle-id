@@ -15,7 +15,7 @@ else
 Geode_CODESIGN_FLAGS = -Sentitlements.xml
 endif
 
-Geode_FILES = $(wildcard src/*.m) $(wildcard src/*.mm) $(wildcard src/views/*.m) $(wildcard src/components/*.m) $(wildcard src/LCUtils/*.m) fishhook/fishhook.c $(wildcard MSColorPicker/MSColorPicker/*.m) $(wildcard GCDWebServer/GCDWebServer/*/*.m)
+Geode_FILES = $(wildcard src/*.m) $(wildcard src/*.mm) $(wildcard src/views/*.m) $(wildcard src/components/*.m) $(wildcard src/LCUtils/*.m) fishhook/fishhook.c $(wildcard MSColorPicker/MSColorPicker/*.m) $(wildcard GCDWebServer/GCDWebServer/*/*.m) src/LCUtils/mach_excServer.c
 Geode_FRAMEWORKS = UIKit CoreGraphics Security
 #Geode_CFLAGS = -fobjc-arc -IGCDWebServer/GCDWebServer/Core -IGCDWebServer/GCDWebServer/Requests -IGCDWebServer/GCDWebServer/Responses -Wno-deprecated-declarations
 Geode_CFLAGS = -fobjc-arc -IGCDWebServer/GCDWebServer/Core -IGCDWebServer/GCDWebServer/Requests -IGCDWebServer/GCDWebServer/Responses
@@ -28,7 +28,7 @@ $(APPLICATION_NAME)_LDFLAGS = -e _GeodeMain -rpath @loader_path/Frameworks
 #$(APPLICATION_NAME)_LDFLAGS = -e _GeodeMain -rpath @loader_path/Frameworks -L./libs -lLIEF -lstdc++
 
 include $(THEOS_MAKE_PATH)/application.mk
-SUBPROJECTS += ZSign TweakLoader WebServerLib TestJITLess EnterpriseLoader
+SUBPROJECTS += ZSign TweakLoader WebServerLib PlatformConsole TestJITLess EnterpriseLoader
 include $(THEOS_MAKE_PATH)/aggregate.mk
 
 
