@@ -1,10 +1,10 @@
 #import "LCUtils/GCSharedUtils.h"
 #import "LCUtils/Shared.h"
+#import "LCUtils/UIKitPrivate.h"
 #import "LCUtils/unarchive.h"
 #import "Patcher.h"
 #import "Utils.h"
 #import "components/LogUtils.h"
-#import "LCUtils/UIKitPrivate.h"
 #import <CommonCrypto/CommonCrypto.h>
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
@@ -618,6 +618,24 @@ extern SecTaskRef SecTaskCreateFromSelf(CFAllocatorRef allocator) __attribute__(
 	[[NSFileManager defaultManager] createDirectoryAtPath:extractionPath withIntermediateDirectories:YES attributes:nil error:nil];
 	int res = extract(fileToExtract, extractionPath, nil);
 	return completion(res);
+}
++ (void)copyOrigBinary:(void (^)(BOOL success, NSString* error))completionHandler {
+	if (![Utils isSandboxed]) return completionHandler(NO, @"Not sandboxed");
+	NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
+	NSURL* from = [bundlePath URLByAppendingPathComponent:@"GeometryOriginal"];
+	NSURL* to = [bundlePath URLByAppendingPathComponent:@"GeometryJump"];
+	NSFileManager* fm = [NSFileManager defaultManager];
+	NSError* error;
+	if (![fm fileExistsAtPath:from.path]) {
+		[fm copyItemAtURL:to toURL:from error:&error];
+		if (error) {
+			return completionHandler(NO, [NSString stringWithFormat:@"Couldn't copy binary: %@", error.localizedDescription]);
+		}
+	}
+	if (![fm fileExistsAtPath:from.path]) {
+		return completionHandler(NO, @"Couldn't find original binary.");
+	}
+	return completionHandler(YES, @"Success");
 }
 @end
 

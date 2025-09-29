@@ -9,6 +9,7 @@
 #import "src/JITLessVC.h"
 #import "src/LCUtils/LCUtils.h"
 #import "src/LCUtils/Shared.h"
+#import "src/LCUtils/utils.h"
 #import "src/Theming.h"
 #import "src/Utils.h"
 #import "src/components/NSUDBrowserVC.h"
@@ -415,7 +416,7 @@
 			cell.accessoryType = UITableViewCellAccessoryNone;
 		} else if (row == 5) {
 			cell.textLabel.text = @"Force Resign";
-			if (![[Utils getPrefs] boolForKey:@"JITLESS"]) {
+			if (![[Utils getPrefs] boolForKey:@"JITLESS"] && !has_txm()) {
 				cell.selectionStyle = UITableViewCellSelectionStyleNone;
 				cell.textLabel.textColor = [UIColor systemGrayColor];
 			} else {
@@ -438,9 +439,9 @@
 			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
 			cellval1.accessoryView =
 				[self createSwitch:[[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] tag:7
-						   disable:![Utils isSandboxed] || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert]];
+						   disable:![Utils isSandboxed] || has_txm() || [[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert]];
 			cellval1.textLabel.text = @"advanced.manual-reopen-jit".loc;
-			if (![Utils isSandboxed] || ([self isIOSVersionGreaterThanOrEqualTo:@"19"]) || [[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert]) {
+			if (![Utils isSandboxed] || has_txm() || [[Utils getPrefs] integerForKey:@"JITLESS"] || ![Utils isDevCert]) {
 				cellval1.textLabel.textColor = [UIColor systemGrayColor];
 			}
 			return cellval1;
@@ -826,7 +827,7 @@
 				[Utils showError:self title:@"The game is already launching! Please wait." error:nil];
 				break;
 			}
-			if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] && ![[Utils getPrefs] boolForKey:@"JITLESS"]) {
+			if ([[Utils getPrefs] boolForKey:@"MANUAL_REOPEN"] && ![[Utils getPrefs] boolForKey:@"JITLESS"] && !has_txm()) {
 				[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 				[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
 				[[Utils getPrefs] setBool:YES forKey:@"safemode"];
@@ -838,7 +839,7 @@
 					[Utils showNotice:self title:@"launcher.relaunch-notice".loc];
 				}
 			} else {
-				if (![[Utils getPrefs] boolForKey:@"DONT_PATCH_SAFEMODE"] && [[Utils getPrefs] boolForKey:@"JITLESS"]) {
+				if (![[Utils getPrefs] boolForKey:@"DONT_PATCH_SAFEMODE"] && ([[Utils getPrefs] boolForKey:@"JITLESS"] || has_txm())) {
 					[_root.launchButton setEnabled:NO];
 					[_root signAppWithSafeMode:^(BOOL success, NSString* error) {
 						dispatch_async(dispatch_get_main_queue(), ^{
@@ -1142,7 +1143,7 @@
 			break;
 		}
 		case 5: { // Force Resign
-			if (![[Utils getPrefs] boolForKey:@"JITLESS"])
+			if (![[Utils getPrefs] boolForKey:@"JITLESS"] && !has_txm())
 				break;
 			return [_root signApp:YES completionHandler:^(BOOL success, NSString* error) {
 				dispatch_async(dispatch_get_main_queue(), ^{

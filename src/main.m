@@ -350,25 +350,36 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 				symlink(target.UTF8String, webServerPath.UTF8String);
 			}
 		}
-/*
-		NSString* platformPath = [tweakFolder stringByAppendingPathComponent:@"PlatformConsole.dylib"];
-		if (![fm fileExistsAtPath:platformPath]) {
-			AppLog(@"[invokeAppMain] Creating PlatformConsole.dylib symlink");
-			remove(platformPath.UTF8String);
-			NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"PlatformConsole.dylib"];
-			symlink(target.UTF8String, platformPath.UTF8String);
+		//show-platform-console
+/*		if ([gcUserDefaults boolForKey:@"PLATFORM_CONSOLE"]) {
+			NSString* platformPath = [tweakFolder stringByAppendingPathComponent:@"PlatformConsole.dylib"];
+			if (![fm fileExistsAtPath:platformPath]) {
+				AppLog(@"[invokeAppMain] Creating PlatformConsole.dylib symlink");
+				remove(platformPath.UTF8String);
+				NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"PlatformConsole.dylib"];
+				symlink(target.UTF8String, platformPath.UTF8String);
+			}
 		}
-*/
+		setenv("SHOW_PLATFORM_CONSOLE", "1", 1);*/
 	} else {
 		AppLog(@"[invokeAppMain] Couldn't find tweak folder!");
 	}
 	// If JIT is enabled, bypass library validation so we can load arbitrary binaries
 	if (!usingLiveContainer) {
-		if (checkJITEnabled()) { // lc already hooks it so it's unnecessary to do it again...
-			init_bypassDyldLibValidation();
+		if (checkJITEnabled()) {
+			if (has_txm()) {
+				setenv("TXM_JIT", "1", 1);
+				// we will assume every binary is signed, since i currently cant figure out this issue blind
+				AppLog(@"[invokeAppMain] JIT pass (2/2) [Bypassed because TXM]");
+			} else {
+				init_bypassDyldLibValidation();
+				AppLog(@"[invokeAppMain] JIT pass (2/2) & Bypassed Dyld-lib validation!");
+			}
+		} else {
+			AppLog(@"[invokeAppMain] JIT pass (2/2) [Bypassed because JIT-Less]");
 		}
-		AppLog(@"[invokeAppMain] JIT pass (2/2) & Bypassed Dyld-lib validation!");
 	} else {
+		// lc already hooks it so it's unnecessary to do it again...
 		AppLog(@"[invokeAppMain] Ignoring bypass dyld lib validation hook since LC should already do that.");
 	}
 

@@ -134,7 +134,7 @@ static int common_hooked_fcntl(fcntl_p orig, int fildes, int cmd, void *param) {
 	if (cmd == F_ADDFILESIGS_RETURN) {
 		char filePath[PATH_MAX];
 		bzero(filePath, PATH_MAX);
-		if (orig(fildes, F_GETPATH, filePath) != -1) {
+		if (__fcntl(fildes, F_GETPATH, filePath) != -1) {
 			fsignatures_t *fsig = (fsignatures_t*)param;
 			// called to check that cert covers file.. so we'll make it cover everything ;)
 			fsig->fs_file_start = 0xFFFFFFFF;
@@ -156,22 +156,33 @@ static int hooked_dyld_fcntl(int fildes, int cmd, void *param) {
 
 #include <dirent.h>
 
+int cache_txm = 0;
+
 BOOL has_txm() {
 	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"FORCE_TXM"]) return YES;
 	if (@available(iOS 26.0, *)) return YES;
-	if (access("/System/Volumes/Preboot/boot/usr/standalone/firmware/FUD/Ap,TrustedExecutionMonitor.img4", F_OK) == 0) return YES;
+	if (cache_txm > 0) return cache_txm == 2;
+	if (access("/System/Volumes/Preboot/boot/usr/standalone/firmware/FUD/Ap,TrustedExecutionMonitor.img4", F_OK) == 0) {
+		cache_txm = 2;
+		return YES;
+	}
 	DIR *d = opendir("/private/preboot");
-    if(!d) return NO;
-    struct dirent *dir;
+	if(!d) {
+		cache_txm = 1;
+		return NO;
+	}
+	struct dirent *dir;
 	char txmPath[PATH_MAX];
-    while ((dir = readdir(d)) != NULL) {
-        if(strlen(dir->d_name) == 96) {
-            snprintf(txmPath, sizeof(txmPath), "/private/preboot/%s/usr/standalone/firmware/FUD/Ap,TrustedExecutionMonitor.img4", dir->d_name);
-            break;
-        }
-    }
-    closedir(d);
-    return access(txmPath, F_OK) == 0;
+	while ((dir = readdir(d)) != NULL) {
+		if(strlen(dir->d_name) == 96) {
+			snprintf(txmPath, sizeof(txmPath), "/private/preboot/%s/usr/standalone/firmware/FUD/Ap,TrustedExecutionMonitor.img4", dir->d_name);
+			break;
+		}
+	}
+	closedir(d);
+	BOOL ret = access(txmPath, F_OK) == 0;
+	cache_txm = (ret) ? 2 : 1;
+	return access(txmPath, F_OK) == 0;
 }
 
 void init_bypassDyldLibValidation() {

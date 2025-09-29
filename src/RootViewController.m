@@ -559,18 +559,11 @@
 									  [LCUtils signTweaks:[LCPath tweakPath] force:force progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
 										  if (error != nil) {
 											  AppLog(@"Detailed error for signing tweaks: %@", error);
-											  return completionHandler(
-												  NO,
-												  [NSString stringWithFormat:
-																@"Couldn't sign tweaks. Please make sure that you have either patched %@, or imported a certificate in settings.",
-																[LCUtils getStoreName]]);
+											  return completionHandler(NO, @"Couldn't sign tweaks. Please make sure that you imported a certificate in settings.");
 										  }
 										  if (error != nil) {
 											  AppLog(@"Detailed error for signing mods: %@", error);
-											  return completionHandler(
-												  NO, [NSString stringWithFormat:
-																	@"Couldn't sign mods. Please make sure that you have either patched %@, or imported a certificate in settings.",
-																	[LCUtils getStoreName]]);
+											  return completionHandler(NO, @"Couldn't sign mods. Please make sure that you imported a certificate in settings.");
 										  }
 										  completionHandler(YES, nil);
 									  }];
@@ -584,13 +577,54 @@
 					  }
 				  });
 			  }];
+	} else if (has_txm()) {
+		// probably should move this... or idk
+		[Utils copyOrigBinary:^(BOOL success, NSString *error) {
+			dispatch_async(dispatch_get_main_queue(), ^{
+				if (success) {
+					self.optionalTextLabel.text = @"launcher.status.signing".loc;
+					if ([LCUtils certificateData]) {
+						[LCUtils validateCertificate:^(int status, NSDate* expirationDate, NSString* errorC) {
+							if (errorC) {
+								return completionHandler(NO, [NSString stringWithFormat:@"launcher.error.sign.invalidcert".loc, errorC]);
+							}
+							if (status != 0) {
+								return completionHandler(NO, @"launcher.error.sign.invalidcert2".loc);
+							}
+							LCAppInfo* app = [[LCAppInfo alloc] initWithBundlePath:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app"].path];
+							[app patchExecAndSignIfNeedWithCompletionHandler:^(BOOL signSuccess, NSString* signError) {
+								if (signError)
+									return completionHandler(NO, signError);
+								[LCUtils signTweaks:[LCPath tweakPath] force:NO progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
+									if (error != nil) {
+										AppLog(@"Detailed error for signing tweaks: %@", error);
+										return completionHandler(
+											NO,
+											@"Couldn't sign tweaks. Please make sure that you imported a certificate in settings.");
+									}
+									if (error != nil) {
+										AppLog(@"Detailed error for signing mods: %@", error);
+										return completionHandler(NO, @"Couldn't sign mods. Please make sure that you imported a certificate in settings.");
+									}
+									completionHandler(YES, nil);
+								}];
+							} progressHandler:^(NSProgress* signProgress) {} forceSign:NO];
+						  }];
+					  } else {
+						  return completionHandler(NO, @"No certificate found.");
+					  }
+				} else {
+					completionHandler(NO, error);
+				}
+			});
+		}];
 	} else {
 		return completionHandler(YES, nil);
 	}
 }
 
 - (void)signApp:(BOOL)forceSign completionHandler:(void (^)(BOOL success, NSString* error))completionHandler {
-	if (![[Utils getPrefs] boolForKey:@"JITLESS"] && ![[Utils getPrefs] boolForKey:@"FORCE_PATCHING"])
+	if (![[Utils getPrefs] boolForKey:@"JITLESS"] && ![[Utils getPrefs] boolForKey:@"FORCE_PATCHING"] && !has_txm())
 		return completionHandler(YES, nil);
 
 	NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
@@ -624,11 +658,7 @@
 									  [LCUtils signTweaks:[LCPath tweakPath] force:force progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
 										  if (error != nil) {
 											  AppLog(@"Detailed error for signing tweaks: %@", error);
-											  return completionHandler(
-												  NO,
-												  [NSString stringWithFormat:
-																@"Couldn't sign tweaks. Please make sure that you have either patched %@, or imported a certificate in settings.",
-																[LCUtils getStoreName]]);
+											  return completionHandler(NO, @"Couldn't sign tweaks. Please make sure that you imported a certificate in settings.");
 										  }
 
 										  [LCUtils signModsNew:[[LCPath dataPath] URLByAppendingPathComponent:@"game/geode"] force:force progressHandler:^(NSProgress* progress) {}
@@ -637,9 +667,7 @@
 													  progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
 														  if (error != nil) {
 															  AppLog(@"Detailed error for signing mods: %@", error);
-															  return completionHandler(NO, [NSString stringWithFormat:@"Couldn't sign mods. Please make sure that you have either "
-																													  @"patched %@, or imported a certificate in settings.",
-																													  [LCUtils getStoreName]]);
+															  return completionHandler(NO, @"Couldn't sign mods. Please make sure that you imported a certificate in settings.");
 														  }
 														  [[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
 														  [[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
@@ -655,8 +683,54 @@
 					  } else {
 						  completionHandler(NO, error);
 					  }
-				  });
-			  }];
+			});
+		}];
+	} else if (has_txm()) {
+		[Utils copyOrigBinary:^(BOOL success, NSString *error) {
+			dispatch_async(dispatch_get_main_queue(), ^{
+				if (success) {
+					BOOL force = forceSign;
+					self.optionalTextLabel.text = @"launcher.status.signing".loc;
+					if ([LCUtils certificateData]) {
+						[LCUtils validateCertificate:^(int status, NSDate* expirationDate, NSString* errorC) {
+							if (errorC) {
+								return completionHandler(NO, [NSString stringWithFormat:@"launcher.error.sign.invalidcert".loc, errorC]);
+							}
+							if (status != 0) {
+								return completionHandler(NO, @"launcher.error.sign.invalidcert2".loc);
+							}
+							LCAppInfo* app = [[LCAppInfo alloc] initWithBundlePath:[[LCPath bundlePath] URLByAppendingPathComponent:@"com.robtop.geometryjump.app"].path];
+								[app patchExecAndSignIfNeedWithCompletionHandler:^(BOOL signSuccess, NSString* signError) {
+								if (signError)
+									return completionHandler(NO, signError);
+								[LCUtils signTweaks:[LCPath tweakPath] force:force progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
+									if (error != nil) {
+										AppLog(@"Detailed error for signing tweaks: %@", error);
+										return completionHandler(NO, @"Couldn't sign tweaks. Please make sure that you imported a certificate in settings.");
+									}
+
+									[LCUtils signModsNew:[[LCPath dataPath] URLByAppendingPathComponent:@"game/geode"] force:force progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
+										[LCUtils signMods:[[LCPath dataPath] URLByAppendingPathComponent:@"game/geode"] force:force progressHandler:^(NSProgress* progress) {} completion:^(NSError* error) {
+										if (error != nil) {
+											AppLog(@"Detailed error for signing mods: %@", error);
+											return completionHandler(NO, @"Couldn't sign mods. Please make sure that you imported a certificate in settings.");
+										}
+										[[Utils getPrefs] setValue:[Utils gdBundleName] forKey:@"selected"];
+										[[Utils getPrefs] setValue:@"GeometryDash" forKey:@"selectedContainer"];
+									completionHandler(YES, nil);
+										}];
+									}];
+								}];
+							} progressHandler:^(NSProgress* signProgress) {} forceSign:force];
+						}];
+					} else {
+						return completionHandler(NO, @"No certificate found.");
+					}
+				} else {
+					completionHandler(NO, error);
+				}
+			});
+		}];
 	} else {
 		[Patcher patchGDBinary:[bundlePath URLByAppendingPathComponent:@"GeometryOriginal"] to:[bundlePath URLByAppendingPathComponent:@"GeometryJump"] withHandlerAddress:0x8b8000
 						 force:NO
@@ -937,7 +1011,7 @@
 		[Utils tweakLaunch_withSafeMode:false];
 		return;
 	}
-	if ([[Utils getPrefs] boolForKey:@"JITLESS"] || [[Utils getPrefs] boolForKey:@"FORCE_PATCHING"]) {
+	if ([[Utils getPrefs] boolForKey:@"JITLESS"] || [[Utils getPrefs] boolForKey:@"FORCE_PATCHING"] || has_txm()) {
 		[self.optionalTextLabel setHidden:NO];
 		self.launchButton.frame = CGRectMake(self.view.center.x - 95, CGRectGetMaxY(self.optionalTextLabel.frame) + 15, 140, 45);
 		self.settingsButton.frame = CGRectMake(self.view.center.x + 50, CGRectGetMaxY(self.optionalTextLabel.frame) + 15, 45, 45);
