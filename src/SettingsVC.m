@@ -94,54 +94,6 @@
 	return ([[[UIDevice currentDevice] systemVersion] compare:version options:NSNumericSearch] != NSOrderedAscending);
 }
 
-- (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
-	switch (section) {
-	case 0: // General
-		return 7;
-	case 1: // Gameplay
-		if (![Utils isSandboxed]) {
-			return 2;
-		} else {
-			return 6;
-		}
-	case 2: // JIT
-		if ([Utils isSandboxed] && ![[Utils getPrefs] integerForKey:@"JITLESS"] && [Utils isDevCert]) {
-			if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 4) {
-				return 3;
-			} else if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 3) {
-				return 2;
-			}
-		} else {
-			return 0;
-		}
-		return 1;
-	case 3: // JIT-Less
-		if ([Utils isSandboxed]) {
-			if ([Utils isDevCert]) {
-				return 7;
-			} else {
-				if ([[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
-					return 5;
-				} else {
-					return 8;
-				}
-			}
-		} else {
-			return 0;
-		}
-	case 4: // Advanced
-		return 6;
-	case 5: // About
-		return 4;
-	case 6: // Credits
-		return [self.creditsArray count];
-	case 7: // Developer
-		return 24;
-	default:
-		return 0;
-	}
-}
-
 - (UISwitch*)createSwitch:(BOOL)enabled tag:(NSInteger)tag disable:(BOOL)disable {
 	UISwitch* uiSwitch = [[UISwitch alloc] init];
 	[uiSwitch setOn:enabled];
@@ -249,17 +201,6 @@
 			return cellval1;
 		}
 		if (indexPath.row == 4) {
-			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
-			cellval1.textLabel.text = @"Enable 120hz (Experimental)".loc;
-			if (![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
-				cellval1.textLabel.textColor = [UIColor systemGrayColor];
-			}
-            cellval1.textLabel.textColor = [UIColor systemGrayColor];
-			//cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_MAX_FPS"] tag:20 disable:![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]];
-			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_MAX_FPS"] tag:20 disable:YES];
-			return cellval1;
-		}
-		if (indexPath.row == 5) {
 			cellval1.textLabel.text = @"Aspect Ratio".loc;
 			NSInteger aspectX = [[Utils getPrefs] integerForKey:@"ASPECT_RATIO_X"];
 			NSInteger aspectY = [[Utils getPrefs] integerForKey:@"ASPECT_RATIO_Y"];
@@ -269,6 +210,17 @@
 				cellval1.detailTextLabel.text = [NSString stringWithFormat:@"%ld:%ld", (long)aspectX, (long)aspectY];
 			}
 			cellval1.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+			return cellval1;
+		}
+		if (indexPath.row == 5) {
+			cellval1.selectionStyle = UITableViewCellSelectionStyleNone;
+			cellval1.textLabel.text = @"Enable 120hz (Experimental)".loc;
+			if (![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
+				cellval1.textLabel.textColor = [UIColor systemGrayColor];
+			}
+			cellval1.textLabel.textColor = [UIColor systemGrayColor];
+			//cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_MAX_FPS"] tag:20 disable:![Utils isSandboxed] || [[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]];
+			cellval1.accessoryView = [self createSwitch:[[Utils getPrefs] boolForKey:@"USE_MAX_FPS"] tag:20 disable:YES];
 			return cellval1;
 		}
 		break;
@@ -684,6 +636,54 @@
 	}
 }
 
+- (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
+	switch (section) {
+	case 0: // General
+		return 7;
+	case 1: // Gameplay
+		if (![Utils isSandboxed]) {
+			return 2;
+		} else {
+			return 5;
+		}
+	case 2: // JIT
+		if ([Utils isSandboxed] && ![[Utils getPrefs] integerForKey:@"JITLESS"] && [Utils isDevCert]) {
+			if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 4) {
+				return 3;
+			} else if ([[Utils getPrefs] integerForKey:@"JIT_ENABLER"] == 3) {
+				return 2;
+			}
+		} else {
+			return 0;
+		}
+		return 1;
+	case 3: // JIT-Less
+		if ([Utils isSandboxed]) {
+			if ([Utils isDevCert]) {
+				return 7;
+			} else {
+				if ([[Utils getPrefs] integerForKey:@"ENTERPRISE_MODE"]) {
+					return 5;
+				} else {
+					return 8;
+				}
+			}
+		} else {
+			return 0;
+		}
+	case 4: // Advanced
+		return 6;
+	case 5: // About
+		return 4;
+	case 6: // Credits
+		return [self.creditsArray count];
+	case 7: // Developer
+		return 24;
+	default:
+		return 0;
+	}
+}
+
 // TODO: Replace Manual Reopen with JIT to be in the JIT Enabler
 - (NSArray*)getJITEnablerOptions {
 	NSString* tsPath = [NSString stringWithFormat:@"%@/../_TrollStore", [NSBundle mainBundle].bundlePath];
@@ -787,6 +787,7 @@
 		}
 		case 3: { // change icon
 			IconViewController* IconVC = [[IconViewController alloc] init];
+			IconVC.root = _root;
 			[[self navigationController] pushViewController:IconVC animated:YES];
 			break;
 		}
@@ -893,7 +894,7 @@
 			}
 			break;
 		}
-		case 5: {
+		case 4: {
 			UIAlertController* alert = [UIAlertController
 				alertControllerWithTitle:@"Aspect Ratio".loc
 								 message:nil
@@ -1481,6 +1482,8 @@
 					AppLog(@"Icon set successfully.");
 				}
 			}];
+			[[Utils getPrefs] setValue:@"Pride" forKey:@"CURRENT_ICON"];
+			[_root updateLogoImage:2];
 		} else {
 			NSFileManager* fm = [NSFileManager defaultManager];
 			NSURL* bundlePath = [[LCPath bundlePath] URLByAppendingPathComponent:[Utils gdBundleName]];
@@ -1530,6 +1533,15 @@
 			UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Warning" message:@"jitless.enterprise.warning".loc preferredStyle:UIAlertControllerStyleAlert];
 			UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"Yes I do" style:UIAlertActionStyleDestructive handler:^(UIAlertAction* _Nonnull action) {
 				[Utils toggleKey:@"ENTERPRISE_MODE"];
+				[[UIApplication sharedApplication] setAlternateIconName:@"Pride" completionHandler:^(NSError* _Nullable error) {
+					if (error) {
+						AppLog(@"Failed to set alternate icon: %@", error);
+					} else {
+						AppLog(@"Icon set successfully.");
+					}
+				}];
+				[[Utils getPrefs] setValue:@"Pride" forKey:@"CURRENT_ICON"];
+				[_root updateLogoImage:2];
 				[self.tableView reloadData];
 			}];
 			UIAlertAction* cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];

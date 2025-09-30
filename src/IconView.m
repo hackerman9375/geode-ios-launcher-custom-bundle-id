@@ -78,10 +78,18 @@
 		[name.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
 	]];
 
+	NSString* iconKey = [[Utils getPrefs] stringForKey:@"CURRENT_ICON"];
 	NSString* currentIcon = [UIApplication sharedApplication].alternateIconName;
-	BOOL isSelected = ([currentIcon isEqualToString:self.icons[indexPath.row][@"iconName"]]);
+	BOOL isSelected = ([iconKey isEqualToString:self.icons[indexPath.row][@"name"]]) || ([currentIcon isEqualToString:self.icons[indexPath.row][@"iconName"]]);
 	if (currentIcon == nil) {
 		isSelected = ([self.icons[indexPath.row][@"iconName"] isEqualToString:@"AppIcon"]);
+		if (iconKey == nil) {
+			[[Utils getPrefs] setValue:@"Default" forKey:@"CURRENT_ICON"];
+		}
+	} else {
+		if (iconKey == nil && isSelected) {
+			[[Utils getPrefs] setValue:self.icons[indexPath.row][@"name"] forKey:@"CURRENT_ICON"];
+		}
 	}
 	cell.accessoryType = isSelected ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
 	return cell;
@@ -95,12 +103,13 @@
 	}
 	[[UIApplication sharedApplication] setAlternateIconName:iconKey completionHandler:^(NSError* _Nullable error) {
 		if (error) {
-			AppLog(@"Failed to set alternate icon: %@", error);
-			[Utils showError:self title:@"Couldn't set icon" error:error];
+			AppLog(@"Failed to set alternate icon: %@, assuming doesn't have entitlements", error);
 		} else {
 			AppLog(@"Icon set successfully.");
 		}
 	}];
+	[[Utils getPrefs] setValue:self.icons[indexPath.row][@"name"] forKey:@"CURRENT_ICON"];
+	[_root updateLogoImage:indexPath.row];
 	[self.tableView reloadData];
 }
 

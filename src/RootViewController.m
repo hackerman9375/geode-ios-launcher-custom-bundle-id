@@ -32,6 +32,7 @@
 @property(nonatomic, strong) ProgressBar* progressBar;
 @property(nonatomic, strong) NSTimer* launchTimer;
 @property(nonatomic, assign) NSInteger countdown;
+@property(nonatomic, strong) NSArray* icons;
 
 @end
 
@@ -199,9 +200,31 @@
 	}
 }
 
+- (void)updateLogoImage:(NSInteger)index {
+	if (self.icons[index]) {
+		[self.logoImageView setImage:[Utils imageViewFromPDF:self.icons[index][@"Logo"]].image];
+	}
+}
+
 - (void)viewDidLoad {
 	[super viewDidLoad];
 	[Utils increaseLaunchCount];
+
+	_icons = @[
+		@{ @"name" : @"Default", @"Logo" : @"geode_logo", @"iconName" : @"AppIcon" },
+		@{ @"name" : @"Geode", @"Logo" : @"new_geode_logo", @"iconName" : @"Geode" },
+		@{ @"name" : @"Pride", @"Logo" : @"pride_logo", @"iconName" : @"Pride" },
+		@{ @"name" : @"Lesbian", @"Logo" : @"lesbian_logo", @"iconName" : @"Lesbian" },
+		@{ @"name" : @"Gay", @"Logo" : @"gay_logo", @"iconName" : @"Gay" },
+		@{ @"name" : @"Bi", @"Logo" : @"bi_logo", @"iconName" : @"Bi" },
+		@{ @"name" : @"Trans", @"Logo" : @"trans_logo", @"iconName" : @"Trans" },
+		@{ @"name" : @"Pan", @"Logo" : @"pan_logo", @"iconName" : @"Pan" },
+		@{ @"name" : @"Nonbinary", @"Logo" : @"nonbinary_logo", @"iconName" : @"Nonbinary" },
+		@{ @"name" : @"Asexual", @"Logo" : @"asexual_logo", @"iconName" : @"Asexual" },
+		@{ @"name" : @"Genderfluid", @"Logo" : @"genderfluid_logo", @"iconName" : @"Genderfluid" },
+		@{ @"name" : @"Perfection.", @"Logo" : @"pride_logo", @"iconName" : @"Perfection" }
+	];
+
 	self.impactFeedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
 	[self.impactFeedback prepare];
 	[LogUtils clearLogs:NO];
@@ -210,7 +233,42 @@
 	if (err) {
 		AppLog(@"error while making app paths: %@", err);
 	}
-	self.logoImageView = [Utils imageViewFromPDF:@"geode_logo"];
+	NSString* iconKey = [[Utils getPrefs] stringForKey:@"CURRENT_ICON"];
+	NSString* currentIcon = [UIApplication sharedApplication].alternateIconName;
+	if (currentIcon == nil) {
+		if (iconKey == nil) {
+			[[Utils getPrefs] setValue:@"Default" forKey:@"CURRENT_ICON"];
+		}
+	} else {
+		if (iconKey == nil) {
+			NSString *foundName = nil;
+			for (NSDictionary *dict in _icons) {
+				if ([dict[@"iconName"] isEqualToString:currentIcon]) {
+					foundName = dict[@"name"];
+					break;
+				}
+			}
+			if (foundName) {
+				[[Utils getPrefs] setValue:foundName forKey:@"CURRENT_ICON"];
+				iconKey = foundName;
+			}
+		}
+	}
+	NSString *logoFile = nil;
+	if (iconKey) {
+		for (NSDictionary *dict in _icons) {
+			if ([dict[@"name"] isEqualToString:iconKey]) {
+				logoFile = dict[@"Logo"];
+				break;
+			}
+		}
+	}
+	if (logoFile) {
+		self.logoImageView = [Utils imageViewFromPDF:logoFile];
+	} else {
+		self.logoImageView = [Utils imageViewFromPDF:@"geode_logo"];
+	}
+	//self.logoImageView = [Utils imageViewFromPDF:@"geode_logo"];
 	if (self.logoImageView) {
 		self.logoImageView.layer.cornerRadius = 50;
 		self.logoImageView.clipsToBounds = YES;
