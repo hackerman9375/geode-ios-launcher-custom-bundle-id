@@ -162,6 +162,7 @@ BOOL has_txm() {
 	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"FORCE_TXM"]) return YES;
 	if (@available(iOS 26.0, *)) return YES;
 	if (cache_txm > 0) return cache_txm == 2;
+	return NO;
 	if (access("/System/Volumes/Preboot/boot/usr/standalone/firmware/FUD/Ap,TrustedExecutionMonitor.img4", F_OK) == 0) {
 		cache_txm = 2;
 		return YES;
