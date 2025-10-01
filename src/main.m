@@ -351,7 +351,7 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 			}
 		}
 		//show-platform-console
-/*		if ([gcUserDefaults boolForKey:@"PLATFORM_CONSOLE"]) {
+		if ([gcUserDefaults boolForKey:@"PLATFORM_CONSOLE"]) {
 			NSString* platformPath = [tweakFolder stringByAppendingPathComponent:@"PlatformConsole.dylib"];
 			if (![fm fileExistsAtPath:platformPath]) {
 				AppLog(@"[invokeAppMain] Creating PlatformConsole.dylib symlink");
@@ -359,8 +359,8 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 				NSString* target = [NSBundle.mainBundle.privateFrameworksPath stringByAppendingPathComponent:@"PlatformConsole.dylib"];
 				symlink(target.UTF8String, platformPath.UTF8String);
 			}
+		    setenv("SHOW_PLATFORM_CONSOLE", "1", 1);
 		}
-		setenv("SHOW_PLATFORM_CONSOLE", "1", 1);*/
 	} else {
 		AppLog(@"[invokeAppMain] Couldn't find tweak folder!");
 	}
