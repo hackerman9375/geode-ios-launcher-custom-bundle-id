@@ -365,10 +365,12 @@ static NSString* invokeAppMain(NSString* selectedApp, NSString* selectedContaine
 		AppLog(@"[invokeAppMain] Couldn't find tweak folder!");
 	}
 	// If JIT is enabled, bypass library validation so we can load arbitrary binaries
+	if (has_txm()) {
+		setenv("TXM_JIT", "1", 1);
+	}
 	if (!usingLiveContainer) {
 		if (checkJITEnabled()) {
 			if (has_txm()) {
-				setenv("TXM_JIT", "1", 1);
 				// we will assume every binary is signed, since i currently cant figure out this issue blind
 				AppLog(@"[invokeAppMain] JIT pass (2/2) [Bypassed because TXM]");
 			} else {
