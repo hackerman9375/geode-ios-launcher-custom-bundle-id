@@ -840,7 +840,7 @@
 					[Utils showNotice:self title:@"launcher.relaunch-notice".loc];
 				}
 			} else {
-				if (![[Utils getPrefs] boolForKey:@"DONT_PATCH_SAFEMODE"] && ([[Utils getPrefs] boolForKey:@"JITLESS"] || has_txm())) {
+				if ((![[Utils getPrefs] boolForKey:@"DONT_PATCH_SAFEMODE"] && ([[Utils getPrefs] boolForKey:@"JITLESS"] || has_txm())) && ![[Utils getPrefs] boolForKey:@"ENTERPRISE_MODE"]) {
 					[_root.launchButton setEnabled:NO];
 					[_root signAppWithSafeMode:^(BOOL success, NSString* error) {
 						dispatch_async(dispatch_get_main_queue(), ^{
