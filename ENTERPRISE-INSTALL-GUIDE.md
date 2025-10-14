@@ -4,11 +4,11 @@
 > This is because this method is time consuming, tedious, and slow for using Geode, as it will require you to install a patched Geometry Dash ("Geode Helper") each time you want to install a mod, update a mod, enable a mod, disable a mod, update Geode, and launch in safe mode.
 
 > [!CAUTION]
+> In this tutorial, you will install the Geode Helper. This Helper stores a seperate save data for Geometry Dash. Uninstalling the Helper will cause your ***__SAVE DATA, MODS AND MOD SETTINGS in the Helper, to be PERMANENTLY DELETED!!!__*** So please, **backup your data (saving your data from the GD account menu also works) before planning to uninstall the Helper** (you usually do not have to uninstall the Helper anyway, just sideload the Helper while it's installed and it will be updated) to prevent any data loss.
+
+> [!WARNING]
 > This guide will not teach you how to go about obtaining such certificates. These certificates ("free certificates") violate [Apple's Terms of Service](https://developer.apple.com/support/terms/apple-developer-program-license-agreement/#ADPLA5), and may get your iDevice blacklisted. As such, this guide is only for educational purposes, given the consequences: Use at your own risk.
 > If you are fine with this, and acknowledge the warning, you can proceed to follow this guide.
-
-> [!CAUTION]
-> In this tutorial you will install a Helper. Uninstalling this Helper **will cause your SAVE DATA to be DELETED!!!** So please, **backup your data before planning to uninstall it** to prevent any data loss.
 
 This tutorial is for people who cannot afford to purchase a Developer Certificate, and do not have a computer, but wish to use Geode.
 
