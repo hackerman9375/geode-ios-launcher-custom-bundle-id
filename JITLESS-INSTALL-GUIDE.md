@@ -7,7 +7,7 @@ This tutorial is mainly for iOS 26, as Apple broke enabling JIT on iOS 26, but i
 # Prerequisites
 ## SideStore Method
 > [!WARNING]
-> Only SideStore is supported for JIT-less as it is the only sideloader that exposes the certificate. AltStore and Sideloadly will not work.
+> Sideloadly is not supported for this method as it does not supporting exporting the certificate unlike SideStore and AltStore.
 
 > [!TIP]
 > If you have never installed SideStore before, follow the first prerequisites, then follow the [iOS 17.4+ (SideStore)](./MODERN-IOS-INSTALL.md) guide until the **Post Installation** section, then come back to this guide.
